@@ -60,6 +60,7 @@ export function RoamRig({ scene, world }: { scene: PoemScene; world: World }) {
   const { camera, gl } = useThree();
   const keys = useKeys();
   const find = useScene((s) => s.find);
+  const setNear = useScene((s) => s.setNear);
   const mode = useScene((s) => s.mode);
 
   const figureRef = useRef<THREE.Group>(null);
@@ -164,6 +165,20 @@ export function RoamRig({ scene, world }: { scene: PoemScene; world: World }) {
       bob.current += dt * 1.4;
     }
 
+    // Keep to the bank. The basins are carved below their water level, so
+    // walking in put the camera under the surface — and a 蓑笠翁 watches the
+    // boat from the shore, he does not wade out to it.
+    for (const b of scene.terrain.basins) {
+      const dx = pos.current.x - b.x;
+      const dz = pos.current.z - b.z;
+      const d = Math.hypot(dx, dz);
+      const shore = b.r * 0.97;
+      if (d < shore && d > 1e-4) {
+        pos.current.x = b.x + (dx / d) * shore;
+        pos.current.z = b.z + (dz / d) * shore;
+      }
+    }
+
     const groundY = terrainHeight(pos.current.x, pos.current.z, scene.terrain);
     pos.current.y = groundY;
 
@@ -200,12 +215,21 @@ export function RoamRig({ scene, world }: { scene: PoemScene; world: World }) {
     camera.position.copy(smoothed.current);
     camera.lookAt(target);
 
-    // Reaching a landmark is what unlocks its line of the poem.
+    // Reaching a place inks its line. Coming within a few radii only stirs it,
+    // which is how you can tell you are walking towards something.
+    let nearest: string | null = null;
+    let nearestD = Infinity;
     for (const lm of scene.landmarks) {
       const dx = pos.current.x - lm.x;
       const dz = pos.current.z - lm.z;
-      if (dx * dx + dz * dz < lm.radius * lm.radius) find(lm.id);
+      const d2 = dx * dx + dz * dz;
+      if (d2 < lm.radius * lm.radius) find(lm.id);
+      if (d2 < (lm.radius * 3) ** 2 && d2 < nearestD) {
+        nearestD = d2;
+        nearest = lm.id;
+      }
     }
+    setNear(nearest);
   });
 
   if (mode !== 'roam') return null;
@@ -223,12 +247,28 @@ export function RoamRig({ scene, world }: { scene: PoemScene; world: World }) {
 export function ViewRig({ scene }: { scene: PoemScene }) {
   const { camera, gl } = useThree();
   const mode = useScene((s) => s.mode);
+  const focus = useScene((s) => s.focus);
   const state = useRef({ yaw: scene.start.heading, pitch: 0.12, dist: 90 });
   const target = useMemo(() => new THREE.Vector3(0, 16, 0), []);
+  const wanted = useMemo(() => new THREE.Vector3(0, 16, 0), []);
 
   useEffect(() => {
     state.current = { yaw: scene.start.heading, pitch: 0.12, dist: 90 };
-  }, [scene]);
+    target.set(0, 16, 0);
+    wanted.set(0, 16, 0);
+  }, [scene, target, wanted]);
+
+  // Choosing a line from the inscription moves the view to the place it names.
+  useEffect(() => {
+    const lm = scene.landmarks.find((l) => l.id === focus);
+    if (!lm) {
+      wanted.set(0, 16, 0);
+      state.current.dist = 90;
+      return;
+    }
+    wanted.set(lm.x, terrainHeight(lm.x, lm.z, scene.terrain) + 9, lm.z);
+    state.current.dist = 42;
+  }, [focus, scene, wanted]);
 
   useEffect(() => {
     if (mode !== 'view') return;
@@ -275,6 +315,7 @@ export function ViewRig({ scene }: { scene: PoemScene }) {
     const dt = Math.min(rawDt, 0.05);
     // No auto-rotation: the default framing is composed around the moon, and a
     // slow drift kept carrying it out of shot.
+    target.lerp(wanted, 1 - Math.pow(0.02, dt));
     const { yaw, pitch, dist } = state.current;
     const cp = Math.cos(pitch);
     const desired = new THREE.Vector3(

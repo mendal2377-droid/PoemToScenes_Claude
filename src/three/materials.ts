@@ -126,10 +126,16 @@ export function makeTerrainMaterial(p: Palette) {
 
         // 点苔 — moss dots. A landscape painter never draws every blade; they
         // dot the ground and let the eye fill it in.
+        // Each dot is a disc measured from a jittered centre, not a shape drawn
+        // into the cell's uv — the latter left the cell's square edge visible
+        // wherever the blob ran past it. Jitter and radius are kept small enough
+        // that a dot never crosses into the neighbouring cell.
         vec2 cell = floor(vW.xz * 2.3);
-        vec2 jit = vec2(hash21(cell), hash21(cell + 19.0)) - 0.5;
+        vec2 jit = (vec2(hash21(cell), hash21(cell + 19.0)) - 0.5) * 0.4;
+        vec2 centre = (cell + 0.5 + jit) / 2.3;
+        float dd = distance(vW.xz, centre) * 2.3;
         float dots = step(0.79, hash21(cell + 3.0));
-        float dotShape = inkDab(fract(vW.xz * 2.3) * 0.8 + jit * 0.4 + 0.1, hash21(cell) * 7.0);
+        float dotShape = smoothstep(0.28, 0.08, dd) * (0.7 + hash21(cell + 5.0) * 0.5);
         col = mix(col, uInk * 0.8 + uLow * 0.3, dots * dotShape * 0.34);
 
         // Broad washes so the ground is not a flat field of one green.

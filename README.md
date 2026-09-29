@@ -1,7 +1,12 @@
 # 卧游 · Wandering in the Landscape
 
 A walkable Chinese landscape painting. Pick a classical poem, step into the world it
-describes, and collect it one line at a time by walking to the place each line is about.
+describes, and watch the text and the land come into agreement as you walk.
+
+The whole poem is inscribed on the picture from the first moment, the way a 题款 sits on
+a real scroll. Nothing is hidden and nothing is collected: a line you have not stood in
+front of yet is written in 淡墨, pale and set back; reaching its place brings it up to
+full ink.
 
 Built with Next.js and React Three Fiber. Every surface is painted rather than lit —
 there is not a single light source in the scene.
@@ -23,8 +28,8 @@ Five more poems sit greyed out on the shelf as sketches.
 
 - **自由观看** — orbit the valley the way you would walk around a hanging scroll.
 - **漫游** — WASD to walk, Shift to run, drag to look. A figure in a straw hat and rain
-  cape follows the ochre trail. Reach a landmark and its line of the poem unrolls in
-  calligraphy where you're standing.
+  cape follows the ochre trail. Coming near a place stirs its line in the inscription;
+  arriving inks it. Clicking a line in free view travels to the place it names.
 - **落笔** — a painter's palette at the bottom of the screen. Take a pine, a bamboo, a
   stone or a cloud, drop it into the landscape, then tune the brushwork itself: stroke
   density, stroke length, curl, ink tone. Density and length regrow the geometry; curl
@@ -74,6 +79,13 @@ src/
 ```
 
 ### A few decisions worth knowing about
+
+**The poem is a 题款, not a pickup.** The first build scattered the lines across the
+valley as floating seals you walked over to collect, which turned a scroll into a quest
+map and meant a reader could not simply read the poem. Now the text is inscribed on the
+picture in vertical columns, right to left, signed and sealed, and walking only changes
+how dark the ink is. The landscape keeps its markers to faint rings on the ground that
+fade up as you approach and are invisible from any distance.
 
 **留白 is a real field, not a look.** A low-resolution noise field marks where the
 brush never went. The terrain shader washes those patches back to bare paper, and the
@@ -133,7 +145,6 @@ route, the loading card and the poem sheet all read from that one object. A land
 - The five greyed poems on the shelf are titles and palettes, not worlds.
 - **江雪's river is a circular basin**, so its shoreline reads as a pond rather than a
   river running through. It wants an elongated or path-shaped basin.
-- **The poem is presented as eight independent lines.** 山居秋暝 is a 五言律诗 whose
-  middle couplets are 对仗 — 明月↔清泉, 松间↔石上, 照↔流. Collecting them one at a time
-  flattens the structure, and there is no 注释, no rhyme marking (秋·流·舟·留) and no
-  sound, all of which this audience would want.
+- **The 对仗 is not expressed.** 山居秋暝 is a 五言律诗 whose middle couplets are matched
+  pairs — 明月↔清泉, 松间↔石上, 照↔流. The inscription shows the poem whole but treats all
+  eight lines alike. There is also no 注释, no rhyme marking (秋·流·舟·留) and no sound.

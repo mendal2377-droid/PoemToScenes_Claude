@@ -66,8 +66,12 @@ type SceneState = {
   found: string[];
   /** The line currently being revealed in the world, if any. */
   revealing: string | null;
-  scrollOpen: boolean;
+  /** The landmark the traveller is closest to — its line stirs in the inscription. */
+  near: string | null;
+  /** A place the free view is flying to, chosen from the inscription. */
+  focus: string | null;
   panelOpen: boolean;
+  inscriptionOpen: boolean;
   /** Composition mode. */
   brush: PlaceableKind | null;
   placed: PlacedItem[];
@@ -78,8 +82,10 @@ type SceneState = {
   setAtmosphere: (patch: Partial<Atmosphere>) => void;
   find: (id: string) => void;
   clearRevealing: () => void;
-  toggleScroll: (open?: boolean) => void;
+  setNear: (id: string | null) => void;
+  setFocus: (id: string | null) => void;
   togglePanel: (open?: boolean) => void;
+  toggleInscription: (open?: boolean) => void;
   setBrush: (kind: PlaceableKind | null) => void;
   place: (x: number, z: number) => void;
   select: (uid: string | null) => void;
@@ -103,8 +109,10 @@ export const useScene = create<SceneState>((set, get) => ({
   atmosphere: { hour: 0.8, wind: 0.5, mist: 0.4, snow: 0 },
   found: [],
   revealing: null,
-  scrollOpen: false,
-  panelOpen: true,
+  near: null,
+  focus: null,
+  panelOpen: false,
+  inscriptionOpen: true,
   brush: null,
   placed: [],
   selected: null,
@@ -115,11 +123,12 @@ export const useScene = create<SceneState>((set, get) => ({
       atmosphere: { ...scene.atmosphere },
       found: [],
       revealing: null,
+      near: null,
+      focus: null,
       placed: [],
       selected: null,
       brush: null,
       mode: 'view',
-      scrollOpen: false,
     }),
 
   setMode: (mode) => set({ mode, brush: mode === 'compose' ? get().brush : null }),
@@ -134,9 +143,17 @@ export const useScene = create<SceneState>((set, get) => ({
 
   clearRevealing: () => set({ revealing: null }),
 
-  toggleScroll: (open) => set({ scrollOpen: open ?? !get().scrollOpen }),
+  // Called every frame from the walk loop, so it must not churn the store.
+  setNear: (id) => {
+    if (get().near === id) return;
+    set({ near: id });
+  },
+
+  setFocus: (id) => set({ focus: id }),
 
   togglePanel: (open) => set({ panelOpen: open ?? !get().panelOpen }),
+
+  toggleInscription: (open) => set({ inscriptionOpen: open ?? !get().inscriptionOpen }),
 
   setBrush: (kind) => set({ brush: kind, selected: kind ? null : get().selected }),
 
@@ -170,5 +187,5 @@ export const useScene = create<SceneState>((set, get) => ({
     set({ placed: placed.filter((p) => p.uid !== selected), selected: null });
   },
 
-  resetFound: () => set({ found: [], revealing: null }),
+  resetFound: () => set({ found: [], revealing: null, near: null, focus: null }),
 }));

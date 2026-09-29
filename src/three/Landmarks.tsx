@@ -3,65 +3,63 @@
 import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
+import { clamp } from '@/lib/noise';
 import { terrainHeight } from '@/lib/terrain';
 import { useScene } from '@/lib/store';
 import type { PoemScene } from '@/lib/types';
-import { LabelProjector, type LabelBus, type LabelPoint } from './Labels';
 
-/** The breathing ring that marks a place still waiting to be reached. */
-function Ring({ radius, color, y }: { radius: number; color: string; y: number }) {
+/**
+ * A place waiting to be reached, marked only on the ground.
+ *
+ * Floating seals turned the painting into a quest map, so nothing hovers any
+ * more: just a ring drawn on the earth that fades up as you come near it and is
+ * invisible from across the valley. The poem itself lives in the inscription.
+ */
+function Ring({
+  lm,
+  scene,
+  found,
+}: {
+  lm: PoemScene['landmarks'][number];
+  scene: PoemScene;
+  found: boolean;
+}) {
   const ref = useRef<THREE.Mesh>(null);
+  const y = useMemo(() => terrainHeight(lm.x, lm.z, scene.terrain), [lm, scene]);
 
-  useFrame(({ clock }) => {
-    if (!ref.current) return;
-    const t = clock.elapsedTime;
-    ref.current.scale.setScalar(0.86 + Math.sin(t * 1.6) * 0.09);
-    const m = ref.current.material as THREE.MeshBasicMaterial;
-    m.opacity = 0.2 + Math.sin(t * 1.6) * 0.1;
+  useFrame(({ clock, camera }) => {
+    const mesh = ref.current;
+    if (!mesh) return;
+    const d = camera.position.distanceTo(mesh.position);
+    // Only visible from within a few ring-radii; nothing to see from a distance.
+    const near = 1 - clamp((d - lm.radius * 1.5) / (lm.radius * 4), 0, 1);
+    const pulse = 0.72 + Math.sin(clock.elapsedTime * 1.5) * 0.28;
+    const m = mesh.material as THREE.MeshBasicMaterial;
+    m.opacity = near * pulse * (found ? 0.06 : 0.3);
+    mesh.visible = m.opacity > 0.01;
   });
 
   return (
-    <mesh ref={ref} rotation={[-Math.PI / 2, 0, 0]} position={[0, y + 0.25, 0]}>
-      <ringGeometry args={[radius * 0.82, radius, 56]} />
-      <meshBasicMaterial color={color} transparent opacity={0.25} depthWrite={false} side={THREE.DoubleSide} />
+    <mesh ref={ref} rotation={[-Math.PI / 2, 0, 0]} position={[lm.x, y + 0.22, lm.z]}>
+      <ringGeometry args={[lm.radius * 0.88, lm.radius, 56]} />
+      <meshBasicMaterial
+        color={scene.palette.accent}
+        transparent
+        opacity={0}
+        depthWrite={false}
+        side={THREE.DoubleSide}
+      />
     </mesh>
   );
 }
 
-/**
- * The 3D half of the landmarks: the ground rings, plus the anchors that the DOM
- * overlay hangs its seals and verse slips from.
- */
-export function Landmarks({ scene, bus }: { scene: PoemScene; bus: LabelBus }) {
+export function Landmarks({ scene }: { scene: PoemScene }) {
   const found = useScene((s) => s.found);
-
-  const heights = useMemo(
-    () => scene.landmarks.map((lm) => terrainHeight(lm.x, lm.z, scene.terrain)),
-    [scene]
-  );
-
-  const points: LabelPoint[] = useMemo(
-    () =>
-      scene.landmarks.map((lm, i) => ({
-        id: lm.id,
-        x: lm.x,
-        // A found verse hangs a little higher than the seal it replaces.
-        y: heights[i] + (found.includes(lm.id) ? 4.6 : 3.2),
-        z: lm.z,
-      })),
-    [scene, heights, found]
-  );
-
   return (
     <group>
-      {scene.landmarks.map((lm, i) =>
-        found.includes(lm.id) ? null : (
-          <group key={lm.id} position={[lm.x, 0, lm.z]}>
-            <Ring radius={lm.radius} color={scene.palette.accent} y={heights[i]} />
-          </group>
-        )
-      )}
-      <LabelProjector points={points} bus={bus} />
+      {scene.landmarks.map((lm) => (
+        <Ring key={lm.id} lm={lm} scene={scene} found={found.includes(lm.id)} />
+      ))}
     </group>
   );
 }

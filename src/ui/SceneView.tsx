@@ -1,15 +1,13 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useScene, type Mode } from '@/lib/store';
 import type { PoemScene } from '@/lib/types';
 import { Panel } from './Panel';
 import { Palette } from './Palette';
-import { PoemSheet } from './PoemSheet';
-import { WorldLabels } from './WorldLabels';
-import { createLabelBus } from '@/three/Labels';
+import { Inscription } from './Inscription';
 
 const SceneCanvas = dynamic(() => import('@/three/SceneCanvas').then((m) => m.SceneCanvas), {
   ssr: false,
@@ -54,14 +52,12 @@ export function SceneView({ scene }: { scene: PoemScene }) {
   const load = useScene((s) => s.load);
   const mode = useScene((s) => s.mode);
   const setMode = useScene((s) => s.setMode);
-  const found = useScene((s) => s.found);
   const revealing = useScene((s) => s.revealing);
   const clearRevealing = useScene((s) => s.clearRevealing);
-  const scrollOpen = useScene((s) => s.scrollOpen);
-  const toggleScroll = useScene((s) => s.toggleScroll);
+  const panelOpen = useScene((s) => s.panelOpen);
+  const togglePanel = useScene((s) => s.togglePanel);
 
   const [phase, setPhase] = useState<'card' | 'build' | 'done'>('card');
-  const bus = useMemo(() => createLabelBus(), []);
 
   useEffect(() => {
     load(scene);
@@ -75,28 +71,27 @@ export function SceneView({ scene }: { scene: PoemScene }) {
 
   const onReady = useCallback(() => setPhase('done'), []);
 
-  // A found line hangs in the middle of the screen for a moment, then lets go.
+  // A line you have just reached holds the middle of the screen for a beat,
+  // then hands over to the inscription, where it stays inked.
   useEffect(() => {
     if (!revealing) return;
-    const t = setTimeout(clearRevealing, 3000);
+    const t = setTimeout(clearRevealing, 2200);
     return () => clearTimeout(t);
   }, [revealing, clearRevealing]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') toggleScroll(false);
+      if (e.key === 'Escape') togglePanel(false);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [toggleScroll]);
+  }, [togglePanel]);
 
   const revealed = scene.landmarks.find((l) => l.id === revealing);
-  const total = scene.lines.length;
 
   return (
     <main className="scene-page">
-      {phase !== 'card' && <SceneCanvas scene={scene} onReady={onReady} bus={bus} />}
-      {phase !== 'card' && <WorldLabels scene={scene} bus={bus} />}
+      {phase !== 'card' && <SceneCanvas scene={scene} onReady={onReady} />}
 
       <div className="topbar">
         <Link href="/" className="topbar__home">
@@ -117,43 +112,25 @@ export function SceneView({ scene }: { scene: PoemScene }) {
           ))}
         </div>
 
-        <button type="button" className="pill" onClick={() => toggleScroll(true)}>
-          诗笺 {found.length}/{total}
+        <button type="button" className="pill" data-on={panelOpen} onClick={() => togglePanel()}>
+          天时
         </button>
 
         <div className="topbar__spacer" />
-
-        <div className="topbar__title">
-          {scene.title}
-          <small>
-            {scene.dynasty} · {scene.author}
-          </small>
-        </div>
       </div>
 
       {mode === 'roam' && (
-        <>
-          <div className="hud">
-            <span className="hud__name">{scene.title}</span>
-            <span className="hud__beads">
-              {scene.landmarks.map((l) => (
-                <span key={l.id} className="bead" data-on={found.includes(l.id)} title={l.label} />
-              ))}
-            </span>
-            <span className="hud__count">
-              {found.length} / {total}
-            </span>
-          </div>
-          <div className="hud__keys">
-            <kbd>W</kbd>
-            <kbd>A</kbd>
-            <kbd>S</kbd>
-            <kbd>D</kbd> 行 · <kbd>Shift</kbd> 疾 · 拖动转身 · 循径而行
-          </div>
-        </>
+        <div className="hud__keys">
+          <kbd>W</kbd>
+          <kbd>A</kbd>
+          <kbd>S</kbd>
+          <kbd>D</kbd> 行 · <kbd>Shift</kbd> 疾 · 拖动转身 · 循径而行
+        </div>
       )}
 
-      <Panel scene={scene} />
+      <Inscription scene={scene} />
+
+      {panelOpen && <Panel scene={scene} />}
       {mode === 'compose' && <Palette scene={scene} />}
 
       {revealed && (
@@ -161,8 +138,6 @@ export function SceneView({ scene }: { scene: PoemScene }) {
           <p className="reveal__line">{scene.lines[revealed.line]}</p>
         </div>
       )}
-
-      {scrollOpen && <PoemSheet scene={scene} />}
 
       <LoadingCard scene={scene} done={phase === 'done'} />
     </main>

@@ -10,7 +10,6 @@ import { useWorld } from './useWorld';
 import { WorldView } from './World';
 import { RoamRig, ViewRig } from './Roam';
 import { Landmarks } from './Landmarks';
-import type { LabelBus } from './Labels';
 import { Composer } from './Composer';
 
 /** Drives the one uniform block every material in the scene reads from. */
@@ -31,15 +30,7 @@ function Ticker() {
   return null;
 }
 
-function Contents({
-  scene,
-  onReady,
-  bus,
-}: {
-  scene: PoemScene;
-  onReady?: () => void;
-  bus: LabelBus;
-}) {
+function Contents({ scene, onReady }: { scene: PoemScene; onReady?: () => void }) {
   const world = useWorld(scene);
   const mode = useScene((s) => s.mode);
   const brush = useScene((s) => s.brush);
@@ -68,22 +59,14 @@ function Contents({
       <Ticker />
       <WorldView scene={scene} world={world} onGroundDown={mode === 'compose' ? onGroundDown : undefined} />
       <Composer scene={scene} />
-      <Landmarks scene={scene} bus={bus} />
+      <Landmarks scene={scene} />
       <ViewRig scene={scene} />
       <RoamRig scene={scene} world={world} />
     </>
   );
 }
 
-export function SceneCanvas({
-  scene,
-  onReady,
-  bus,
-}: {
-  scene: PoemScene;
-  onReady?: () => void;
-  bus: LabelBus;
-}) {
+export function SceneCanvas({ scene, onReady }: { scene: PoemScene; onReady?: () => void }) {
   return (
     <Canvas
       className="scene-canvas"
@@ -95,7 +78,7 @@ export function SceneCanvas({
       }}
     >
       <Suspense fallback={null}>
-        <Contents scene={scene} onReady={onReady} bus={bus} />
+        <Contents scene={scene} onReady={onReady} />
       </Suspense>
     </Canvas>
   );
