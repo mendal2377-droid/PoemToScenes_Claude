@@ -45,6 +45,25 @@ export type Atmosphere = {
   snow: number;
 };
 
+/**
+ * One line of the poem, with the things a reader of classical verse actually
+ * wants: what it means, where it falls in the tonal pattern, and whether it
+ * carries the rhyme.
+ */
+export type Verse = {
+  text: string;
+  /**
+   * 平仄 for each character, one letter per character: 'p' for 平, 'z' for 仄.
+   * Taken from 平水韵, so 入声 characters count as 仄 even where modern Mandarin
+   * has flattened them — 月, 石, 竹, 歇, 绝, 灭, 雪 all do.
+   */
+  tones: string;
+  /** Whether the line ends on the rhyme. */
+  rhyme: boolean;
+  /** A sentence of 注释 — what the line is saying. */
+  note: string;
+};
+
 export type Landmark = {
   id: string;
   /** Index into the poem's lines. */
@@ -61,7 +80,11 @@ export type PoemScene = {
   title: string;
   author: string;
   dynasty: string;
-  lines: readonly string[];
+  lines: readonly Verse[];
+  /** Indices of lines that form a 对仗 pair. */
+  couplets: readonly (readonly [number, number])[];
+  /** The rhyme category, e.g. 下平十一尤. */
+  rhymeName: string;
   /** One sentence for the landing page and the loading card. */
   note: string;
   /** Latin title on the loading card, the way a gallery would label it. */

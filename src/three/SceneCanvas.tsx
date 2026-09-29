@@ -4,6 +4,7 @@ import { Suspense, useCallback, useEffect } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useScene } from '@/lib/store';
+import { ambience } from '@/lib/ambience';
 import type { PoemScene } from '@/lib/types';
 import { shared } from './materials';
 import { useWorld } from './useWorld';
@@ -12,8 +13,11 @@ import { RoamRig, ViewRig } from './Roam';
 import { Landmarks } from './Landmarks';
 import { Composer } from './Composer';
 
-/** Drives the one uniform block every material in the scene reads from. */
-function Ticker() {
+/**
+ * Drives the one uniform block every material in the scene reads from, and
+ * carries the listener's position to the ambience so the sound follows the eye.
+ */
+function Ticker({ scene }: { scene: PoemScene }) {
   const atm = useScene((s) => s.atmosphere);
 
   useEffect(() => {
@@ -23,8 +27,11 @@ function Ticker() {
     shared.uSnow.value = atm.snow;
   }, [atm]);
 
-  useFrame(({ clock }) => {
+  useFrame(({ clock, camera }, dt) => {
     shared.uTime.value = clock.elapsedTime;
+    if (ambience.running) {
+      ambience.update(camera.position.x, camera.position.z, scene, atm.wind, Math.min(dt, 0.1));
+    }
   });
 
   return null;
@@ -56,7 +63,7 @@ function Contents({ scene, onReady }: { scene: PoemScene; onReady?: () => void }
 
   return (
     <>
-      <Ticker />
+      <Ticker scene={scene} />
       <WorldView scene={scene} world={world} onGroundDown={mode === 'compose' ? onGroundDown : undefined} />
       <Composer scene={scene} />
       <Landmarks scene={scene} />

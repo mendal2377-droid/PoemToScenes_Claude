@@ -24,6 +24,27 @@ there is not a single light source in the scene.
 
 Five more poems sit greyed out on the shelf as sketches.
 
+**The inscription reads like a scholarly edition.**
+
+- **对仗** — the matched couplets are bracketed together. In 山居秋暝 those are
+  明月松间照/清泉石上流 and 竹喧归浣女/莲动下渔舟, where every character answers its
+  opposite: 明月↔清泉, 松间↔石上, 照↔流.
+- **韵脚** — rhyming characters wear a vermilion ring. 秋·流·舟·留 in 山居秋暝 (下平十一尤);
+  绝·灭·雪 in 江雪, which rhymes on the 入声 and so marks three of its four lines.
+- **平仄** — an optional toggle puts a hollow dot beside every 平 and a filled one beside
+  every 仄, so the tonal pattern of a 五言律诗 runs down each column as a visible stripe.
+  Tones are from 平水韵, which means 月, 石, 竹, 歇, 绝, 灭 and 雪 all count as 仄 even where
+  modern Mandarin has flattened them.
+- **注释** — a sentence on whichever line is under your eye.
+
+**Sound, synthesised.** 竹喧 literally means *noise in the bamboo*, and 清泉石上流 is a line
+you hear before you see; half the poem is sound and the scene was silent. Every layer is
+filtered noise built in the Web Audio graph — no audio files ship. A bed of wind, 松风
+through the pines, 泉声 over the stones, the hollow knock of bamboo culms, water at the
+lotus pond. Layer gains follow the listener, so walking toward the stream brings it up.
+Off until you ask for it, both because browsers forbid otherwise and because silence is a
+legitimate way to read a poem.
+
 **Three modes.**
 
 - **自由观看** — orbit the valley the way you would walk around a hanging scroll.
@@ -87,6 +108,10 @@ picture in vertical columns, right to left, signed and sealed, and walking only 
 how dark the ink is. The landscape keeps its markers to faint rings on the ground that
 fade up as you approach and are invisible from any distance.
 
+**The thumbstick writes to a plain object, not state.** Same reasoning as the shared
+uniform block: the walk loop reads it every frame, and re-rendering the tree at frame rate
+to move a figure would be absurd. It only mounts for coarse pointers.
+
 **留白 is a real field, not a look.** A low-resolution noise field marks where the
 brush never went. The terrain shader washes those patches back to bare paper, and the
 grass builder samples the *same array* through a matching bilinear filter, so nothing
@@ -137,14 +162,12 @@ route, the loading card and the poem sheet all read from that one object. A land
 
 ## Known limitations
 
-- **Roaming needs a keyboard.** On touch, free view and composition work, but there is no
-  on-screen joystick yet, so 漫游 is desktop-only.
 - **Building a world costs ~0.6–0.7 s** of main-thread time. The loading card is painted
   first and covers it, but it is a blocking build, not a worker.
 - **Placed props are session-only.** Nothing persists across a reload.
 - The five greyed poems on the shelf are titles and palettes, not worlds.
 - **江雪's river is a circular basin**, so its shoreline reads as a pond rather than a
   river running through. It wants an elongated or path-shaped basin.
-- **The 对仗 is not expressed.** 山居秋暝 is a 五言律诗 whose middle couplets are matched
-  pairs — 明月↔清泉, 松间↔石上, 照↔流. The inscription shows the poem whole but treats all
-  eight lines alike. There is also no 注释, no rhyme marking (秋·流·舟·留) and no sound.
+- **平仄 is hand-encoded per poem**, not looked up. Adding a poem means writing its tones
+  out; there is no 平水韵 table in the project.
+- **吟诵 is missing.** The ambience is weather and water, not a voice reading the poem.

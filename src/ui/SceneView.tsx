@@ -8,6 +8,8 @@ import type { PoemScene } from '@/lib/types';
 import { Panel } from './Panel';
 import { Palette } from './Palette';
 import { Inscription } from './Inscription';
+import { ambience } from '@/lib/ambience';
+import { Thumbstick } from './Thumbstick';
 
 const SceneCanvas = dynamic(() => import('@/three/SceneCanvas').then((m) => m.SceneCanvas), {
   ssr: false,
@@ -58,6 +60,8 @@ export function SceneView({ scene }: { scene: PoemScene }) {
   const togglePanel = useScene((s) => s.togglePanel);
 
   const [phase, setPhase] = useState<'card' | 'build' | 'done'>('card');
+  const [sound, setSound] = useState(false);
+  const [sealed, setSealed] = useState(false);
 
   useEffect(() => {
     load(scene);
@@ -70,6 +74,18 @@ export function SceneView({ scene }: { scene: PoemScene }) {
   }, [scene]);
 
   const onReady = useCallback(() => setPhase('done'), []);
+
+  // Audio can only be created from a gesture, so this lives behind a toggle —
+  // and silence is a legitimate way to read a poem anyway.
+  const toggleSound = useCallback(() => {
+    setSound((on) => {
+      if (on) ambience.stop();
+      else void ambience.start();
+      return !on;
+    });
+  }, []);
+
+  useEffect(() => () => ambience.stop(), []);
 
   // A line you have just reached holds the middle of the screen for a beat,
   // then hands over to the inscription, where it stays inked.
@@ -86,6 +102,19 @@ export function SceneView({ scene }: { scene: PoemScene }) {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [togglePanel]);
+
+  const found = useScene((s) => s.found);
+  const complete = found.length === scene.lines.length;
+
+  // The poem coming whole deserves a beat of its own, once.
+  useEffect(() => {
+    if (!complete) {
+      setSealed(false);
+      return;
+    }
+    const t = setTimeout(() => setSealed(true), 1400);
+    return () => clearTimeout(t);
+  }, [complete]);
 
   const revealed = scene.landmarks.find((l) => l.id === revealing);
 
@@ -116,8 +145,14 @@ export function SceneView({ scene }: { scene: PoemScene }) {
           天时
         </button>
 
+        <button type="button" className="pill" data-on={sound} onClick={toggleSound} title="松风 · 泉声 · 竹喧">
+          {sound ? '闻声' : '寂'}
+        </button>
+
         <div className="topbar__spacer" />
       </div>
+
+      {mode === 'roam' && <Thumbstick />}
 
       {mode === 'roam' && (
         <div className="hud__keys">
@@ -135,7 +170,18 @@ export function SceneView({ scene }: { scene: PoemScene }) {
 
       {revealed && (
         <div className="reveal" key={revealed.id}>
-          <p className="reveal__line">{scene.lines[revealed.line]}</p>
+          <p className="reveal__line">{scene.lines[revealed.line].text}</p>
+        </div>
+      )}
+
+      {sealed && (
+        <div className="sealed" key="sealed" onAnimationEnd={() => setSealed(false)}>
+          <p className="sealed__mark" style={{ background: scene.palette.accent }}>
+            游毕
+          </p>
+          <p className="sealed__note">
+            {scene.title} · {scene.lines.length}句俱全 · 韵在{scene.rhymeName}
+          </p>
         </div>
       )}
 

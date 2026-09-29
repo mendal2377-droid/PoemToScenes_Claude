@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import { clamp } from '@/lib/noise';
 import { terrainHeight } from '@/lib/terrain';
 import { useScene } from '@/lib/store';
+import { touchInput } from '@/lib/touch';
 import type { PoemScene } from '@/lib/types';
 import { Figure } from './World';
 import type { World } from './useWorld';
@@ -139,6 +140,13 @@ export function RoamRig({ scene, world }: { scene: PoemScene; world: World }) {
         ix += v[0];
         iz += v[1];
       }
+    }
+
+    // The thumbstick feeds the same two axes as the keys, so everything
+    // downstream is unaware of which one is driving.
+    if (touchInput.active) {
+      ix += touchInput.x;
+      iz += touchInput.y;
     }
 
     const running = keys.current.has('ShiftLeft') || keys.current.has('ShiftRight');
