@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo } from 'react';
 import * as THREE from 'three';
+import { Rng } from '@/lib/noise';
 import { basinWaterLevel, terrainHeight } from '@/lib/terrain';
 import type { PoemScene } from '@/lib/types';
 import { buildGroundMask, buildPaperField } from './groundMask';
@@ -24,7 +25,8 @@ import {
   buildRocks,
   scatterRocks,
 } from './flora';
-import { buildBoatCanopy, buildBoatHull, buildCape, buildHat, buildPavilionRoof } from './props';
+import { buildBoatCanopy, buildBoatHull, buildCape, buildHat, buildHerd, buildPavilionRoof } from './props';
+import { bodies, shared } from './materials';
 import {
   makeBarkMaterial,
   makeFoliageMaterial,
@@ -35,7 +37,7 @@ import {
   makeMountainMaterial,
   makeRockMaterial,
   makeSkyMaterial,
-  makeSnowMaterial,
+  makeFallMaterial,
   makeTerrainMaterial,
   makeThatchMaterial,
   makeWaterMaterial,
@@ -98,7 +100,8 @@ function buildWorld(scene: PoemScene) {
       spec,
       spec.seed + 5,
       avoid,
-      paper.sample
+      paper.sample,
+      scene.flora.grass.height ?? 1
     ),
     reeds: buildReeds(
       scene.flora.reeds.count,
@@ -109,7 +112,21 @@ function buildWorld(scene: PoemScene) {
     ),
     rocks: buildRocks(scatterRocks(scene.flora.rocks.count, spec, spec.seed + 7)),
     mist: buildMistBanks(34, spec, spec.seed + 8),
-    snow: scene.atmosphere.snow > 0 ? buildSnow(2600, 90, spec.seed + 9) : null,
+    fall: buildSnow(2600, 90, spec.seed + 9),
+    rain: buildSnow(5600, 48, spec.seed + 10),
+    wsnow: buildSnow(3800, 64, spec.seed + 11),
+    herd: scene.herd
+      ? buildHerd(
+          Array.from({ length: scene.herd.count }, (_, i) => {
+            const rng = new Rng(spec.seed + 400 + i);
+            const a = rng.range(0, Math.PI * 2);
+            const r = Math.sqrt(rng.next()) * scene.herd!.r;
+            const hx = scene.herd!.x + Math.cos(a) * r;
+            const hz = scene.herd!.z + Math.sin(a) * r;
+            return { x: hx, y: terrainHeight(hx, hz, spec), z: hz, s: scene.herd!.scale * rng.range(0.8, 1.25), seed: rng.next() };
+          })
+        )
+      : null,
     pavilionRoof: scene.pavilion ? buildPavilionRoof(3.1, 2.9, 4.9) : null,
     boatHull: scene.boat ? buildBoatHull(5.6, 1.5, 0.62) : null,
     boatCanopy: scene.boat ? buildBoatCanopy(2.1, 1.35, 0.85) : null,
@@ -145,17 +162,26 @@ function buildWorld(scene: PoemScene) {
     grass: makeGrassMaterial(p),
     rock: makeRockMaterial(p),
     mist: makeMistMaterial(p),
-    snow: makeSnowMaterial(p),
+    fall: makeFallMaterial(p, scene.fall, shared.uSnow),
+    rain: makeFallMaterial(p, { kind: 'rain', color: '#d3dbe2', size: 1 }, shared.uRain),
+    wsnow: makeFallMaterial(p, { kind: 'snow', color: '#ffffff', size: 1.1 }, shared.uWSnow),
     thatch: makeThatchMaterial(p),
     ink: makeInkMaterial(p),
     shadow: makeContactShadowMaterial(p),
     straw: strawDark,
     hat: hatPale,
     wood: makeInkMaterial(p, p.trunk),
+    herd: null as THREE.ShaderMaterial | null,
   };
 
   // The middle range sits between the other two in weight as well as distance.
   mat.mountainMid.uniforms.uFarness.value = 0.45;
+
+  // Petals and leaves drift but do not settle; snow does.
+  shared.uAccum.value = scene.fall.accumulate;
+  if (scene.herd) {
+    mat.herd = makeInkMaterial(p, scene.herd.color);
+  }
 
   const mask = buildGroundMask(spec, trail);
   mat.terrain.uniforms.uMask.value = mask;
@@ -163,11 +189,13 @@ function buildWorld(scene: PoemScene) {
   mat.terrain.uniforms.uExtent.value = spec.extent;
 
   // 明月松间照 needs to know where the moon is and where the pines are.
-  const moonDir = new THREE.Vector3(scene.luminary.x, scene.luminary.y, scene.luminary.z).normalize();
+  // The moon moves with the clock, so every material holds the one shared vector.
+  const moonDir = bodies.moon;
   const grove = scene.flora.pines.clusters[0];
   mat.terrain.uniforms.uMoonDir.value = moonDir;
   mat.terrain.uniforms.uGrove.value = new THREE.Vector2(grove?.x ?? 0, grove?.z ?? 0);
   mat.terrain.uniforms.uGroveR.value = grove?.r ?? 1;
+  mat.terrain.uniforms.uGrassStroke.value = scene.flora.grass.stroke ?? 0.4;
 
   for (const m of [mat.needle, mat.bambooLeaf, mat.dab, mat.reed, mat.pad]) {
     m.uniforms.uMoonDir.value = moonDir;

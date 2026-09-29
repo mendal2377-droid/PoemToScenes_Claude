@@ -454,7 +454,8 @@ export function buildGrass(
   spec: TerrainSpec,
   seed: number,
   avoid: readonly { x: number; z: number; r: number }[] = [],
-  paper?: (x: number, z: number) => number
+  paper?: (x: number, z: number) => number,
+  height = 1
 ): THREE.BufferGeometry | null {
   if (count <= 0) return null;
   const rng = new Rng(seed);
@@ -487,7 +488,7 @@ export function buildGrass(
       const x = cx + rng.range(-spread, spread);
       const z = cz + rng.range(-spread, spread);
       const y = terrainHeight(x, z, spec);
-      const h = rng.range(0.2, 0.58);
+      const h = rng.range(0.2, 0.58) * height;
       const w = rng.range(0.04, 0.078);
       const a = rng.range(0, Math.PI * 2);
       const leanX = Math.cos(a) * rng.range(0.1, 0.5);

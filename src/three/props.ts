@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { Rng } from '@/lib/noise';
 
 /**
  * A 四角亭 roof. The corners lift and the eaves sag between them — that curve is
@@ -189,6 +190,76 @@ export function buildCape(topR: number, bottomR: number, height: number): THREE.
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
   g.setIndex(idx);
+  g.computeVertexNormals();
+  return g;
+}
+
+/**
+ * 牛羊 — grazing animals, merged into a single buffer.
+ *
+ * 敕勒歌 spends six lines describing emptiness and then ends by pulling the
+ * grass aside to reveal cattle and sheep. The line has nothing to show without
+ * them, so: a squat body, a lowered head and four legs, which is all the
+ * silhouette needs at the distance you actually see them from.
+ */
+export function buildHerd(
+  placements: readonly { x: number; y: number; z: number; s: number; seed: number }[]
+): THREE.BufferGeometry | null {
+  if (!placements.length) return null;
+
+  const body = new THREE.SphereGeometry(1, 9, 7).toNonIndexed();
+  const head = new THREE.SphereGeometry(1, 7, 6).toNonIndexed();
+  const leg = new THREE.CylinderGeometry(1, 0.8, 1, 5).toNonIndexed();
+  const out: number[] = [];
+  const m = new THREE.Matrix4();
+  const v = new THREE.Vector3();
+
+  const stamp = (geo: THREE.BufferGeometry) => {
+    const arr = geo.attributes.position.array as Float32Array;
+    for (let i = 0; i < arr.length; i += 3) {
+      v.set(arr[i], arr[i + 1], arr[i + 2]).applyMatrix4(m);
+      out.push(v.x, v.y, v.z);
+    }
+  };
+
+  for (const p of placements) {
+    const rng = new Rng(Math.floor(p.seed * 1e6) + 17);
+    const face = rng.range(0, Math.PI * 2);
+    const s = p.s;
+    const bodyY = p.y + s * 0.62;
+
+    m.makeScale(s * 0.34, s * 0.3, s * 0.62);
+    m.premultiply(new THREE.Matrix4().makeRotationY(face));
+    m.setPosition(p.x, bodyY, p.z);
+    stamp(body);
+
+    // Head down in the grass, which is what grazing looks like.
+    const hx = p.x + Math.sin(face) * s * 0.6;
+    const hz = p.z + Math.cos(face) * s * 0.6;
+    m.makeScale(s * 0.19, s * 0.17, s * 0.23);
+    m.setPosition(hx, p.y + s * rng.range(0.3, 0.46), hz);
+    stamp(head);
+
+    for (const [ox, oz] of [
+      [-0.18, 0.34],
+      [0.18, 0.34],
+      [-0.18, -0.34],
+      [0.18, -0.34],
+    ]) {
+      const lx = p.x + (ox * Math.cos(face) + oz * Math.sin(face)) * s;
+      const lz = p.z + (-ox * Math.sin(face) + oz * Math.cos(face)) * s;
+      m.makeScale(s * 0.045, s * 0.62, s * 0.045);
+      m.setPosition(lx, p.y + s * 0.31, lz);
+      stamp(leg);
+    }
+  }
+
+  body.dispose();
+  head.dispose();
+  leg.dispose();
+
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(out, 3));
   g.computeVertexNormals();
   return g;
 }

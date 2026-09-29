@@ -1,6 +1,8 @@
 'use client';
 
 import { useScene } from '@/lib/store';
+import { clockLabel, dayPart, shichen, shichenPart } from '@/lib/time';
+import { WEATHER } from '@/lib/weather';
 import type { PoemScene } from '@/lib/types';
 
 function Slider({
@@ -41,19 +43,33 @@ function Slider({
   );
 }
 
-const HOURS: [number, string][] = [
-  [0.18, '晨曦'],
-  [0.44, '日中'],
-  [0.62, '向晚'],
-  [0.84, '初月'],
-  [1.01, '夜深'],
+/** Where to jump on the dial: the four moments a poem is most often set at. */
+const JUMPS: [string, number][] = [
+  ['拂晓', 5.6],
+  ['正午', 12],
+  ['黄昏', 18.2],
+  ['夜深', 23.2],
 ];
 
-const hourName = (h: number) => HOURS.find(([t]) => h < t)?.[1] ?? '夜深';
+const SPEEDS: [string, number][] = [
+  ['缓', 1],
+  ['常', 4],
+  ['疾', 14],
+];
+
+const FALL_LABEL = { snow: '落雪', leaf: '落叶', petal: '落花' } as const;
 
 export function Panel({ scene }: { scene: PoemScene }) {
   const atm = useScene((s) => s.atmosphere);
   const setAtmosphere = useScene((s) => s.setAtmosphere);
+  const clock = useScene((s) => s.clock);
+  const setClock = useScene((s) => s.setClock);
+  const running = useScene((s) => s.running);
+  const setRunning = useScene((s) => s.setRunning);
+  const speed = useScene((s) => s.speed);
+  const setSpeed = useScene((s) => s.setSpeed);
+  const weather = useScene((s) => s.weather);
+  const setWeather = useScene((s) => s.setWeather);
   const mode = useScene((s) => s.mode);
   const placed = useScene((s) => s.placed);
   const selectedId = useScene((s) => s.selected);
@@ -65,19 +81,82 @@ export function Panel({ scene }: { scene: PoemScene }) {
   return (
     <aside className="panel">
       <div className="panel__head">
-        <span>天时气象</span>
-        <span>Atmosphere</span>
+        <span>时辰</span>
+        <span>Time</span>
       </div>
 
-      <Slider
-        label="时辰"
-        roman="hour"
-        value={atm.hour}
+      <div className="clock">
+        <span className="clock__name">
+          {shichen(clock)}
+          <em>{shichenPart(clock)}</em>
+        </span>
+        <span className="clock__part">
+          {dayPart(clock)} · {clockLabel(clock)}
+        </span>
+      </div>
+
+      <input
+        type="range"
         min={0}
-        max={1}
-        onChange={(v) => setAtmosphere({ hour: v })}
-        display={hourName(atm.hour)}
+        max={24}
+        step={0.05}
+        value={clock}
+        aria-label="时刻"
+        onChange={(e) => setClock(Number(e.target.value))}
       />
+
+      <div className="chips">
+        {JUMPS.map(([label, at]) => (
+          <button key={label} type="button" className="chip" onClick={() => setClock(at)}>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      <div className="chips chips--spread">
+        <button
+          type="button"
+          className="chip chip--play"
+          data-on={running}
+          onClick={() => setRunning(!running)}
+          title="让一天自己流转"
+        >
+          {running ? '止' : '流转'}
+        </button>
+        {SPEEDS.map(([label, v]) => (
+          <button
+            key={label}
+            type="button"
+            className="chip"
+            data-on={speed === v}
+            disabled={!running}
+            onClick={() => setSpeed(v)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      <div className="panel__head">
+        <span>天气</span>
+        <span>Weather</span>
+      </div>
+
+      <div className="chips chips--grid">
+        {WEATHER.map((w) => (
+          <button
+            key={w.id}
+            type="button"
+            className="chip"
+            data-on={weather === w.id}
+            title={w.hint}
+            onClick={() => setWeather(w.id)}
+          >
+            {w.label}
+          </button>
+        ))}
+      </div>
+
       <Slider
         label="风势"
         roman="wind"
@@ -95,8 +174,8 @@ export function Panel({ scene }: { scene: PoemScene }) {
         onChange={(v) => setAtmosphere({ mist: v })}
       />
       <Slider
-        label="落雪"
-        roman="snow"
+        label={FALL_LABEL[scene.fall.kind]}
+        roman="fall"
         value={atm.snow}
         min={0}
         max={1}

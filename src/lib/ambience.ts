@@ -131,6 +131,29 @@ class Ambience {
       return bp;
     });
 
+    // Rain: a broad bright hiss, the sound of a great many small impacts, with a
+    // lower patter under it for the drops landing on leaves and earth.
+    this.addLayer(ctx, 'rain', 0.3, (src) => {
+      const hp = ctx.createBiquadFilter();
+      hp.type = 'highpass';
+      hp.frequency.value = 2800;
+      const bp = ctx.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.value = 6200;
+      bp.Q.value = 0.35;
+      src.connect(hp);
+      hp.connect(bp);
+      return bp;
+    });
+    this.addLayer(ctx, 'patter', 0.2, (src) => {
+      const bp = ctx.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.value = 1500;
+      bp.Q.value = 0.6;
+      src.connect(bp);
+      return bp;
+    });
+
     // A resonator the knocks are fired through — hollow, like a struck culm.
     const knock = ctx.createBiquadFilter();
     knock.type = 'bandpass';
@@ -155,6 +178,39 @@ class Ambience {
       this.layers = {};
       this.knockFilter = null;
     }, 900);
+  }
+
+  /**
+   * Thunder: a long low rumble that swells and rolls off. Built from a buffer
+   * whose envelope has a sharp crack at the front and a slow, uneven tail — a
+   * single smooth decay sounds like a door closing, not weather.
+   */
+  thunder() {
+    const ctx = this.ctx;
+    if (!ctx || !this.master) return;
+    const seconds = 3.6;
+    const frames = Math.floor(ctx.sampleRate * seconds);
+    const buffer = ctx.createBuffer(1, frames, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    const phase = Math.random() * 6.28;
+    for (let i = 0; i < frames; i++) {
+      const t = i / ctx.sampleRate;
+      const crack = Math.exp(-t * 14) * 0.7;
+      const roll = Math.exp(-t * 0.95) * (0.62 + 0.38 * Math.sin(t * 5.2 + phase)) * (1 - Math.exp(-t * 9));
+      data[i] = (Math.random() * 2 - 1) * (crack + roll);
+    }
+    const src = ctx.createBufferSource();
+    src.buffer = buffer;
+    const lp = ctx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.value = 190;
+    lp.Q.value = 0.9;
+    const g = ctx.createGain();
+    g.gain.value = 1.35;
+    src.connect(lp);
+    lp.connect(g);
+    g.connect(this.master);
+    src.start();
   }
 
   /** One bamboo culm knocking against another. */
@@ -183,7 +239,7 @@ class Ambience {
    * smoothed approach rather than a jump — stepping a gain directly at frame
    * rate is audible as zipper noise.
    */
-  update(x: number, z: number, scene: PoemScene, wind: number, dt: number) {
+  update(x: number, z: number, scene: PoemScene, wind: number, dt: number, rain = 0) {
     const ctx = this.ctx;
     if (!ctx || !this.master) return;
     const now = ctx.currentTime;
@@ -230,6 +286,10 @@ class Ambience {
     set('stream', stream);
     set('bamboo', bamboo * (0.35 + breath * 0.7));
     set('water', water * (0.45 + breath * 0.4));
+
+    // Rain is everywhere, so it does not depend on where the listener stands.
+    set('rain', rain);
+    set('patter', rain * (0.35 + rain * 0.65));
 
     // 竹喧 — knocks get more frequent the harder the wind and the deeper in the
     // grove you stand.

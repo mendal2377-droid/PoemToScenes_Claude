@@ -31,10 +31,23 @@ export type FloraSpec = {
   pines: { clusters: readonly { x: number; z: number; r: number; count: number }[] };
   bamboo: { groves: readonly { x: number; z: number; r: number; count: number }[] };
   broadleaf: { clusters: readonly { x: number; z: number; r: number; count: number; tint: string }[] };
-  grass: { count: number; radius: number };
+  grass: { count: number; radius: number; /** Blade height multiplier. */ height?: number; /** How strongly the ground itself is brushed with grass strokes, 0–1. */ stroke?: number };
   reeds: { count: number };
   lotus: { count: number };
   rocks: { count: number };
+};
+
+/**
+ * What drifts down through the scene. Snow settles and whitens the ground;
+ * 桂花 and 落木 do not, so accumulation is separate from the particles.
+ */
+export type Fall = {
+  kind: 'snow' | 'petal' | 'leaf';
+  color: string;
+  /** Point size multiplier. */
+  size: number;
+  /** 0 = nothing settles on the ground, 1 = full snow cover. */
+  accumulate: number;
 };
 
 export type Atmosphere = {
@@ -42,7 +55,10 @@ export type Atmosphere = {
   hour: number;
   wind: number;
   mist: number;
+  /** Ambient fall — leaves, petals or snow, per the scene's `fall`. */
   snow: number;
+  /** How overcast the poem is by default, 0–1. Defaults to a light 0.2. */
+  cloud?: number;
 };
 
 /**
@@ -99,6 +115,10 @@ export type PoemScene = {
   start: { x: number; z: number; heading: number };
   /** Moon or sun position in the sky, as a direction. */
   luminary: { x: number; y: number; z: number; size: number; kind: 'moon' | 'sun' };
+  /** What falls through the air when the 落 slider is raised. */
+  fall: Fall;
+  /** Grazing animals, for poems that need them. */
+  herd?: { count: number; x: number; z: number; r: number; color: string; scale: number };
   /** Where the fisherman's boat rides, if the poem has one. */
   boat?: { x: number; z: number; rot: number };
   /** Where the thatched pavilion stands, if the poem has one. */

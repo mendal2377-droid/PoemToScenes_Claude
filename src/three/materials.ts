@@ -13,6 +13,28 @@ export const shared = {
   uHour: { value: 0.8 },
   uMist: { value: 0.4 },
   uSnow: { value: 0 },
+  /** How much of uSnow settles on surfaces — petals and leaves do not. */
+  uAccum: { value: 1 },
+  /** How overcast, 0–1. Greys and flattens everything; dims the sun and moon. */
+  uCloud: { value: 0.2 },
+  /** Snow actually lying on surfaces: ambient snow that settles, or the snow weather. */
+  uCover: { value: 0 },
+  /** Intensity of falling rain, and of falling snow weather. */
+  uRain: { value: 0 },
+  uWSnow: { value: 0 },
+  /** A lightning flash, 0–1, decaying. */
+  uFlash: { value: 0 },
+};
+
+/**
+ * The sun and moon, as vectors every material can hold a reference to. Written
+ * once per frame from the clock; three reads the values at draw time, so the
+ * pools of moonlight under the pines and the silver on the needles follow the
+ * moon across the sky without anything being rebuilt.
+ */
+export const bodies = {
+  sun: new THREE.Vector3(0, 1, 0),
+  moon: new THREE.Vector3(0, 1, 0),
 };
 
 const c = (hex: string) => new THREE.Color(hex);
@@ -39,6 +61,8 @@ const ATMOS_FN = /* glsl */ `
 uniform vec3 uMistColor;
 uniform float uHour;
 uniform float uMist;
+uniform float uCloud;
+uniform float uFlash;
 
 // uHour: 0 dawn, 0.5 noon, 1 night.
 vec3 applyHour(vec3 col){
@@ -48,6 +72,15 @@ vec3 applyHour(vec3 col){
   vec3 warm = vec3(1.06, 0.92, 0.74);
   col = mix(col, col * cool + cool * 0.1, night * 0.56);
   col = mix(col, col * warm, dawn * 0.5);
+
+  // Overcast: the colour drains out of everything and the value drops a little,
+  // which is most of what makes a grey day read as one without any lighting.
+  float luma = dot(col, vec3(0.299, 0.587, 0.114));
+  col = mix(col, vec3(luma) * 0.94, uCloud * 0.52);
+  col *= 1.0 - uCloud * 0.16;
+
+  // Lightning lights the whole valley at once, and only for a moment.
+  col += vec3(0.62, 0.68, 0.86) * uFlash * 0.55;
   return col;
 }
 
@@ -58,6 +91,8 @@ vec3 applyMist(vec3 col, float dist, float strength){
   // Fog at dusk is not a bright white sheet — it goes down with the light.
   float night = smoothstep(0.62, 1.0, uHour);
   vec3 fogCol = mix(uMistColor, uMistColor * vec3(0.38, 0.44, 0.62), night * 0.8);
+  // Fog under cloud is a cold grey, not the warm paper of a clear morning.
+  fogCol = mix(fogCol, vec3(dot(fogCol, vec3(0.333))) * 0.9, uCloud * 0.5);
   return mix(col, fogCol, clamp(f, 0.0, 0.88));
 }
 `;
@@ -68,6 +103,10 @@ const COMMON_UNIFORMS = (p: Palette) => ({
   uHour: shared.uHour,
   uMist: shared.uMist,
   uSnow: shared.uSnow,
+  uAccum: shared.uAccum,
+  uCloud: shared.uCloud,
+  uCover: shared.uCover,
+  uFlash: shared.uFlash,
   uMistColor: { value: c(p.mist) },
 });
 
@@ -90,6 +129,8 @@ export function makeTerrainMaterial(p: Palette) {
       uMoonColor: { value: c(p.moon) },
       uGrove: { value: new THREE.Vector2(0, 0) },
       uGroveR: { value: 1 },
+      uGrassTip: { value: c(p.grassTip) },
+      uGrassStroke: { value: 0.4 },
     },
     vertexShader: /* glsl */ `
       varying vec3 vW;
@@ -105,8 +146,8 @@ export function makeTerrainMaterial(p: Palette) {
       PRELUDE +
       ATMOS_FN +
       /* glsl */ `
-      uniform vec3 uHigh, uLow, uOchre, uInk, uWater, uPaper, uMoonColor, uMoonDir;
-      uniform float uSnow, uExtent, uGroveR;
+      uniform vec3 uHigh, uLow, uOchre, uInk, uWater, uPaper, uMoonColor, uMoonDir, uGrassTip;
+      uniform float uSnow, uAccum, uCover, uExtent, uGroveR, uGrassStroke;
       uniform float uTime;
       uniform vec2 uGrove;
       uniform sampler2D uMask;
@@ -142,6 +183,21 @@ export function makeTerrainMaterial(p: Palette) {
         float wash = fbm2(vW.xz * 0.035);
         col *= 0.86 + wash * 0.34;
 
+        // Grass brushed into the ground.
+        //
+        // No number of 3D blades makes a steppe read as a sea of grass — 42,000
+        // of them over a hundred-metre radius is about one per square metre.
+        // A painter would not have modelled them either: they are combed into
+        // the ground in long strokes that follow the lie of the land, and the
+        // blades that do exist are accents on top.
+        float lay = 0.7 + fbm2(vW.xz * 0.009) * 1.9;
+        vec2 dir = vec2(cos(lay), sin(lay));
+        vec2 gq = vec2(dot(vW.xz, dir), dot(vW.xz, vec2(-dir.y, dir.x)));
+        float streak = fbm2(vec2(gq.x * 0.42, gq.y * 8.5));
+        float blades = smoothstep(0.44, 0.74, streak) * uGrassStroke;
+        col = mix(col, mix(col, uGrassTip, 0.62), blades * 0.55);
+        col = mix(col, uLow * 0.82, smoothstep(0.34, 0.1, streak) * uGrassStroke * 0.3);
+
         // 皴 on anything steep enough to read as rock.
         float cun = cunTexture(vW, vN, 0.55);
         col = mix(col, uInk, cun * slope * 0.5);
@@ -153,7 +209,7 @@ export function makeTerrainMaterial(p: Palette) {
 
         // The trail the poem walks you along — but 万径人踪灭: once the snow
         // comes down, the paths go under it.
-        float trail = smoothstep(0.24, 0.78, vTrail) * (1.0 - uSnow * 0.8);
+        float trail = smoothstep(0.24, 0.78, vTrail) * (1.0 - uCover * 0.8);
         float trailEdge = fbm2(vW.xz * 1.1) * 0.3;
         col = mix(col, uOchre * (0.92 + trailEdge), trail * 0.62);
         // Grit underfoot, so the path is not a flat band of colour.
@@ -164,7 +220,7 @@ export function makeTerrainMaterial(p: Palette) {
         col = mix(col, uWater, smoothstep(0.2, 1.0, vWet) * 0.4);
 
         // Snow settles on the flat, clings less to the steep.
-        float snow = uSnow * smoothstep(0.55, 0.15, slope);
+        float snow = uCover * smoothstep(0.55, 0.15, slope);
         col = mix(col, vec3(0.96, 0.97, 0.95), snow * (0.72 + wash * 0.3));
 
         // 明月松间照 — pools of moonlight on the ground beneath the pines,
@@ -227,7 +283,7 @@ export function makeMountainMaterial(p: Palette, far: boolean) {
       ATMOS_FN +
       /* glsl */ `
       uniform vec3 uFar, uNear, uInk, uPaper;
-      uniform float uFarness, uSnow;
+      uniform float uFarness, uSnow, uAccum, uCover;
       varying vec3 vW;
       varying float vTop;
       varying float vSeed;
@@ -263,7 +319,7 @@ export function makeMountainMaterial(p: Palette, far: boolean) {
         col = mix(col, uInk, smoothstep(1.3, 0.0, drop) * 0.85);
 
         // Snow caps.
-        float snowCap = uSnow * smoothstep(9.0, 0.5, drop);
+        float snowCap = uCover * smoothstep(9.0, 0.5, drop);
         col = mix(col, vec3(0.97, 0.98, 0.97), snowCap * 0.85);
 
         // Far ranges wash out into the paper — 远山无皴.
@@ -350,7 +406,7 @@ export function makeFoliageMaterial(p: Palette, kind: FoliageKind, stiffness = 1
       ATMOS_FN +
       /* glsl */ `
       uniform vec3 uDark, uLight, uInk, uMoonColor, uMoonDir;
-      uniform float uSnow, uInkTone;
+      uniform float uSnow, uAccum, uCover, uInkTone;
       varying vec2 vUv;
       varying float vSeed;
       varying vec3 vTint;
@@ -373,7 +429,7 @@ export function makeFoliageMaterial(p: Palette, kind: FoliageKind, stiffness = 1
         float edge = smoothstep(0.36, 0.62, a);
         col = mix(uInk * 0.85 + col * 0.35, col, edge);
 
-        col = mix(col, vec3(0.95, 0.96, 0.95), uSnow * 0.55 * smoothstep(0.3, 1.0, vUp));
+        col = mix(col, vec3(0.95, 0.96, 0.95), uCover * 0.55 * smoothstep(0.3, 1.0, vUp));
 
         // Leaves turned toward the moon catch a silver edge.
         float night = smoothstep(0.46, 1.0, uHour);
@@ -426,7 +482,7 @@ export function makeGrassMaterial(p: Palette) {
       ATMOS_FN +
       /* glsl */ `
       uniform vec3 uDark, uLight, uInk, uAccent;
-      uniform float uSnow;
+      uniform float uSnow, uAccum, uCover;
       varying float vUp;
       varying float vSeed;
       varying vec3 vW;
@@ -437,7 +493,7 @@ export function makeGrassMaterial(p: Palette) {
         // A few tufts go autumn-coloured.
         col = mix(col, uAccent, step(0.95, vSeed) * vUp * 0.45);
         col = mix(col, uInk, (1.0 - vUp) * 0.16);
-        col = mix(col, vec3(0.95, 0.96, 0.94), uSnow * vUp * 0.7);
+        col = mix(col, vec3(0.95, 0.96, 0.94), uCover * vUp * 0.7);
         col = applyHour(col);
         float d = length(vW - cameraPosition);
         col = applyMist(col, d, 1.0);
@@ -483,7 +539,7 @@ export function makeBarkMaterial(p: Palette) {
       ATMOS_FN +
       /* glsl */ `
       uniform vec3 uTrunk, uInk;
-      uniform float uSnow;
+      uniform float uSnow, uAccum, uCover;
       varying vec3 vW;
       varying vec3 vN;
       varying float vUp;
@@ -496,7 +552,7 @@ export function makeBarkMaterial(p: Palette) {
         // Rim of ink on the shaded side.
         float rim = 1.0 - abs(dot(normalize(vN), normalize(cameraPosition - vW)));
         col = mix(col, uInk, pow(clamp(rim, 0.0, 1.0), 1.8) * 0.48);
-        col = mix(col, vec3(0.94, 0.95, 0.94), uSnow * 0.3 * clamp(vN.y, 0.0, 1.0));
+        col = mix(col, vec3(0.94, 0.95, 0.94), uCover * 0.3 * clamp(vN.y, 0.0, 1.0));
         col = applyHour(col);
         col = applyMist(col, length(vW - cameraPosition), 1.0);
         gl_FragColor = vec4(col, 1.0);
@@ -530,7 +586,7 @@ export function makeRockMaterial(p: Palette) {
       ATMOS_FN +
       /* glsl */ `
       uniform vec3 uInk, uBase, uPaper;
-      uniform float uSnow;
+      uniform float uSnow, uAccum, uCover;
       varying vec3 vW;
       varying vec3 vN;
       void main(){
@@ -539,7 +595,7 @@ export function makeRockMaterial(p: Palette) {
         col = mix(col, uInk, cun * 0.62);
         float rim = 1.0 - abs(dot(normalize(vN), normalize(cameraPosition - vW)));
         col = mix(col, uInk, pow(clamp(rim, 0.0, 1.0), 2.0) * 0.8);
-        col = mix(col, vec3(0.96, 0.97, 0.96), uSnow * clamp(vN.y, 0.0, 1.0) * 0.8);
+        col = mix(col, vec3(0.96, 0.97, 0.96), uCover * clamp(vN.y, 0.0, 1.0) * 0.8);
         col = applyHour(col);
         col = applyMist(col, length(vW - cameraPosition), 1.0);
         gl_FragColor = vec4(col, 1.0);
@@ -617,9 +673,15 @@ export function makeSkyMaterial(p: Palette, luminary: { x: number; y: number; z:
       uLow: { value: c(p.skyLow) },
       uPaper: { value: c(p.paper) },
       uMoon: { value: c(p.moon) },
+      uSun: { value: c('#fff0c4') },
       uInk: { value: c(p.ink) },
-      uDir: { value: new THREE.Vector3(luminary.x, luminary.y, luminary.z).normalize() },
-      uSize: { value: luminary.size },
+      // The vectors are shared with every other material that needs to know
+      // where the light is; they are moved in place, never replaced.
+      uSunDir: { value: bodies.sun },
+      uMoonDir: { value: bodies.moon },
+      // The authored body keeps the size the poem's composition gave it.
+      uSunSize: { value: luminary.kind === 'sun' ? luminary.size : 0.078 },
+      uMoonSize: { value: luminary.kind === 'moon' ? luminary.size : 0.1 },
     },
     vertexShader: /* glsl */ `
       varying vec3 vDir;
@@ -631,40 +693,79 @@ export function makeSkyMaterial(p: Palette, luminary: { x: number; y: number; z:
     fragmentShader:
       PRELUDE +
       /* glsl */ `
-      uniform vec3 uHigh, uLow, uPaper, uMoon, uInk, uDir;
-      uniform float uSize, uHour, uMist, uTime;
+      uniform vec3 uHigh, uLow, uPaper, uMoon, uSun, uInk, uSunDir, uMoonDir;
+      uniform float uSunSize, uMoonSize, uHour, uMist, uTime, uCloud, uFlash;
       varying vec3 vDir;
+
+      // A disc with a soft rim, and a halo whose reach is set by its size.
+      float disc(vec3 d, vec3 dir, float size){
+        float ang = dot(d, normalize(dir));
+        return smoothstep(1.0 - size * size * 0.5, 1.0 - size * size * 0.42, ang);
+      }
 
       void main(){
         vec3 d = normalize(vDir);
+        vec3 sd = normalize(uSunDir);
+        vec3 md = normalize(uMoonDir);
+
         float up = clamp(d.y * 1.25 + 0.14, 0.0, 1.0);
         vec3 col = mix(uLow, uHigh, pow(up, 0.72));
 
-        // Night cools and darkens the whole sky.
+        // Night cools and darkens the whole sky, the zenith first.
         float night = smoothstep(0.62, 1.0, uHour);
         col = mix(col, col * vec3(0.44, 0.5, 0.72), night * 0.72 * smoothstep(-0.04, 0.46, d.y));
 
-        // Painted cloud bands — long horizontal fbm smears, kept off the zenith.
+        // Sunrise and sunset: the horizon warms on the side the sun is on.
+        // Strongest while the sun is low, gone once it has climbed.
+        float sunLow = smoothstep(-0.14, 0.05, sd.y) * (1.0 - smoothstep(0.16, 0.5, sd.y));
+        float toward = pow(max(dot(d.xz, normalize(sd.xz + 1e-4)), 0.0), 2.2);
+        float glow = sunLow * toward * (1.0 - smoothstep(0.0, 0.55, d.y));
+        col = mix(col, vec3(1.0, 0.62, 0.36), glow * 0.55 * (1.0 - uCloud * 0.6));
+        col += vec3(0.32, 0.14, 0.05) * glow * 0.4 * (1.0 - uCloud);
+
+        // Stars, on a clear night, once the moon has left them room.
+        vec2 sg = vec2(atan(d.z, d.x) * 230.0, d.y * 230.0);
+        float star = step(0.9968, hash21(floor(sg)));
+        float twinkle = 0.55 + 0.45 * sin(uTime * (1.4 + hash21(floor(sg) + 3.0) * 2.5) + hash21(floor(sg)) * 6.28);
+        float sky = night * smoothstep(0.08, 0.4, d.y) * (1.0 - uCloud) * (1.0 - 0.75 * max(md.y, 0.0));
+        col += vec3(0.95, 0.95, 1.0) * star * twinkle * sky;
+
+        // Painted cloud bands. Cover follows uCloud: a clear sky keeps a few
+        // streaks, and a full overcast closes the whole dome.
         vec2 cp = vec2(atan(d.z, d.x) * 1.6, d.y * 3.4 - uTime * 0.008);
         float cloud = fbm2(cp * vec2(1.0, 2.2) + vec2(uTime * 0.012, 0.0));
-        float band = smoothstep(0.52, 0.78, cloud) * smoothstep(0.02, 0.28, d.y) * smoothstep(0.95, 0.5, d.y);
+        float lo = mix(0.54, 0.16, uCloud);
+        float band = smoothstep(lo, lo + 0.26, cloud) * smoothstep(0.0, 0.2, d.y + uCloud * 0.12);
+        band *= mix(smoothstep(0.95, 0.5, d.y), 1.0, uCloud);
         vec3 cloudCol = mix(uPaper, uMoon, 0.45);
-        col = mix(col, cloudCol, band * (0.55 - night * 0.2));
+        // Storm cloud is slate, and darker still at night.
+        cloudCol = mix(cloudCol, vec3(0.5, 0.53, 0.58), uCloud * 0.6);
+        cloudCol *= 1.0 - night * 0.5;
+        col = mix(col, cloudCol, band * (0.55 - night * 0.2 + uCloud * 0.42));
         // A thin ink edge along the top of each bank, the way clouds are outlined.
         float cedge = smoothstep(0.74, 0.8, cloud) * smoothstep(0.86, 0.8, cloud);
-        col = mix(col, uInk, cedge * 0.1);
+        col = mix(col, uInk, cedge * 0.1 * (1.0 - uCloud * 0.5));
 
-        // The moon (or a low sun) with a soft halo.
-        float ang = dot(d, normalize(uDir));
-        float disc = smoothstep(1.0 - uSize * uSize * 0.5, 1.0 - uSize * uSize * 0.42, ang);
-        float halo = pow(clamp(ang, 0.0, 1.0), 130.0);
-        col = mix(col, uMoon, halo * 0.45);
-        col = mix(col, uMoon, disc);
+        // Overcast greys the sky itself and pulls it toward the paper.
+        float luma = dot(col, vec3(0.299, 0.587, 0.114));
+        col = mix(col, vec3(luma) * 0.96, uCloud * 0.5);
+
+        // The sun and the moon, each fading under cloud and below the horizon.
+        float seen = 1.0 - uCloud * 0.9;
+        float sunUp = smoothstep(-0.05, 0.05, sd.y);
+        float moonUp = smoothstep(-0.05, 0.05, md.y);
+        float sunHalo = pow(clamp(dot(d, sd), 0.0, 1.0), 60.0);
+        float moonHalo = pow(clamp(dot(d, md), 0.0, 1.0), 130.0);
+        col = mix(col, uSun, sunHalo * 0.5 * sunUp * seen);
+        col = mix(col, uSun, disc(d, sd, uSunSize) * sunUp * seen);
+        col = mix(col, uMoon, moonHalo * 0.45 * moonUp * seen * night);
+        col = mix(col, uMoon, disc(d, md, uMoonSize) * moonUp * seen * smoothstep(0.55, 0.8, uHour));
 
         // Haze piling up on the horizon.
         col = mix(col, uPaper, (1.0 - smoothstep(-0.06, 0.34, d.y)) * (0.3 + uMist * 0.5));
 
         col = pigmentGrain(col, d * 40.0, 0.07);
+        col += vec3(0.62, 0.68, 0.86) * uFlash * 0.7;
         gl_FragColor = vec4(col, 1.0);
       }
     `,
@@ -732,39 +833,80 @@ export function makeMistMaterial(p: Palette) {
 
 /* ------------------------------------------------------------------- snow */
 
-export function makeSnowMaterial(p: Palette) {
+/**
+ * Whatever is drifting down: 雪, 桂花 or 落木.
+ *
+ * One shader for all three because the difference is only in weight — snow
+ * falls fast and straight and is round; a petal is lighter, wanders further and
+ * tumbles; a leaf is heavier than a petal but broader, so it swings hardest of
+ * all. `uFall` selects between them.
+ */
+export function makeFallMaterial(
+  p: Palette,
+  fall: { kind: string; color: string; size: number },
+  /** Which shared uniform sets how much of this is falling. */
+  amount: { value: number }
+) {
+  const kindIndex = fall.kind === 'petal' ? 1 : fall.kind === 'leaf' ? 2 : fall.kind === 'rain' ? 3 : 0;
   return new THREE.ShaderMaterial({
     transparent: true,
     depthWrite: false,
     uniforms: {
       ...COMMON_UNIFORMS(p),
-      uColor: { value: c('#ffffff') },
+      uColor: { value: c(fall.color) },
+      uSize: { value: fall.size },
+      uFall: { value: kindIndex },
+      uAmount: amount,
     },
     vertexShader: /* glsl */ `
       attribute float aSeed;
-      uniform float uTime, uWind, uSnow;
+      uniform float uTime, uWind, uAmount, uSize, uFall;
       varying float vSeed;
       varying float vA;
+      varying float vSpin;
       void main(){
         vec3 pos = position;
-        float fall = mod(uTime * (1.4 + aSeed * 1.6) + aSeed * 90.0, 46.0);
-        pos.y = 42.0 - fall;
-        pos.x += sin(uTime * 0.7 + aSeed * 30.0) * 2.4 * (0.4 + uWind);
-        pos.z += cos(uTime * 0.55 + aSeed * 21.0) * 1.8 * (0.4 + uWind);
+        // Heavier things fall faster and wander less.
+        float speed = uFall < 0.5 ? 1.4 : (uFall < 1.5 ? 0.62 : (uFall < 2.5 ? 0.85 : 15.0));
+        float wander = uFall < 0.5 ? 1.0 : (uFall < 1.5 ? 2.6 : (uFall < 2.5 ? 2.0 : 0.0));
+        float drop = mod(uTime * (speed + aSeed * speed * (uFall > 2.5 ? 0.25 : 1.1)) + aSeed * 90.0, 46.0);
+        pos.y = 42.0 - drop;
+        pos.x += sin(uTime * 0.7 + aSeed * 30.0) * 2.4 * wander * (0.4 + uWind);
+        pos.z += cos(uTime * 0.55 + aSeed * 21.0) * 1.8 * wander * (0.4 + uWind);
+        // Rain is driven sideways by the wind, more the further it has fallen.
+        if(uFall > 2.5) pos.x += drop * uWind * 0.11;
         vSeed = aSeed;
-        vA = uSnow;
+        vA = uAmount;
+        // Petals and leaves turn over as they go; snow does not.
+        vSpin = uFall < 0.5 ? 0.0 : uTime * (0.8 + aSeed * 2.2) + aSeed * 6.283;
         vec4 mv = modelViewMatrix * vec4(pos, 1.0);
-        gl_PointSize = (6.0 + aSeed * 9.0) * (26.0 / -mv.z);
+        float base = uFall > 2.5 ? 22.0 + aSeed * 10.0 : 6.0 + aSeed * 9.0;
+        gl_PointSize = base * uSize * (26.0 / -mv.z);
         gl_Position = projectionMatrix * mv;
       }
     `,
     fragmentShader: /* glsl */ `
       uniform vec3 uColor;
+      uniform float uFall;
       varying float vSeed;
       varying float vA;
+      varying float vSpin;
       void main(){
-        vec2 p = gl_PointCoord * 2.0 - 1.0;
-        float a = smoothstep(1.0, 0.2, length(p)) * vA * (0.4 + vSeed * 0.6);
+        vec2 q = gl_PointCoord * 2.0 - 1.0;
+        float a;
+        if(uFall < 0.5){
+          a = smoothstep(1.0, 0.2, length(q));
+        } else if(uFall > 2.5){
+          // A streak: a hair-thin vertical line, brighter at its head.
+          a = smoothstep(0.1, 0.02, abs(q.x)) * smoothstep(1.0, 0.7, abs(q.y)) * (0.5 + 0.5 * (q.y * 0.5 + 0.5));
+        } else {
+          // A tumbling blade: the spin squashes it as it turns edge-on.
+          float s = sin(vSpin), cc = cos(vSpin);
+          vec2 r = vec2(q.x * cc - q.y * s, q.x * s + q.y * cc);
+          r.x /= max(0.25, abs(cos(vSpin * 0.7)));
+          a = smoothstep(1.0, 0.25, length(r * vec2(1.0, 2.1)));
+        }
+        a *= vA * (0.4 + vSeed * 0.6);
         if(a < 0.02) discard;
         gl_FragColor = vec4(uColor, a);
       }
@@ -797,7 +939,7 @@ export function makeThatchMaterial(p: Palette) {
       ATMOS_FN +
       /* glsl */ `
       uniform vec3 uOchre, uInk;
-      uniform float uSnow;
+      uniform float uSnow, uAccum, uCover;
       varying vec3 vW;
       varying vec3 vN;
       void main(){
@@ -805,7 +947,7 @@ export function makeThatchMaterial(p: Palette) {
         float straw = fbm2(vec2(vW.x * 9.0 + vW.z * 9.0, vW.y * 22.0));
         col = mix(col, uInk, smoothstep(0.48, 0.8, straw) * 0.5);
         col *= 0.8 + clamp(vN.y, 0.0, 1.0) * 0.35;
-        col = mix(col, vec3(0.95, 0.96, 0.95), uSnow * clamp(vN.y, 0.0, 1.0) * 0.7);
+        col = mix(col, vec3(0.95, 0.96, 0.95), uCover * clamp(vN.y, 0.0, 1.0) * 0.7);
         col = applyHour(col);
         col = applyMist(col, length(vW - cameraPosition), 1.0);
         gl_FragColor = vec4(col, 1.0);

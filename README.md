@@ -13,16 +13,23 @@ there is not a single light source in the scene.
 
 ## What's here
 
-**Two finished worlds.**
+**Eight worlds**, each built around what its poem is actually about rather than a generic
+landscape re-skinned.
 
-- **《山居秋暝》· 王维** — an autumn dusk after rain. Eight lines, eight places: the empty
-  hilltop, the autumn maples, the moonlit pine grove, the spring over stones, the bamboo,
-  the lotus pond with its boat, the withered flowers, the thatched pavilion.
-- **《江雪》· 柳宗元** — twenty characters, almost all of them absences. A white world, a
-  dark river, one boat. Turn the snow up and the paths disappear, which is the poem
-  (万径人踪灭) doing its own work on the terrain shader.
+| | poem | what the world does |
+|---|---|---|
+| 1 | **山居秋暝** · 王维 | autumn dusk; moonlight falls between the pines, a boat parts the lotus |
+| 2 | **江雪** · 柳宗元 | nearly empty; turn the snow up and the paths go under it (万径人踪灭) |
+| 3 | **鸟鸣涧** · 王维 | the darkest and quietest — a ravine, and osmanthus coming down |
+| 4 | **春江花月夜** · 张若虚 | a huge low moon over water, blossom on the margin. The rhyme changes halfway |
+| 5 | **西江月** · 辛弃疾 | a 词, rhymed across both tones. Paddy, frogs, rain, and a hut round the bend |
+| 6 | **饮酒·其五** · 陶渊明 | hedge, hut, a mountain seen without looking, birds going home |
+| 7 | **登高** · 杜甫 | a high terrace, hard wind, leaves without end. All four couplets are 对仗 |
+| 8 | **敕勒歌** · 佚名 | a steppe; six lines of emptiness, then the grass parts to show cattle |
 
-Five more poems sit greyed out on the shelf as sketches.
+The shelf was originally sketched with 桃花源记 in the sixth slot. It is prose, and the app
+walks a poem line by line, so it became 饮酒·其五 — the same poet doing the same thing in
+verse.
 
 **The inscription reads like a scholarly edition.**
 
@@ -39,7 +46,7 @@ Five more poems sit greyed out on the shelf as sketches.
   modern Mandarin has flattened them.
 - **注释** — a sentence on whichever line is under your eye.
 
-**Sound, synthesised.** 竹喧 literally means *noise in the bamboo*, and 清泉石上流 is a line
+**Sound, synthesised** — and now it rains: a bright hiss with a lower patter under it, and thunder built from a sharp crack in front of a slow, uneven tail. 竹喧 literally means *noise in the bamboo*, and 清泉石上流 is a line
 you hear before you see; half the poem is sound and the scene was silent. Every layer is
 filtered noise built in the Web Audio graph — no audio files ship. A bed of wind, 松风
 through the pines, 泉声 over the stones, the hollow knock of bamboo culms, water at the
@@ -58,7 +65,29 @@ legitimate way to read a poem.
   density, stroke length, curl, ink tone. Density and length regrow the geometry; curl
   and tone are uniforms.
 
-**天时气象** — time of day, wind, mist and snow, live, on any scene.
+**时辰 and 天气** — a real day and a real sky, behind the 天时 button, on every scene.
+
+- **The clock** is read the way the poems read it: as the twelve 时辰. It tells you 酉时正
+  · 18:19 rather than just a time, and 山居秋暝 opens at 酉时正 because its 晚来秋 is late in
+  酉. Drag the dial, jump to 拂晓 / 正午 / 黄昏 / 夜深, or press 流转 and let the day turn
+  by itself (缓 · 常 · 疾; about three and a half minutes a day at the ordinary pace).
+  The sun and moon travel arcs across the sky; the horizon warms on the sunward side at
+  dawn and dusk; stars come out on a clear night, and the moonlight pooling under the
+  pines follows the moon.
+- **Each poem's own composition is kept.** The authored position of a scene's sun or moon
+  is honoured at the scene's opening time and the sky is shifted to make that true, so
+  moving the clock travels the arc from where the picture wants it rather than snapping
+  to a generic one.
+- **The weather** — 本景, 晴, 多云, 阴, 细雨, 雷雨, 雪, 雾, 大风. A preset is a *target*: the
+  sky eases toward it over a few seconds, so clear turning to storm is a darkening rather
+  than a cut. Overcast drains colour and value out of every surface, greys the sky and
+  dims the sun and moon; rain falls as streaks driven sideways by the wind; snow
+  accumulates on the ground and melts more slowly than it fell; 雷雨 adds lightning that
+  lights the whole valley for a moment, and thunder that arrives late, because the
+  farther the strike the longer the gap. 本景 restores the poem's own sky.
+- **Precipitation follows the camera.** It used to sit at the origin with a fixed radius,
+  so walking to the edge of the valley walked out from under the snow.
+- 风势, 云雾 and 落雪/落叶/落花 stay as sliders and sit on top of the presets.
 
 ## Running it
 
@@ -83,7 +112,9 @@ src/
   lib/
     noise.ts        deterministic value noise, fbm, ridged noise, seeded RNG
     terrain.ts      the height field — one function, the single source of truth
-    poems.ts        the poems, their palettes, terrain, flora and landmarks
+    poems.ts        the shelf, derived from scenes/
+    scenes/         one file per poem: text, tones, palette, terrain, flora, landmarks
+    validate.ts     checks every scene at build time (see below)
     types.ts        the scene schema
     store.ts        zustand: mode, found lines, atmosphere, placed props
   three/
@@ -158,17 +189,25 @@ looks right offline and in mainland China without waiting on Google Fonts.
 
 ### Adding a poem
 
-Add a `PoemScene` to `src/lib/poems.ts` and push it into `SCENES`. The landing shelf, the
-route, the loading card and the poem sheet all read from that one object. A landmark's
-`line` indexes into `lines`, so the collection loop wires itself up.
+Write a `PoemScene` in `src/lib/scenes/`, add it to `SCENES` in `scenes/index.ts`, and the
+shelf, route, loading card and inscription all read from it. A landmark's `line` indexes
+into `lines`, so the walk wires itself up.
+
+**Every scene is validated at build time** (`validate.ts`), and a bad one fails `next build`
+rather than the reader's walk. It checks that tone strings match their line lengths, that
+every line has somewhere to stand, that no landmark, start point or pavilion sits inside
+water, that the boat is actually afloat, and that scenery stays inside the terrain. Two
+landmarks once reached production sitting in a pond, so walking to them put the camera
+under the surface; the messages say how far to move the entry.
 
 ## Known limitations
 
 - **Building a world costs ~0.6–0.7 s** of main-thread time. The loading card is painted
   first and covers it, but it is a blocking build, not a worker.
+- **敕勒歌 is the heaviest world** — tens of thousands of grass blades — and takes the
+  longest to build. Its grass reads mainly through strokes brushed into the ground shader.
 - **Placed props are session-only.** Nothing persists across a reload.
-- The five greyed poems on the shelf are titles and palettes, not worlds.
-- **江雪's river is a circular basin**, so its shoreline reads as a pond rather than a
+- **Several rivers are circular basins** — 江雪 and 春江花月夜 especially —, so the shoreline reads as a pond rather than a
   river running through. It wants an elongated or path-shaped basin.
 - **平仄 is hand-encoded per poem**, not looked up. Adding a poem means writing its tones
   out; there is no 平水韵 table in the project.

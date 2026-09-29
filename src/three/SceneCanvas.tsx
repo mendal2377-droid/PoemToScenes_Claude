@@ -1,12 +1,13 @@
 'use client';
 
-import { Suspense, useCallback, useEffect } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useRef } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useScene } from '@/lib/store';
 import { ambience } from '@/lib/ambience';
 import type { PoemScene } from '@/lib/types';
-import { shared } from './materials';
+import { bodies, shared } from './materials';
+import { clockToShader, shaderToClock, skyAt } from '@/lib/time';
 import { useWorld } from './useWorld';
 import { WorldView } from './World';
 import { RoamRig, ViewRig } from './Roam';
@@ -14,23 +15,102 @@ import { Landmarks } from './Landmarks';
 import { Composer } from './Composer';
 
 /**
- * Drives the one uniform block every material in the scene reads from, and
- * carries the listener's position to the ambience so the sound follows the eye.
+ * Runs the sky.
+ *
+ * Every frame it turns the clock, puts the sun and moon where the clock says,
+ * and eases each weather value toward the target the panel last set — so clear
+ * going to storm is a darkening over a few seconds, not a cut. It also carries
+ * the listener's position to the ambience, and fires the lightning.
+ *
+ * The clock lives in a ref here and in the store there, and the two are kept
+ * honest without re-rendering the interface sixty times a second: the store is
+ * written back a few times a second while the day is turning, and if the store
+ * value ever differs from what this last wrote, somebody moved the slider and
+ * the ref follows.
  */
 function Ticker({ scene }: { scene: PoemScene }) {
-  const atm = useScene((s) => s.atmosphere);
+  const local = useRef(useScene.getState().clock);
+  const wrote = useRef(local.current);
+  const saveIn = useRef(0);
+  const snap = useRef(true);
+  const cover = useRef(0);
+  const thunderIn = useRef(6);
+  const secondFlash = useRef(0);
+  const flash = useRef(0);
+  const authoredClock = useMemo(() => shaderToClock(scene.atmosphere.hour), [scene]);
 
+  // A new poem starts where it is, not fading in from the last one's weather.
   useEffect(() => {
-    shared.uWind.value = atm.wind;
-    shared.uHour.value = atm.hour;
-    shared.uMist.value = atm.mist;
-    shared.uSnow.value = atm.snow;
-  }, [atm]);
+    snap.current = true;
+    local.current = useScene.getState().clock;
+    wrote.current = local.current;
+  }, [scene]);
 
-  useFrame(({ clock, camera }, dt) => {
+  useFrame(({ clock, camera }, rawDt) => {
+    const dt = Math.min(rawDt, 0.1);
+    const st = useScene.getState();
     shared.uTime.value = clock.elapsedTime;
+
+    // --- the clock ---------------------------------------------------------
+    if (Math.abs(st.clock - wrote.current) > 1e-3) local.current = st.clock;
+    if (st.running) {
+      // One day in about three and a half minutes at the ordinary pace.
+      local.current = (local.current + dt * 0.115 * st.speed) % 24;
+      saveIn.current -= dt;
+      if (saveIn.current <= 0) {
+        saveIn.current = 0.2;
+        wrote.current = local.current;
+        useScene.setState({ clock: local.current });
+      }
+    }
+
+    const hour = clockToShader(local.current);
+    shared.uHour.value = hour;
+
+    const sky = skyAt(local.current, scene.luminary, authoredClock);
+    bodies.sun.set(...sky.sun);
+    bodies.moon.set(...sky.moon);
+
+    // --- the weather eases toward its target ------------------------------
+    const ease = snap.current ? 1 : 1 - Math.exp(-dt * 1.5);
+    const approach = (u: { value: number }, target: number) => {
+      u.value += (target - u.value) * ease;
+    };
+    approach(shared.uWind, st.atmosphere.wind);
+    approach(shared.uMist, st.atmosphere.mist);
+    approach(shared.uSnow, st.atmosphere.snow);
+    approach(shared.uCloud, st.sky.cloud);
+    approach(shared.uRain, st.sky.rain);
+    approach(shared.uWSnow, st.sky.snow);
+
+    // Snow lies down slowly and goes slowly; the sky can change faster than the ground.
+    const lying = Math.max(shared.uSnow.value * shared.uAccum.value, shared.uWSnow.value);
+    const rate = lying > cover.current ? 0.55 : 0.22;
+    cover.current += (lying - cover.current) * (snap.current ? 1 : 1 - Math.exp(-dt * rate));
+    shared.uCover.value = cover.current;
+    snap.current = false;
+
+    // --- lightning ---------------------------------------------------------
+    if (st.sky.thunder > 0.3) {
+      thunderIn.current -= dt;
+      if (thunderIn.current <= 0) {
+        flash.current = 1;
+        secondFlash.current = 0.11 + Math.random() * 0.1;
+        thunderIn.current = 4 + Math.random() * 11 / st.sky.thunder;
+        // Light first, sound after — the farther the strike, the longer the gap.
+        if (ambience.running) window.setTimeout(() => ambience.thunder(), 350 + Math.random() * 2100);
+      }
+    }
+    if (secondFlash.current > 0) {
+      secondFlash.current -= dt;
+      if (secondFlash.current <= 0) flash.current = Math.max(flash.current, 0.7);
+    }
+    flash.current *= Math.exp(-dt * 8);
+    shared.uFlash.value = flash.current < 0.01 ? 0 : flash.current;
+
+    // --- sound -------------------------------------------------------------
     if (ambience.running) {
-      ambience.update(camera.position.x, camera.position.z, scene, atm.wind, Math.min(dt, 0.1));
+      ambience.update(camera.position.x, camera.position.z, scene, shared.uWind.value, dt, shared.uRain.value);
     }
   });
 

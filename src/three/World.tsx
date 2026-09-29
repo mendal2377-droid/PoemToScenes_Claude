@@ -1,6 +1,8 @@
 'use client';
 
 import * as THREE from 'three';
+import { useRef, type ReactNode } from 'react';
+import { useFrame } from '@react-three/fiber';
 import type { PoemScene } from '@/lib/types';
 import type { World } from './useWorld';
 
@@ -110,6 +112,21 @@ function Boat({ scene, world }: { scene: PoemScene; world: World }) {
   );
 }
 
+/**
+ * Weather has to be where the viewer is. Precipitation used to sit at the
+ * origin with a fixed radius, so walking to the edge of the valley walked out
+ * from under the snow; now the whole cloud of particles is carried along with
+ * the camera, and only its horizontal position — it still falls from the same
+ * height whatever the ground is doing.
+ */
+function FollowCamera({ children }: { children: ReactNode }) {
+  const ref = useRef<THREE.Group>(null);
+  useFrame(({ camera }) => {
+    if (ref.current) ref.current.position.set(camera.position.x, 0, camera.position.z);
+  });
+  return <group ref={ref}>{children}</group>;
+}
+
 /** Everything in the poem that does not move on its own. */
 export function WorldView({
   scene,
@@ -167,7 +184,12 @@ export function WorldView({
       <Boat scene={scene} world={world} />
 
       <mesh geometry={geo.mist} material={mat.mist} renderOrder={5} />
-      {geo.snow && <points geometry={geo.snow} material={mat.snow} renderOrder={6} />}
+      {geo.herd && mat.herd && <mesh geometry={geo.herd} material={mat.herd} />}
+      <FollowCamera>
+        <points geometry={geo.fall} material={mat.fall} renderOrder={6} frustumCulled={false} />
+        <points geometry={geo.wsnow} material={mat.wsnow} renderOrder={6} frustumCulled={false} />
+        <points geometry={geo.rain} material={mat.rain} renderOrder={7} frustumCulled={false} />
+      </FollowCamera>
     </group>
   );
 }

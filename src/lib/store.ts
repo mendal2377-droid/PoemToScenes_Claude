@@ -2,6 +2,8 @@
 
 import { create } from 'zustand';
 import type { Atmosphere, PoemScene } from './types';
+import { shaderToClock } from './time';
+import { getWeather, type WeatherId, type WeatherTarget } from './weather';
 
 export type Mode = 'view' | 'roam' | 'compose';
 
@@ -72,6 +74,15 @@ type SceneState = {
   focus: string | null;
   panelOpen: boolean;
   inscriptionOpen: boolean;
+  /** Hours on a 24-hour dial. The renderer eases towards it; see Ticker. */
+  clock: number;
+  /** Whether the day is turning by itself. */
+  running: boolean;
+  /** Multiplier on the pace of the day. */
+  speed: number;
+  weather: WeatherId;
+  /** Where the sky is headed. wind and mist live in `atmosphere`. */
+  sky: Pick<WeatherTarget, 'cloud' | 'rain' | 'snow' | 'thunder'>;
   /** Composition mode. */
   brush: PlaceableKind | null;
   placed: PlacedItem[];
@@ -86,6 +97,10 @@ type SceneState = {
   setFocus: (id: string | null) => void;
   togglePanel: (open?: boolean) => void;
   toggleInscription: (open?: boolean) => void;
+  setClock: (clock: number) => void;
+  setRunning: (running: boolean) => void;
+  setSpeed: (speed: number) => void;
+  setWeather: (id: WeatherId) => void;
   setBrush: (kind: PlaceableKind | null) => void;
   place: (x: number, z: number) => void;
   select: (uid: string | null) => void;
@@ -113,6 +128,11 @@ export const useScene = create<SceneState>((set, get) => ({
   focus: null,
   panelOpen: false,
   inscriptionOpen: true,
+  clock: 18,
+  running: false,
+  speed: 1,
+  weather: 'scene',
+  sky: { cloud: 0.2, rain: 0, snow: 0, thunder: 0 },
   brush: null,
   placed: [],
   selected: null,
@@ -121,6 +141,10 @@ export const useScene = create<SceneState>((set, get) => ({
     set({
       scene,
       atmosphere: { ...scene.atmosphere },
+      clock: shaderToClock(scene.atmosphere.hour),
+      running: false,
+      weather: 'scene',
+      sky: { cloud: scene.atmosphere.cloud ?? 0.2, rain: 0, snow: 0, thunder: 0 },
       found: [],
       revealing: null,
       near: null,
@@ -150,6 +174,32 @@ export const useScene = create<SceneState>((set, get) => ({
   },
 
   setFocus: (id) => set({ focus: id }),
+
+  setClock: (clock) => set({ clock: ((clock % 24) + 24) % 24 }),
+
+  setRunning: (running) => set({ running }),
+
+  setSpeed: (speed) => set({ speed }),
+
+  setWeather: (id) => {
+    const scene = get().scene;
+    if (!scene) return;
+    if (id === 'scene') {
+      // Back to the poem's own sky.
+      set({
+        weather: id,
+        atmosphere: { ...get().atmosphere, wind: scene.atmosphere.wind, mist: scene.atmosphere.mist, snow: scene.atmosphere.snow },
+        sky: { cloud: scene.atmosphere.cloud ?? 0.2, rain: 0, snow: 0, thunder: 0 },
+      });
+      return;
+    }
+    const t = getWeather(id).target;
+    set({
+      weather: id,
+      atmosphere: { ...get().atmosphere, wind: t.wind, mist: t.mist },
+      sky: { cloud: t.cloud, rain: t.rain, snow: t.snow, thunder: t.thunder },
+    });
+  },
 
   togglePanel: (open) => set({ panelOpen: open ?? !get().panelOpen }),
 
