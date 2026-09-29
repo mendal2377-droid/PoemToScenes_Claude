@@ -180,7 +180,9 @@ export function SceneView({ scene }: { scene: PoemScene }) {
             游毕
           </p>
           <p className="sealed__note">
-            {scene.title} · {scene.lines.length}句俱全 · 韵在{scene.rhymeName}
+            {scene.kind === 'prose'
+              ? `${scene.title} · 全文俱到`
+              : `${scene.title} · ${scene.lines.length}句俱全 · 韵在${scene.rhymeName}`}
           </p>
         </div>
       )}

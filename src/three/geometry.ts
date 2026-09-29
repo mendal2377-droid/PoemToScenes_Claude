@@ -9,6 +9,20 @@ import type { PoemScene } from '@/lib/types';
  * visitor who simply follows the ochre trail collects the whole poem.
  */
 export function buildTrail(scene: PoemScene): [number, number][] {
+  if (scene.journey) {
+    // A story is walked in the order it is told: from where you wake, through
+    // every place in the sequence of the text, and it does not come back.
+    const ordered = [...scene.landmarks].sort((p, q) => p.line - q.line);
+    const pts = [{ x: scene.start.x, z: scene.start.z }, ...ordered.map((l) => ({ x: l.x, z: l.z }))];
+    const curve = new THREE.CatmullRomCurve3(
+      pts.map((p) => new THREE.Vector3(p.x, 0, p.z)),
+      false,
+      'catmullrom',
+      0.35
+    );
+    return curve.getPoints(Math.max(220, pts.length * 28)).map((v) => [v.x, v.z] as [number, number]);
+  }
+
   const pts = [...scene.landmarks].map((l) => ({ x: l.x, z: l.z }));
   pts.push({ x: scene.start.x, z: scene.start.z });
 
@@ -60,6 +74,8 @@ export function buildMountainRing(opts: {
   hMax: number;
   segments?: number;
   bottom?: number;
+  /** Peaks that dominate the horizon at a given bearing. */
+  massifs?: readonly { angle: number; width: number; boost: number }[];
 }): THREE.BufferGeometry {
   const { seed, rMin, rMax, hMin, hMax } = opts;
   const segments = opts.segments ?? 360;
@@ -78,7 +94,16 @@ export function buildMountainRing(opts: {
     const crest = ridge(Math.cos(a) * 2.4 + 10, Math.sin(a) * 2.4 + 10, 5, seed);
     const depth = ridge(Math.cos(a) * 1.1 + 40, Math.sin(a) * 1.1 + 40, 3, seed + 333);
     const r = rMin + (rMax - rMin) * depth;
-    const h = hMin + (hMax - hMin) * Math.pow(crest, 1.35);
+    let h = hMin + (hMax - hMin) * Math.pow(crest, 1.35);
+    // A massif is a Gaussian bump on the skyline at a chosen bearing. Measured
+    // the short way round the circle so one straddling the seam still works.
+    if (opts.massifs) {
+      for (const m of opts.massifs) {
+        let d = a - m.angle;
+        d = Math.atan2(Math.sin(d), Math.cos(d));
+        h += m.boost * Math.exp(-(d / m.width) * (d / m.width));
+      }
+    }
     cols.push({ x: Math.cos(a) * r, z: Math.sin(a) * r, top: h });
   }
 
@@ -235,5 +260,59 @@ export function buildSnow(count: number, radius: number, seed: number): THREE.Bu
   // The shader lifts each flake up to 42 and drops it; the stored y is always 0,
   // so an auto-computed bounding sphere would cull the whole snowfall.
   geo.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, 20, 0), radius + 48);
+  return geo;
+}
+
+/**
+ * The water of a wide river: a flat ribbon at the river's own level.
+ *
+ * Unlike the brook — which rides just above its bed because it runs downhill —
+ * a river is level across its width, so this is a plane, and it relies on the
+ * terrain to hide it wherever the bank rises above the water. It only runs
+ * where the carve is strongest; past that the ground has risen to meet it.
+ */
+export function buildRiver(rv: {
+  path: readonly (readonly [number, number])[];
+  width: number;
+  level: number;
+}): THREE.BufferGeometry {
+  const curve = new THREE.CatmullRomCurve3(
+    rv.path.map((p) => new THREE.Vector3(p[0], 0, p[1])),
+    false,
+    'catmullrom',
+    0.5
+  );
+  const steps = 260;
+  // Reach a little past the banks; the terrain trims it back to the waterline.
+  const half = rv.width * 0.5 + rv.width * 0.36 * 0.62;
+  const positions: number[] = [];
+  const uvs: number[] = [];
+  const indices: number[] = [];
+  let n = 0;
+
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps;
+    // Where the carve has faded the ground is above the water anyway.
+    if (t < 0.05 || t > 0.95) continue;
+    const p = curve.getPoint(t);
+    const tan = curve.getTangent(t);
+    const nx = -tan.z;
+    const nz = tan.x;
+    const len = Math.hypot(nx, nz) || 1;
+    positions.push(p.x - (nx / len) * half, rv.level, p.z - (nz / len) * half);
+    positions.push(p.x + (nx / len) * half, rv.level, p.z + (nz / len) * half);
+    uvs.push(0, t * 30, 1, t * 30);
+    if (n > 0) {
+      const a = (n - 1) * 2;
+      indices.push(a, a + 2, a + 1, a + 1, a + 2, a + 3);
+    }
+    n++;
+  }
+
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+  geo.setIndex(indices);
+  geo.computeVertexNormals();
   return geo;
 }

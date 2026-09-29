@@ -8,6 +8,8 @@ import { DENG_GAO } from './denggao';
 import { NIAO_MING } from './niaoming';
 import { XI_JIANG } from './xijiang';
 import { YIN_JIU } from './yinjiu';
+import { TAO_HUA_YUAN } from './taohuayuan';
+import { BAO_CHAN_SHAN } from './baochanshan';
 
 /**
  * The shelf, in the order it is read.
@@ -24,6 +26,8 @@ export const SCENES: readonly PoemScene[] = [
   YIN_JIU,
   DENG_GAO,
   CHI_LE,
+  TAO_HUA_YUAN,
+  BAO_CHAN_SHAN,
 ];
 
 validateAll(SCENES);

@@ -264,11 +264,18 @@ class Ambience {
       stream = Math.max(stream, falloff(distToPath(x, z, ch.path).dist, 34));
     }
 
+    // A river is water from a long way off.
+    let river = 0;
+    for (const rv of scene.terrain.rivers ?? []) {
+      river = Math.max(river, falloff(distToPath(x, z, rv.path).dist - rv.width * 0.5, 60));
+    }
+
     // Open water.
     let water = 0;
     for (const b of scene.terrain.basins) {
       water = Math.max(water, falloff(Math.hypot(x - b.x, z - b.z) - b.r, b.r * 0.9));
     }
+    water = Math.max(water, river);
 
     // Gusting: the wind slider sets how hard it blows, and a slow drift keeps
     // it from sitting at one level.

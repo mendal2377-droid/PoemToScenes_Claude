@@ -1,4 +1,5 @@
-import { terrainHeight } from './terrain';
+import { distToPath, smoothstep } from './noise';
+import { inWater, terrainHeight } from './terrain';
 import type { PoemScene } from './types';
 
 /**
@@ -21,12 +22,17 @@ export function validateScene(s: PoemScene): string[] {
   // --- the poem itself -----------------------------------------------------
   s.lines.forEach((v, i) => {
     const chars = [...v.text].length;
-    if (v.tones.length !== chars) {
-      e.push(at(`line ${i} "${v.text}" has ${chars} characters but ${v.tones.length} tone marks`));
+    // Prose has no tonal pattern to check; a story is not scanned.
+    if (s.kind !== 'prose') {
+      if (v.tones.length !== chars) {
+        e.push(at(`line ${i} "${v.text}" has ${chars} characters but ${v.tones.length} tone marks`));
+      }
+      if (!/^[pz]+$/.test(v.tones)) {
+        e.push(at(`line ${i} tones "${v.tones}" must be only p (平) and z (仄)`));
+      }
     }
-    if (!/^[pz]+$/.test(v.tones)) {
-      e.push(at(`line ${i} tones "${v.tones}" must be only p (平) and z (仄)`));
-    }
+    // A column of characters is read top to bottom; past this it runs off the screen.
+    if (chars > 18) e.push(at(`line ${i} is ${chars} characters — break it into clauses of 18 or fewer`));
     if (!v.note.trim()) e.push(at(`line ${i} has no 注释`));
   });
 
@@ -57,6 +63,24 @@ export function validateScene(s: PoemScene): string[] {
     if (d > limit) {
       e.push(at(`${label} at (${x}, ${z}) is ${Math.round(d)} from centre, past the walkable limit of ${Math.round(limit)}`));
     }
+    for (const rv of s.terrain.rivers ?? []) {
+      const { dist, t } = distToPath(x, z, rv.path);
+      const end = smoothstep(0.02, 0.16, t) * (1 - smoothstep(0.84, 0.98, t));
+      const reach = rv.width * 0.5 + rv.width * 0.36 * 0.45 + margin;
+      if (end > 0.5 && dist < reach) {
+        e.push(
+          at(
+            `${label} at (${x}, ${z}) is ${Math.round(dist)} from the river's centre line but the water reaches ` +
+              `${Math.round(reach)} — move it ${Math.ceil(reach - dist)} further out`
+          )
+        );
+      }
+    }
+    for (const c of s.terrain.channels) {
+      if (distToPath(x, z, c.path).dist < c.width * 0.42 + margin && label.startsWith('start')) {
+        e.push(at(`${label} at (${x}, ${z}) is in the brook`));
+      }
+    }
     for (const b of s.terrain.basins) {
       const inside = Math.hypot(x - b.x, z - b.z);
       const needed = b.r + margin;
@@ -75,12 +99,36 @@ export function validateScene(s: PoemScene): string[] {
   onLand('start', s.start.x, s.start.z, 2);
   if (s.pavilion) onLand('pavilion', s.pavilion.x, s.pavilion.z, 2);
 
-  // --- and the boat must be *in* the water ---------------------------------
-  if (s.boat) {
-    const floating = s.terrain.basins.some(
-      (b) => Math.hypot(s.boat!.x - b.x, s.boat!.z - b.z) < b.r * 0.92
-    );
-    if (!floating) e.push(at(`boat at (${s.boat.x}, ${s.boat.z}) is not on any water`));
+  // --- and the boat must be where it says it is ----------------------------
+  for (const boat of [s.boat, ...(s.boats ?? [])]) {
+    if (!boat) continue;
+    const on = boat.on ?? 'basin';
+    if (on === 'basin') {
+      const floating = s.terrain.basins.some((b) => Math.hypot(boat!.x - b.x, boat!.z - b.z) < b.r * 0.92);
+      if (!floating) e.push(at(`boat at (${boat.x}, ${boat.z}) is not on any pond`));
+    } else if (on === 'river') {
+      const afloat = (s.terrain.rivers ?? []).some((rv) => {
+        const { dist } = distToPath(boat!.x, boat!.z, rv.path);
+        return dist < rv.width * 0.42;
+      });
+      if (!afloat) e.push(at(`boat at (${boat.x}, ${boat.z}) is not on the river`));
+    } else if (on === 'stream') {
+      const inBrook = s.terrain.channels.some((c) => distToPath(boat!.x, boat!.z, c.path).dist < c.width * 0.42);
+      if (!inBrook) e.push(at(`boat at (${boat.x}, ${boat.z}) is not in the brook`));
+    } else if (inWater(boat.x, boat.z, s.terrain)) {
+      e.push(at(`boat at (${boat.x}, ${boat.z}) is meant to be on the bank but is in the water`));
+    }
+  }
+
+  // --- dry-land set pieces --------------------------------------------------
+  s.huts?.forEach((h, i) => {
+    if (inWater(h.x, h.z, s.terrain)) e.push(at(`hut ${i} at (${h.x}, ${h.z}) is in the water`));
+  });
+  s.steles?.forEach((st, i) => {
+    if (inWater(st.x, st.z, s.terrain)) e.push(at(`stele ${i} at (${st.x}, ${st.z}) is in the water`));
+  });
+  if (s.cave && Math.hypot(s.cave.x, s.cave.z) + s.cave.r > s.terrain.extent) {
+    e.push(at(`cave at (${s.cave.x}, ${s.cave.z}) r=${s.cave.r} reaches past the terrain edge`));
   }
 
   // --- scenery should sit inside the world ---------------------------------

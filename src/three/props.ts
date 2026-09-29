@@ -263,3 +263,37 @@ export function buildHerd(
   g.computeVertexNormals();
   return g;
 }
+
+/**
+ * Points of light: each carries its own colour, size and whether it burns in
+ * daylight. See `makeGlowMaterial`. `boundingSphere` is set by hand because the
+ * points are scattered across the whole valley and a default sphere computed
+ * from a few of them will cull the rest.
+ */
+export function buildGlowPoints(
+  glows: readonly { x: number; y: number; z: number; color: string; size: number; always: boolean }[]
+): THREE.BufferGeometry | null {
+  if (!glows.length) return null;
+  const pos: number[] = [];
+  const size: number[] = [];
+  const always: number[] = [];
+  const color: number[] = [];
+  const seed: number[] = [];
+  const c = new THREE.Color();
+  glows.forEach((g, i) => {
+    pos.push(g.x, g.y, g.z);
+    size.push(g.size);
+    always.push(g.always ? 1 : 0);
+    c.set(g.color);
+    color.push(c.r, c.g, c.b);
+    seed.push(((i * 0.6180339) % 1) as number);
+  });
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  geo.setAttribute('aSize', new THREE.Float32BufferAttribute(size, 1));
+  geo.setAttribute('aAlways', new THREE.Float32BufferAttribute(always, 1));
+  geo.setAttribute('aColor', new THREE.Float32BufferAttribute(color, 3));
+  geo.setAttribute('aSeed', new THREE.Float32BufferAttribute(seed, 1));
+  geo.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, 0, 0), 400);
+  return geo;
+}

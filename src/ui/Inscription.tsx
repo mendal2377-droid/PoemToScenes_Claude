@@ -164,6 +164,7 @@ export function Inscription({ scene }: { scene: PoemScene }) {
 
           <span className="inscription__sign">
             〔{scene.dynasty}〕{scene.author}
+            {scene.kind !== 'prose' && (
             <button
               type="button"
               className="inscription__tones"
@@ -173,6 +174,7 @@ export function Inscription({ scene }: { scene: PoemScene }) {
             >
               平仄
             </button>
+            )}
             <span
               className="inscription__seal"
               data-on={complete}

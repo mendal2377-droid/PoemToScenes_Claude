@@ -62,7 +62,14 @@ export const CHI_LE: PoemScene = {
     channels: [],
     flats: [],
   },
-  atmosphere: { hour: 0.45, wind: 1.2, mist: 0.24, snow: 0, cloud: 0.1 },
+  // 阴山 — a long, low range across the whole far side, and nothing tall
+  // anywhere else: the sky is meant to be most of the picture.
+  skyline: 0.55,
+  massifs: [
+    { angle: -Math.PI / 2, width: 1.15, boost: 38, ring: 'mid' },
+    { angle: -Math.PI / 2, width: 1.6, boost: 30, ring: 'far' },
+  ],
+  atmosphere: { hour: 0.45, wind: 1.2, mist: 0.2, snow: 0, cloud: 0.12 },
   flora: {
     pines: { clusters: [{ x: -78, z: -54, r: 12, count: 5 }] },
     bamboo: { groves: [] },

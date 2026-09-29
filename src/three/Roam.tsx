@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
-import { clamp } from '@/lib/noise';
+import { clamp, distToPath, smoothstep } from '@/lib/noise';
 import { terrainHeight } from '@/lib/terrain';
 import { useScene } from '@/lib/store';
 import { touchInput } from '@/lib/touch';
@@ -187,6 +187,20 @@ export function RoamRig({ scene, world }: { scene: PoemScene; world: World }) {
       }
     }
 
+    // And the bank of a river. The shore is where the carve reaches the water
+    // level — a little inside the visible edge, so nobody stands on the waterline.
+    for (const rv of scene.terrain.rivers ?? []) {
+      const near = distToPath(pos.current.x, pos.current.z, rv.path);
+      const end = smoothstep(0.02, 0.16, near.t) * (1 - smoothstep(0.84, 0.98, near.t));
+      const shore = rv.width * 0.5 + rv.width * 0.36 * 0.3;
+      if (end > 0.5 && near.dist < shore && near.dist > 1e-3) {
+        const dx = pos.current.x - near.px;
+        const dz = pos.current.z - near.pz;
+        pos.current.x = near.px + (dx / near.dist) * shore;
+        pos.current.z = near.pz + (dz / near.dist) * shore;
+      }
+    }
+
     const groundY = terrainHeight(pos.current.x, pos.current.z, scene.terrain);
     pos.current.y = groundY;
 
@@ -243,7 +257,7 @@ export function RoamRig({ scene, world }: { scene: PoemScene; world: World }) {
   if (mode !== 'roam') return null;
   return (
     <group ref={figureRef}>
-      <Figure world={world} shadow />
+      <Figure world={world} shadow torch={scene.torch} />
     </group>
   );
 }
@@ -256,27 +270,36 @@ export function ViewRig({ scene }: { scene: PoemScene }) {
   const { camera, gl } = useThree();
   const mode = useScene((s) => s.mode);
   const focus = useScene((s) => s.focus);
-  const state = useRef({ yaw: scene.start.heading, pitch: 0.12, dist: 90 });
-  const target = useMemo(() => new THREE.Vector3(0, 16, 0), []);
-  const wanted = useMemo(() => new THREE.Vector3(0, 16, 0), []);
+  // Each world's own opening composition, or the general one.
+  const home = useMemo(
+    () => ({
+      dist: scene.view?.dist ?? 90,
+      pitch: scene.view?.pitch ?? 0.12,
+      at: scene.view?.target ?? ([0, 16, 0] as [number, number, number]),
+    }),
+    [scene]
+  );
+  const state = useRef({ yaw: scene.start.heading, pitch: home.pitch, dist: home.dist });
+  const target = useMemo(() => new THREE.Vector3(...home.at), [home]);
+  const wanted = useMemo(() => new THREE.Vector3(...home.at), [home]);
 
   useEffect(() => {
-    state.current = { yaw: scene.start.heading, pitch: 0.12, dist: 90 };
-    target.set(0, 16, 0);
-    wanted.set(0, 16, 0);
-  }, [scene, target, wanted]);
+    state.current = { yaw: scene.start.heading, pitch: home.pitch, dist: home.dist };
+    target.set(...home.at);
+    wanted.set(...home.at);
+  }, [scene, target, wanted, home]);
 
   // Choosing a line from the inscription moves the view to the place it names.
   useEffect(() => {
     const lm = scene.landmarks.find((l) => l.id === focus);
     if (!lm) {
-      wanted.set(0, 16, 0);
-      state.current.dist = 90;
+      wanted.set(...home.at);
+      state.current.dist = home.dist;
       return;
     }
     wanted.set(lm.x, terrainHeight(lm.x, lm.z, scene.terrain) + 9, lm.z);
     state.current.dist = 42;
-  }, [focus, scene, wanted]);
+  }, [focus, scene, wanted, home]);
 
   useEffect(() => {
     if (mode !== 'view') return;

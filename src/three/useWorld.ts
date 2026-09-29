@@ -9,6 +9,7 @@ import { buildGroundMask, buildPaperField } from './groundMask';
 import {
   buildMistBanks,
   buildMountainRing,
+  buildRiver,
   buildPond,
   buildSnow,
   buildStream,
@@ -25,11 +26,12 @@ import {
   buildRocks,
   scatterRocks,
 } from './flora';
-import { buildBoatCanopy, buildBoatHull, buildCape, buildHat, buildHerd, buildPavilionRoof } from './props';
+import { buildBoatCanopy, buildBoatHull, buildCape, buildGlowPoints, buildHat, buildHerd, buildPavilionRoof } from './props';
 import { bodies, shared } from './materials';
 import {
   makeBarkMaterial,
   makeFoliageMaterial,
+  makeGlowMaterial,
   makeGrassMaterial,
   makeContactShadowMaterial,
   makeInkMaterial,
@@ -56,7 +58,31 @@ function buildWorld(scene: PoemScene) {
   // Keep grass out of the water and off the trail-worn ground.
   const avoid = spec.basins.map((b) => ({ x: b.x, z: b.z, r: b.r * 0.95 }));
 
+  const sk = scene.skyline ?? 1;
   const paper = buildPaperField(spec, spec.seed + 313);
+
+  // Reeds stand along the banks of a river as well as round a pond. Each bank
+  // gets a run of small clusters, offset from the path by the edge of the water.
+  const riverSpots: { x: number; z: number; r: number }[] = [];
+  for (const rv of spec.rivers ?? []) {
+    const curve = new THREE.CatmullRomCurve3(
+      rv.path.map((q) => new THREE.Vector3(q[0], 0, q[1])),
+      false,
+      'catmullrom',
+      0.5
+    );
+    const edge = rv.width * 0.5 + rv.width * 0.36 * 0.36;
+    for (let i = 4; i <= 96; i += 2) {
+      const t = i / 100;
+      const q = curve.getPoint(t);
+      const tan = curve.getTangent(t);
+      const nl = Math.hypot(tan.x, tan.z) || 1;
+      for (const side of [-1, 1]) {
+        riverSpots.push({ x: q.x + (-tan.z / nl) * edge * side, z: q.z + (tan.x / nl) * edge * side, r: 2.4 });
+      }
+    }
+  }
+  const reedSpots = [...spec.basins.map((b) => ({ x: b.x, z: b.z, r: b.r })), ...riverSpots];
 
   const pines = buildPines(
     scene.flora.pines.clusters,
@@ -84,12 +110,27 @@ function buildWorld(scene: PoemScene) {
 
   const geo = {
     terrain: buildTerrain(spec),
-    mountainNear: buildMountainRing({ seed: spec.seed + 11, rMin: 152, rMax: 216, hMin: 22, hMax: 54 }),
-    mountainMid: buildMountainRing({ seed: spec.seed + 23, rMin: 244, rMax: 326, hMin: 40, hMax: 94 }),
-    mountainFar: buildMountainRing({ seed: spec.seed + 37, rMin: 384, rMax: 524, hMin: 62, hMax: 150 }),
+    mountainNear: buildMountainRing({ seed: spec.seed + 11, rMin: 152, rMax: 216, hMin: 22 * sk, hMax: 54 * sk, massifs: scene.massifs?.filter((m) => m.ring === 'near'), }),
+    mountainMid: buildMountainRing({ seed: spec.seed + 23, rMin: 244, rMax: 326, hMin: 40 * sk, hMax: 94 * sk, massifs: scene.massifs?.filter((m) => m.ring === 'mid'), }),
+    mountainFar: buildMountainRing({ seed: spec.seed + 37, rMin: 384, rMax: 524, hMin: 62 * sk, hMax: 150 * sk, massifs: scene.massifs?.filter((m) => m.ring === 'far'), }),
     sky: new THREE.SphereGeometry(760, 40, 26),
-    pond: basin ? buildPond(basin, waterLevel) : null,
+    // Every basin holds water, each at its own level.
+    ponds: spec.basins.map((b) => buildPond(b, basinWaterLevel(b, spec))),
     stream: spec.channels[0] ? buildStream(spec.channels[0].path, spec.channels[0].width, spec) : null,
+    rivers: (spec.rivers ?? []).map((rv) => buildRiver(rv)),
+    glows: buildGlowPoints(
+      (scene.glows ?? []).map((g) => ({
+        x: g.x,
+        y: terrainHeight(g.x, g.z, spec) + (g.h ?? 2.2),
+        z: g.z,
+        color: g.color,
+        size: g.size,
+        always: !!g.always,
+      }))
+    ),
+    torchGlow: scene.torch
+      ? buildGlowPoints([{ x: 0.42, y: 1.55, z: 0.32, color: '#ffb35c', size: 2.4, always: true }])
+      : null,
     pines,
     bamboo,
     broadleaf,
@@ -106,7 +147,7 @@ function buildWorld(scene: PoemScene) {
     reeds: buildReeds(
       scene.flora.reeds.count,
       spec,
-      spec.basins.map((b) => ({ x: b.x, z: b.z, r: b.r })),
+      reedSpots,
       { dark: p.foliageDark, light: p.foliageLight },
       spec.seed + 6
     ),
@@ -128,8 +169,8 @@ function buildWorld(scene: PoemScene) {
         )
       : null,
     pavilionRoof: scene.pavilion ? buildPavilionRoof(3.1, 2.9, 4.9) : null,
-    boatHull: scene.boat ? buildBoatHull(5.6, 1.5, 0.62) : null,
-    boatCanopy: scene.boat ? buildBoatCanopy(2.1, 1.35, 0.85) : null,
+    boatHull: scene.boat || scene.boats?.length ? buildBoatHull(5.6, 1.5, 0.62) : null,
+    boatCanopy: scene.boat || scene.boats?.length ? buildBoatCanopy(2.1, 1.35, 0.85) : null,
     hat: buildHat(0.44, 0.2),
     cape: buildCape(0.17, 0.44, 0.82),
   };
@@ -172,6 +213,8 @@ function buildWorld(scene: PoemScene) {
     hat: hatPale,
     wood: makeInkMaterial(p, p.trunk),
     herd: null as THREE.ShaderMaterial | null,
+    plaster: makeInkMaterial(p, '#d8c8a2'),
+    glow: makeGlowMaterial(),
   };
 
   // The middle range sits between the other two in weight as well as distance.
@@ -179,11 +222,12 @@ function buildWorld(scene: PoemScene) {
 
   // Petals and leaves drift but do not settle; snow does.
   shared.uAccum.value = scene.fall.accumulate;
+  shared.uTorch.value = scene.torch ? 1 : 0;
   if (scene.herd) {
     mat.herd = makeInkMaterial(p, scene.herd.color);
   }
 
-  const mask = buildGroundMask(spec, trail);
+  const mask = buildGroundMask(spec, trail, scene.extraPaths ?? []);
   mat.terrain.uniforms.uMask.value = mask;
   mat.terrain.uniforms.uPaperField.value = paper.texture;
   mat.terrain.uniforms.uExtent.value = spec.extent;
@@ -204,6 +248,7 @@ function buildWorld(scene: PoemScene) {
   const heights = {
     pavilion: scene.pavilion ? terrainHeight(scene.pavilion.x, scene.pavilion.z, spec) : 0,
     waterLevel,
+    riverLevel: spec.rivers?.[0]?.level ?? 0,
   };
 
   return { geo, mat, mask, paper, trail, heights, basin };

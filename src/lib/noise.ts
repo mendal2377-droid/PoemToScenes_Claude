@@ -94,9 +94,11 @@ export function distToPath(
   x: number,
   z: number,
   path: readonly (readonly [number, number])[]
-): { dist: number; t: number } {
+): { dist: number; t: number; px: number; pz: number } {
   let best = Infinity;
   let bestT = 0;
+  let bestX = path[0][0];
+  let bestZ = path[0][1];
   let acc = 0;
   let total = 0;
   for (let i = 0; i < path.length - 1; i++) {
@@ -117,10 +119,12 @@ export function distToPath(
     if (d < best) {
       best = d;
       bestT = total > 0 ? (acc + t * len) / total : 0;
+      bestX = px;
+      bestZ = pz;
     }
     acc += len;
   }
-  return { dist: best, t: bestT };
+  return { dist: best, t: bestT, px: bestX, pz: bestZ };
 }
 
 /** Sample a polyline at normalised distance t, returning position and tangent. */

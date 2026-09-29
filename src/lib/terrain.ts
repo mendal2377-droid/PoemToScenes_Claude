@@ -3,6 +3,23 @@ import { clamp, distToPath, fbm, smoothstep } from './noise';
 export type Basin = { x: number; z: number; r: number; depth: number };
 export type Channel = { path: readonly (readonly [number, number])[]; width: number; depth: number };
 export type Flat = { x: number; z: number; r: number; h: number };
+/** A hill, or a piece of a wall. Gaussian, so neighbours merge into one range. */
+export type Bump = { x: number; z: number; r: number; h: number };
+/**
+ * A river wide enough to be a landscape rather than a stream.
+ *
+ * `level` is the absolute height of the water surface — a river is flat across
+ * its width in a way a brook running downhill is not — and the bed is carved to
+ * `depth` below it. The carve fades out towards both ends of the path so the
+ * river runs into the rising ground at the edge of the world instead of into
+ * the void beyond it.
+ */
+export type River = {
+  path: readonly (readonly [number, number])[];
+  width: number;
+  level: number;
+  depth: number;
+};
 
 export type TerrainSpec = {
   seed: number;
@@ -15,6 +32,8 @@ export type TerrainSpec = {
   basins: readonly Basin[];
   channels: readonly Channel[];
   flats: readonly Flat[];
+  bumps?: readonly Bump[];
+  rivers?: readonly River[];
 };
 
 /**
@@ -33,6 +52,17 @@ export function terrainHeight(x: number, z: number, spec: TerrainSpec): number {
   // Lift the outer ring so the valley feels enclosed by the painted mountains.
   const d = Math.hypot(x, z);
   h += smoothstep(rim.start, spec.extent, d) * rim.amp;
+
+  // Hills and walls — added before the pads so a pavilion still gets its level
+  // ground even when it is built on the side of one.
+  if (spec.bumps) {
+    for (const b of spec.bumps) {
+      const dx = (x - b.x) / b.r;
+      const dz = (z - b.z) / b.r;
+      const q = dx * dx + dz * dz;
+      if (q < 9) h += b.h * Math.exp(-q);
+    }
+  }
 
   // Level pads — a pavilion on a slope looks like a mistake, not a painting.
   for (const f of spec.flats) {
@@ -53,7 +83,42 @@ export function terrainHeight(x: number, z: number, spec: TerrainSpec): number {
     h -= w * c.depth;
   }
 
+  // Rivers.
+  if (spec.rivers) {
+    for (const rv of spec.rivers) {
+      const { dist, t } = distToPath(x, z, rv.path);
+      const core = rv.width * 0.5;
+      const bank = rv.width * 0.36;
+      // Fade the carve at both ends so the river meets rising ground.
+      const end = smoothstep(0.02, 0.16, t) * (1 - smoothstep(0.84, 0.98, t));
+      const w = (1 - smoothstep(core, core + bank, dist)) * end;
+      if (w > 0) {
+        // Deepest along the middle, shelving towards the banks.
+        const bed = rv.level - rv.depth * (1 - 0.45 * smoothstep(0, core, dist));
+        h = h * (1 - w) + bed * w;
+      }
+    }
+  }
+
   return h;
+}
+
+/** True where the ground is under open water — pond, brook or river. */
+export function inWater(x: number, z: number, spec: TerrainSpec): boolean {
+  for (const b of spec.basins) {
+    if (Math.hypot(x - b.x, z - b.z) < b.r * 0.98) return true;
+  }
+  for (const c of spec.channels) {
+    if (distToPath(x, z, c.path).dist < c.width * 0.42) return true;
+  }
+  if (spec.rivers) {
+    for (const rv of spec.rivers) {
+      const { dist, t } = distToPath(x, z, rv.path);
+      const end = smoothstep(0.02, 0.16, t) * (1 - smoothstep(0.84, 0.98, t));
+      if (end > 0.5 && dist < rv.width * 0.5 + rv.width * 0.36 * 0.45) return true;
+    }
+  }
+  return false;
 }
 
 /** Surface normal by central difference — used for tilting scattered props. */

@@ -3,6 +3,7 @@
 import * as THREE from 'three';
 import { useRef, type ReactNode } from 'react';
 import { useFrame } from '@react-three/fiber';
+import { terrainHeight } from '@/lib/terrain';
 import type { PoemScene } from '@/lib/types';
 import type { World } from './useWorld';
 
@@ -17,13 +18,25 @@ export function Figure({
   world,
   scale = 1,
   shadow = false,
+  torch = false,
 }: {
   world: World;
   scale?: number;
   shadow?: boolean;
+  /** 拥火以入 — the traveller holds a flame. */
+  torch?: boolean;
 }) {
   return (
     <group scale={scale}>
+      {torch && (
+        <group>
+          {/* The brand: a short stick held out at the side, and the flame on it. */}
+          <mesh material={world.mat.wood} position={[0.36, 1.2, 0.26]} rotation={[0.25, 0, -0.14]}>
+            <cylinderGeometry args={[0.028, 0.034, 0.7, 5]} />
+          </mesh>
+          {world.geo.torchGlow && <points geometry={world.geo.torchGlow} material={world.mat.glow} renderOrder={9} frustumCulled={false} />}
+        </group>
+      )}
       {shadow && (
         <mesh material={world.mat.shadow} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.05, 0]}>
           <planeGeometry args={[1.25, 1.25]} />
@@ -89,10 +102,113 @@ function Pavilion({ scene, world }: { scene: PoemScene; world: World }) {
   );
 }
 
-function Boat({ scene, world }: { scene: PoemScene; world: World }) {
-  const b = scene.boat;
-  if (!b || !world.geo.boatHull) return null;
-  const y = world.heights.waterLevel;
+function Huts({ scene, world }: { scene: PoemScene; world: World }) {
+  if (!scene.huts?.length) return null;
+  return (
+    <>
+      {scene.huts.map((h, i) => {
+        const k = h.scale ?? 1;
+        const y = terrainHeight(h.x, h.z, scene.terrain);
+        return (
+          <group key={i} position={[h.x, y, h.z]} rotation={[0, h.rot, 0]} scale={k}>
+            {/* Rammed-earth walls, and a hipped roof of thatch with a wide eave. */}
+            <mesh material={world.mat.plaster} position={[0, 1.05, 0]}>
+              <boxGeometry args={[3.6, 2.1, 2.9]} />
+            </mesh>
+            <mesh material={world.mat.wood} position={[0, 0.95, 1.46]}>
+              <boxGeometry args={[0.8, 1.5, 0.08]} />
+            </mesh>
+            <mesh material={world.mat.thatch} position={[0, 2.85, 0]} rotation={[0, Math.PI / 4, 0]} scale={[1.9, 1, 1.55]}>
+              <coneGeometry args={[1.55, 1.7, 4]} />
+            </mesh>
+          </group>
+        );
+      })}
+    </>
+  );
+}
+
+/** A plank footbridge with a low rail either side, laid across a brook. */
+function Bridges({ scene, world }: { scene: PoemScene; world: World }) {
+  if (!scene.bridges?.length) return null;
+  return (
+    <>
+      {scene.bridges.map((br, i) => {
+        const len = br.length ?? 9;
+        const y = terrainHeight(br.x, br.z, scene.terrain);
+        // Stand on the higher of the two banks.
+        const bank = Math.max(
+          terrainHeight(br.x + Math.cos(br.rot) * len * 0.5, br.z - Math.sin(br.rot) * len * 0.5, scene.terrain),
+          terrainHeight(br.x - Math.cos(br.rot) * len * 0.5, br.z + Math.sin(br.rot) * len * 0.5, scene.terrain),
+          y
+        );
+        return (
+          <group key={i} position={[br.x, bank + 0.42, br.z]} rotation={[0, br.rot, 0]}>
+            <mesh material={world.mat.wood}>
+              <boxGeometry args={[len, 0.18, 2.3]} />
+            </mesh>
+            {[-1, 1].map((side) => (
+              <mesh key={side} material={world.mat.wood} position={[0, 0.62, side * 1.05]}>
+                <boxGeometry args={[len, 0.1, 0.1]} />
+              </mesh>
+            ))}
+            {[-0.45, -0.15, 0.15, 0.45].flatMap((f) =>
+              [-1, 1].map((side) => (
+                <mesh key={`${f}${side}`} material={world.mat.wood} position={[len * f, 0.32, side * 1.05]}>
+                  <boxGeometry args={[0.12, 0.62, 0.12]} />
+                </mesh>
+              ))
+            )}
+          </group>
+        );
+      })}
+    </>
+  );
+}
+
+/** 碑 — standing slabs, and the ones that have come down across the road. */
+function Steles({ scene, world }: { scene: PoemScene; world: World }) {
+  if (!scene.steles?.length) return null;
+  return (
+    <>
+      {scene.steles.map((st, i) => {
+        const y = terrainHeight(st.x, st.z, scene.terrain);
+        return (
+          <mesh
+            key={i}
+            material={world.mat.rock}
+            position={[st.x, y + (st.fallen ? 0.28 : 1.2), st.z]}
+            rotation={st.fallen ? [-Math.PI / 2 + 0.12, 0, st.rot] : [0.04, st.rot, 0.03]}
+          >
+            <boxGeometry args={[0.7, 2.4, 0.34]} />
+          </mesh>
+        );
+      })}
+    </>
+  );
+}
+
+function Boats({ scene, world }: { scene: PoemScene; world: World }) {
+  const all = [scene.boat, ...(scene.boats ?? [])].filter(Boolean) as NonNullable<PoemScene['boat']>[];
+  return (
+    <>
+      {all.map((b, i) => (
+        <Boat key={i} b={b} scene={scene} world={world} />
+      ))}
+    </>
+  );
+}
+
+function Boat({ b, scene, world }: { b: NonNullable<PoemScene['boat']>; scene: PoemScene; world: World }) {
+  if (!world.geo.boatHull) return null;
+  // On a pond it floats at the pond's level, on a river at the river's, and a
+  // boat that has been left on the bank — 便舍船 — sits on the ground.
+  const y =
+    b.on === 'river'
+      ? world.heights.riverLevel
+      : b.on === 'ground' || b.on === 'stream'
+        ? terrainHeight(b.x, b.z, scene.terrain) + 0.5
+        : world.heights.waterLevel;
 
   return (
     <group position={[b.x, y - 0.18, b.z]} rotation={[0, b.rot, 0]}>
@@ -161,8 +277,13 @@ export function WorldView({
         }
       />
 
-      {geo.pond && <mesh geometry={geo.pond} material={mat.water} />}
+      {geo.ponds.map((g, i) => (
+        <mesh key={i} geometry={g} material={mat.water} />
+      ))}
       {geo.stream && <mesh geometry={geo.stream} material={mat.water} />}
+      {geo.rivers.map((g, i) => (
+        <mesh key={i} geometry={g} material={mat.water} />
+      ))}
 
       {geo.rocks && <mesh geometry={geo.rocks} material={mat.rock} />}
       {geo.grass && <mesh geometry={geo.grass} material={mat.grass} />}
@@ -181,7 +302,11 @@ export function WorldView({
       {geo.lotus.flowers && <mesh geometry={geo.lotus.flowers} material={mat.pad} />}
 
       <Pavilion scene={scene} world={world} />
-      <Boat scene={scene} world={world} />
+      <Huts scene={scene} world={world} />
+      <Bridges scene={scene} world={world} />
+      <Steles scene={scene} world={world} />
+      {geo.glows && <points geometry={geo.glows} material={mat.glow} renderOrder={9} frustumCulled={false} />}
+      <Boats scene={scene} world={world} />
 
       <mesh geometry={geo.mist} material={mat.mist} renderOrder={5} />
       {geo.herd && mat.herd && <mesh geometry={geo.herd} material={mat.herd} />}

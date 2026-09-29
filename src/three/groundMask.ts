@@ -16,7 +16,8 @@ const SIZE = 1024;
  */
 export function buildGroundMask(
   spec: TerrainSpec,
-  trail: readonly (readonly [number, number])[]
+  trail: readonly (readonly [number, number])[],
+  extraPaths: readonly (readonly (readonly [number, number])[])[] = []
 ): THREE.CanvasTexture {
   const canvas = document.createElement('canvas');
   canvas.width = SIZE;
@@ -58,8 +59,12 @@ export function buildGroundMask(
   };
 
   strokePath(trail, 1.9, 'r');
+  // 阡陌 — the footpaths between fields are narrower than the main trail.
+  for (const path of extraPaths) strokePath(path, 1.35, 'r');
 
   for (const ch of spec.channels) strokePath(ch.path, ch.width * 1.5, 'g');
+  // Damp ground along a river's banks; the water itself covers the middle.
+  for (const rv of spec.rivers ?? []) strokePath(rv.path, rv.width * 0.86, 'g');
 
   for (const b of spec.basins) {
     const grad = ctx.createRadialGradient(toX(b.x), toY(b.z), 0, toX(b.x), toY(b.z), b.r * 1.35 * pxPerUnit);

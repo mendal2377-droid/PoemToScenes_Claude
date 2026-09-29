@@ -27,10 +27,11 @@ export const JIANG_XUE: PoemScene = {
     skyLow: '#dcdcd4',
     mountainFar: '#77838f',
     mountainNear: '#8d979f',
-    groundHigh: '#e4e6e4',
-    groundLow: '#c2c8c9',
-    water: '#b8c4ca',
-    waterDeep: '#77878f',
+    groundHigh: '#e6e8e6',
+    groundLow: '#c4cacb',
+    // Against all that white the river has to be the darkest thing in the world.
+    water: '#8f9ba3',
+    waterDeep: '#44525c',
     foliageDark: '#3c4a46',
     foliageLight: '#5d6d64',
     grassTip: '#b6b9ab',
@@ -43,36 +44,59 @@ export const JIANG_XUE: PoemScene = {
   terrain: {
     seed: 19,
     extent: 132,
-    hills: { amp: 2.4, freq: 0.021 },
-    swell: { amp: 5.2, freq: 0.0058 },
-    rim: { start: 62, amp: 40 },
-    basins: [{ x: 4, z: 26, r: 48, depth: 4.2 }],
+    // Smooth and empty. A snowfield has no detail to give.
+    hills: { amp: 1.1, freq: 0.021 },
+    swell: { amp: 2.8, freq: 0.0058 },
+    rim: { start: 66, amp: 42 },
+    basins: [],
     channels: [],
     flats: [],
+    // A river you would not cross in a day, running dark through the white.
+    rivers: [
+      {
+        path: [
+          [-150, -6],
+          [-60, -18],
+          [10, -4],
+          [80, -20],
+          [150, -8],
+        ],
+        width: 70,
+        level: -1.2,
+        depth: 5,
+      },
+    ],
   },
-  atmosphere: { hour: 0.26, wind: 0.26, mist: 0.5, snow: 0.8, cloud: 0.62 },
+  // 千山: the mountains close in on the far bank, and they are the whole
+  // background, not a few hills at the edge.
+  skyline: 1.2,
+  massifs: [
+    { angle: -Math.PI / 2, width: 0.5, boost: 76, ring: 'mid' },
+    { angle: -Math.PI / 2 + 0.85, width: 0.34, boost: 46, ring: 'near' },
+    { angle: -Math.PI / 2 - 0.95, width: 0.4, boost: 52, ring: 'near' },
+    { angle: -Math.PI / 2, width: 0.9, boost: 40, ring: 'far' },
+  ],
+  atmosphere: { hour: 0.26, wind: 0.16, mist: 0.64, snow: 0.85, cloud: 0.8 },
   flora: {
-    pines: {
-      clusters: [
-        { x: -54, z: -46, r: 18, count: 9 },
-        { x: 52, z: -52, r: 16, count: 7 },
-      ],
-    },
+    // Two or three dead trees, so there is something for the snow to be
+    // measured against — and nothing that could be mistaken for company.
+    pines: { clusters: [{ x: -84, z: 74, r: 9, count: 3 }] },
     bamboo: { groves: [] },
     broadleaf: { clusters: [] },
-    grass: { count: 1200, radius: 74 },
-    reeds: { count: 180 },
+    grass: { count: 900, radius: 84, stroke: 0.15 },
+    reeds: { count: 220 },
     lotus: { count: 0 },
-    rocks: { count: 90 },
+    rocks: { count: 70 },
   },
   landmarks: [
-    { id: 'qianshan', line: 0, label: '千山', x: -50, z: -48, radius: 15 },
-    { id: 'wanjing', line: 1, label: '万径', x: 46, z: -28, radius: 15 },
-    { id: 'guzhou', line: 2, label: '孤舟', x: 4, z: -28, radius: 15 },
-    { id: 'duchao', line: 3, label: '寒江', x: -46, z: 2, radius: 17 },
+    { id: 'qianshan', line: 0, label: '千山', x: -70, z: 62, radius: 13 },
+    { id: 'wanjing', line: 1, label: '万径', x: -28, z: 76, radius: 13 },
+    { id: 'guzhou', line: 2, label: '孤舟', x: 28, z: 76, radius: 13 },
+    { id: 'duchao', line: 3, label: '寒江', x: 70, z: 62, radius: 13 },
   ],
-  start: { x: -10, z: 84, heading: 0 },
+  start: { x: 0, z: 94, heading: 0 },
   fall: { kind: 'snow', color: '#ffffff', size: 1, accumulate: 1 },
   luminary: { x: 0.28, y: 0.3, z: -0.91, size: 0.07, kind: 'sun' },
-  boat: { x: 4, z: 8, rot: -0.4 },
+  // One boat, a long way out, and no one within sight of it.
+  boat: { x: 28, z: -8, rot: -0.4, on: 'river' },
 };

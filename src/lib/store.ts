@@ -144,7 +144,7 @@ export const useScene = create<SceneState>((set, get) => ({
       clock: shaderToClock(scene.atmosphere.hour),
       running: false,
       weather: 'scene',
-      sky: { cloud: scene.atmosphere.cloud ?? 0.2, rain: 0, snow: 0, thunder: 0 },
+      sky: { cloud: scene.atmosphere.cloud ?? 0.2, rain: scene.atmosphere.rain ?? 0, snow: 0, thunder: 0 },
       found: [],
       revealing: null,
       near: null,
@@ -189,7 +189,7 @@ export const useScene = create<SceneState>((set, get) => ({
       set({
         weather: id,
         atmosphere: { ...get().atmosphere, wind: scene.atmosphere.wind, mist: scene.atmosphere.mist, snow: scene.atmosphere.snow },
-        sky: { cloud: scene.atmosphere.cloud ?? 0.2, rain: 0, snow: 0, thunder: 0 },
+        sky: { cloud: scene.atmosphere.cloud ?? 0.2, rain: scene.atmosphere.rain ?? 0, snow: 0, thunder: 0 },
       });
       return;
     }

@@ -59,6 +59,8 @@ export type Atmosphere = {
   snow: number;
   /** How overcast the poem is by default, 0–1. Defaults to a light 0.2. */
   cloud?: number;
+  /** Authored rain, 0–1 — 西江月 has "两三点雨山前", which is a few drops, not weather. */
+  rain?: number;
 };
 
 /**
@@ -91,8 +93,39 @@ export type Landmark = {
   radius: number;
 };
 
+/** A lamp, a torch, a light at the end of a passage. */
+export type Glow = {
+  x: number;
+  z: number;
+  /** Height above the ground. */
+  h?: number;
+  color: string;
+  size: number;
+  /** Shown by day as well as by night. Defaults to night only. */
+  always?: boolean;
+};
+
+/**
+ * A part of the world where the light goes out.
+ *
+ * Inside it everything dims towards black and only what is close to the
+ * traveller — the torch — stays lit. It is a property of where you stand, so it
+ * is measured against the camera, and fades in over `fade` metres.
+ */
+export type Cave = { x: number; z: number; r: number; fade: number; depth: number };
+
+export type Massif = {
+  /** Where on the horizon, as an angle: atan2(z, x). Looking towards -z is -π/2. */
+  angle: number;
+  width: number;
+  boost: number;
+  ring: 'near' | 'mid' | 'far';
+};
+
 export type PoemScene = {
   id: string;
+  /** 'prose' scenes are walked in order and carry no tonal apparatus. */
+  kind?: 'poem' | 'prose';
   title: string;
   author: string;
   dynasty: string;
@@ -120,7 +153,35 @@ export type PoemScene = {
   /** Grazing animals, for poems that need them. */
   herd?: { count: number; x: number; z: number; r: number; color: string; scale: number };
   /** Where the fisherman's boat rides, if the poem has one. */
-  boat?: { x: number; z: number; rot: number };
+  boat?: { x: number; z: number; rot: number; on?: 'basin' | 'river' | 'stream' | 'ground' };
+  /** Further boats, for stories that have more than one. */
+  boats?: readonly { x: number; z: number; rot: number; on?: 'basin' | 'river' | 'stream' | 'ground' }[];
+  /** A footbridge over a brook. */
+  bridges?: readonly { x: number; z: number; rot: number; length?: number }[];
+  /** Huts and houses, for the worlds that have people in them. */
+  huts?: readonly { x: number; z: number; rot: number; scale?: number }[];
+  glows?: readonly Glow[];
+  /** Standing stones; `fallen` ones lie across the road. */
+  steles?: readonly { x: number; z: number; rot: number; fallen?: boolean }[];
+  cave?: Cave;
+  /** The traveller carries a torch. */
+  torch?: boolean;
+  /** Extra footpaths beyond the main trail — 阡陌, a field grid. */
+  extraPaths?: readonly (readonly (readonly [number, number])[])[];
+  /** Shape the skyline: a mountain that dominates, or a wall that closes in. */
+  massifs?: readonly Massif[];
+  /**
+   * Where the free view opens. Each world composes differently: a slot in a
+   * mountain wants the camera high and back, a river wants it low on the bank.
+   */
+  view?: { dist?: number; pitch?: number; target?: [number, number, number] };
+  /** Scales every mountain range's height. 0.4 is a low horizon; 1.4 closes in. */
+  skyline?: number;
+  /**
+   * The trail runs from the start through the landmarks in the order of the
+   * text, rather than looping. For a story, the order is the point.
+   */
+  journey?: boolean;
   /** Where the thatched pavilion stands, if the poem has one. */
   pavilion?: { x: number; z: number; rot: number };
 };

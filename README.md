@@ -13,23 +13,32 @@ there is not a single light source in the scene.
 
 ## What's here
 
-**Eight worlds**, each built around what its poem is actually about rather than a generic
-landscape re-skinned.
+**Ten worlds**, each built around what its text is actually about, and each with a
+different landform *and* a different emotion — not one valley re-tinted.
 
-| | poem | what the world does |
-|---|---|---|
-| 1 | **山居秋暝** · 王维 | autumn dusk; moonlight falls between the pines, a boat parts the lotus |
-| 2 | **江雪** · 柳宗元 | nearly empty; turn the snow up and the paths go under it (万径人踪灭) |
-| 3 | **鸟鸣涧** · 王维 | the darkest and quietest — a ravine, and osmanthus coming down |
-| 4 | **春江花月夜** · 张若虚 | a huge low moon over water, blossom on the margin. The rhyme changes halfway |
-| 5 | **西江月** · 辛弃疾 | a 词, rhymed across both tones. Paddy, frogs, rain, and a hut round the bend |
-| 6 | **饮酒·其五** · 陶渊明 | hedge, hut, a mountain seen without looking, birds going home |
-| 7 | **登高** · 杜甫 | a high terrace, hard wind, leaves without end. All four couplets are 对仗 |
-| 8 | **敕勒歌** · 佚名 | a steppe; six lines of emptiness, then the grass parts to show cattle |
+| | text | landform | feeling |
+|---|---|---|---|
+| 1 | **山居秋暝** · 王维 | wooded hills, a brook, a lotus pond; moonlight falls between the pines | 清幽 |
+| 2 | **江雪** · 柳宗元 | a white plain, a wide dark river, mountains closing in, one tiny boat | 孤寂 |
+| 3 | **鸟鸣涧** · 王维 | a steep night ravine, walls all round, a silver brook, falling osmanthus | 幽静 |
+| 4 | **春江花月夜** · 张若虚 | a 170 m river with a huge low moon, its reflection running to you | 浩渺 |
+| 5 | **西江月** · 辛弃疾 | golden paddies, a plank bridge, a hut with a lit window, a few drops of rain | 欣喜 |
+| 6 | **饮酒·其五** · 陶渊明 | a bright meadow, a hedge, 南山 filling the horizon under a low sun | 淡远 |
+| 7 | **登高** · 杜甫 | a brown gorge, a river rolling *toward* you, a terrace, a gale in the leaves | 悲壮 |
+| 8 | **敕勒歌** · 佚名 | a steppe under a great sky; the grass parts to show cattle | 辽阔 |
+| 9 | **桃花源记** · 陶渊明 | a stream through peach blossom to a mountain with one narrow slot; beyond it, a hidden valley of fields | 惊喜 |
+| 10 | **游褒禅山记** · 王安石 | a mountain, a bright front cave, and a back cave that is truly dark — you carry a torch | 求索 |
 
-The shelf was originally sketched with 桃花源记 in the sixth slot. It is prose, and the app
-walks a poem line by line, so it became 饮酒·其五 — the same poet doing the same thing in
-verse.
+The last two are prose. They are walked *in the order they are told* — the trail runs from
+where you wake, through every place in the sequence of the text, and does not loop back —
+and carry no 平仄 or rhyme apparatus, since a story is not scanned. In 桃花源记 the
+mountain is a solid wall from outside and the valley cannot be seen until you are through
+the slot: 豁然开朗 is a reveal, not a caption. In 游褒禅山记 the back cave goes to near
+black, lit only by what your torch reaches, and the crystals get brighter and stranger the
+deeper you go — 入之愈深，其进愈难，而其见愈奇 as an experience.
+
+The shelf was first sketched with 桃花源记 in the sixth slot as a poem; it is prose, so it
+now has its own world and 饮酒·其五 took the slot.
 
 **The inscription reads like a scholarly edition.**
 
@@ -187,6 +196,25 @@ a synchronous unmount during render for every marker.
 **Type.** No web fonts. The stack prefers 楷体 / STKaiti and falls back through 宋体, so it
 looks right offline and in mainland China without waiting on Google Fonts.
 
+### What a scene can be made of
+
+Beyond text and palette, a `PoemScene` can carry:
+
+- **`rivers`** — a river wide enough to be a landscape. Its `level` is an absolute water
+  height (a river is flat across its width), the bed is carved below it, and the carve
+  fades towards both ends so the river runs into rising ground rather than off the world.
+- **`bumps`** — Gaussian hills, positive or negative. A row of them is a wall; a negative
+  one is a hollow, and a chain of hollows is a cave passage.
+- **`flats`** — pinned level ground, which is also how a passage through a wall is kept
+  narrow: pin a short run of floor through the gap and the walls either side stay steep.
+- **`massifs` / `skyline`** — a peak that dominates the horizon at a chosen bearing, and a
+  height scale for every range (0.5 is a low horizon, 1.3 closes in).
+- **`glows`, `huts`, `steles`, `bridges`, `boats`, `herd`** — set pieces.
+- **`cave`** and **`torch`** — the world goes dark round the camera, and only what the torch
+  reaches stays lit. Without a torch it is merely dim, which is what the slot in 桃花源记 is.
+- **`view`** — where the free view opens. A slot in a wall wants the camera high and back.
+- **`journey`** — walk the text in order instead of looping.
+
 ### Adding a poem
 
 Write a `PoemScene` in `src/lib/scenes/`, add it to `SCENES` in `scenes/index.ts`, and the
@@ -202,13 +230,19 @@ under the surface; the messages say how far to move the entry.
 
 ## Known limitations
 
-- **Building a world costs ~0.6–0.7 s** of main-thread time. The loading card is painted
+- **Building a world costs roughly 0.2–0.7 s** of main-thread time. The loading card is painted
   first and covers it, but it is a blocking build, not a worker.
 - **敕勒歌 is the heaviest world** — tens of thousands of grass blades — and takes the
   longest to build. Its grass reads mainly through strokes brushed into the ground shader.
+- **Walls only block sight, not movement.** The walker follows the ground wherever it goes,
+  so the mountain round 桃花源 and the cave walls in 游褒禅山记 can simply be climbed over.
+  The reveal of the hidden valley works if you take the slot; nothing makes you.
+- **The cave is a hollow, not a room.** It has no ceiling — the dark is applied by distance
+  from the camera to the cave, and the torch is a falloff in the shaders, not a light. It
+  reads as enclosed from inside, but seen from directly above it is an open pit.
+- **The prose inscriptions are wide.** Fifteen columns of clause-length text take a good
+  part of the screen, and on a narrow window they cover a lot of the picture.
 - **Placed props are session-only.** Nothing persists across a reload.
-- **Several rivers are circular basins** — 江雪 and 春江花月夜 especially —, so the shoreline reads as a pond rather than a
-  river running through. It wants an elongated or path-shaped basin.
 - **平仄 is hand-encoded per poem**, not looked up. Adding a poem means writing its tones
   out; there is no 平水韵 table in the project.
 - **吟诵 is missing.** The ambience is weather and water, not a voice reading the poem.

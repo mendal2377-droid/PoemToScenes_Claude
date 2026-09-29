@@ -24,6 +24,10 @@ export const shared = {
   uWSnow: { value: 0 },
   /** A lightning flash, 0–1, decaying. */
   uFlash: { value: 0 },
+  /** How far into a cave the viewer is, 0–1. The world goes dark; the torch stays lit. */
+  uCave: { value: 0 },
+  /** 1 when the traveller carries a torch, 0 otherwise. */
+  uTorch: { value: 0 },
 };
 
 /**
@@ -63,6 +67,8 @@ uniform float uHour;
 uniform float uMist;
 uniform float uCloud;
 uniform float uFlash;
+uniform float uCave;
+uniform float uTorch;
 
 // uHour: 0 dawn, 0.5 noon, 1 night.
 vec3 applyHour(vec3 col){
@@ -93,7 +99,16 @@ vec3 applyMist(vec3 col, float dist, float strength){
   vec3 fogCol = mix(uMistColor, uMistColor * vec3(0.38, 0.44, 0.62), night * 0.8);
   // Fog under cloud is a cold grey, not the warm paper of a clear morning.
   fogCol = mix(fogCol, vec3(dot(fogCol, vec3(0.333))) * 0.9, uCloud * 0.5);
-  return mix(col, fogCol, clamp(f, 0.0, 0.88));
+  vec3 fogged = mix(col, fogCol, clamp(f, 0.0, 0.88));
+
+  // Inside a cave the daylight is simply gone. Everything drops to near black,
+  // and the only thing that stays visible is what the torch reaches — warm,
+  // and falling off within a few paces. Distance is measured from the camera,
+  // which follows the figure carrying it.
+  float reach = exp(-dist * 0.115) * uTorch;
+  vec3 lit = col * vec3(1.18, 0.9, 0.62) + vec3(0.07, 0.032, 0.0);
+  vec3 black = fogged * vec3(0.03, 0.034, 0.055);
+  return mix(fogged, mix(black, lit, reach * 0.94), uCave);
 }
 `;
 
@@ -107,6 +122,8 @@ const COMMON_UNIFORMS = (p: Palette) => ({
   uCloud: shared.uCloud,
   uCover: shared.uCover,
   uFlash: shared.uFlash,
+  uCave: shared.uCave,
+  uTorch: shared.uTorch,
   uMistColor: { value: c(p.mist) },
 });
 
@@ -609,6 +626,10 @@ export function makeRockMaterial(p: Palette) {
 export function makeWaterMaterial(p: Palette) {
   return new THREE.ShaderMaterial({
     transparent: true,
+    // Ribbons of water (a brook, a river) are wound so their faces point down,
+    // which culled them from above — the brook was never actually drawn, only
+    // the wet ground beside it. Water is seen from either side.
+    side: THREE.DoubleSide,
     uniforms: {
       ...COMMON_UNIFORMS(p),
       uWater: { value: c(p.water) },
@@ -616,6 +637,9 @@ export function makeWaterMaterial(p: Palette) {
       uPaper: { value: c(p.paper) },
       uInk: { value: c(p.ink) },
       uMoon: { value: c(p.moon) },
+      uSun: { value: c('#fff0c4') },
+      uSunDir: { value: bodies.sun },
+      uMoonDir: { value: bodies.moon },
     },
     vertexShader: /* glsl */ `
       varying vec3 vW;
@@ -631,10 +655,27 @@ export function makeWaterMaterial(p: Palette) {
       PRELUDE +
       ATMOS_FN +
       /* glsl */ `
-      uniform vec3 uWater, uDeep, uPaper, uInk, uMoon;
+      uniform vec3 uWater, uDeep, uPaper, uInk, uMoon, uSun, uSunDir, uMoonDir;
       uniform float uTime;
       varying vec3 vW;
       varying vec2 vUv;
+
+      // The reflection of a light in a level surface is a column lying along the
+      // bearing of that light as the viewer sees it. It widens as it recedes,
+      // breaks into glitter on the small waves, and runs longer the lower the
+      // light sits — which is why moonlight on a river is a road across it.
+      float column(vec3 P, vec3 L, float t){
+        vec2 rel = P.xz - cameraPosition.xz;
+        vec2 dir = normalize(L.xz + vec2(1e-4));
+        float along = dot(rel, dir);
+        float across = abs(rel.x * dir.y - rel.y * dir.x);
+        float wid = 2.0 + max(along, 0.0) * 0.06;
+        float body = smoothstep(wid, 0.0, across) * step(0.0, along);
+        float glitter = 0.45 + 0.55 * smoothstep(0.38, 0.8, fbm2(P.xz * 0.7 + vec2(t * 2.2, -t * 1.4)));
+        float low = 1.0 - smoothstep(0.0, 0.85, L.y);
+        return body * glitter * (0.35 + 0.65 * low);
+      }
+
       void main(){
         float t = uTime * 0.28;
         // 留白 — the water is mostly bare paper with a few drawn ripple lines.
@@ -646,12 +687,19 @@ export function makeWaterMaterial(p: Palette) {
         // Water in this tradition is nearly colourless — mostly paper, with a
         // few ripple lines drawn over it and a little ink pooled in the depths.
         col = mix(col, uPaper, 0.24);
-        col = mix(col, uPaper, line * 0.5);
+        // Ripple lines are drawn near the viewer and let go with distance; over a
+        // river a hundred metres across they otherwise read as contour lines.
+        float near = 1.0 - smoothstep(40.0, 200.0, length(vW - cameraPosition)) * 0.85;
+        col = mix(col, uPaper, line * 0.5 * near);
         col = mix(col, uInk, smoothstep(0.7, 0.95, flow) * 0.12);
 
-        // A streak of moonlight lying on the surface.
-        float glint = smoothstep(7.0, 0.0, abs(vW.x + 4.0)) * (0.5 + 0.5 * sin(vW.z * 0.5 + t * 2.0));
-        col = mix(col, uMoon, glint * smoothstep(0.62, 1.0, uHour) * 0.4);
+        // The moon by night, the sun by day, each only while above the horizon
+        // and fading under cloud.
+        float night = smoothstep(0.55, 0.85, uHour);
+        float moonUp = clamp(uMoonDir.y * 4.0, 0.0, 1.0);
+        float sunUp = clamp(uSunDir.y * 4.0, 0.0, 1.0);
+        col = mix(col, uMoon, column(vW, uMoonDir, t) * night * moonUp * (1.0 - uCloud * 0.8) * 0.8);
+        col = mix(col, uSun, column(vW, uSunDir, t) * (1.0 - night) * sunUp * (1.0 - uCloud * 0.85) * 0.6);
 
         col = applyHour(col);
         col = applyMist(col, length(vW - cameraPosition), 0.85);
@@ -694,7 +742,7 @@ export function makeSkyMaterial(p: Palette, luminary: { x: number; y: number; z:
       PRELUDE +
       /* glsl */ `
       uniform vec3 uHigh, uLow, uPaper, uMoon, uSun, uInk, uSunDir, uMoonDir;
-      uniform float uSunSize, uMoonSize, uHour, uMist, uTime, uCloud, uFlash;
+      uniform float uSunSize, uMoonSize, uHour, uMist, uTime, uCloud, uFlash, uCave;
       varying vec3 vDir;
 
       // A disc with a soft rim, and a halo whose reach is set by its size.
@@ -766,6 +814,7 @@ export function makeSkyMaterial(p: Palette, luminary: { x: number; y: number; z:
 
         col = pigmentGrain(col, d * 40.0, 0.07);
         col += vec3(0.62, 0.68, 0.86) * uFlash * 0.7;
+        col *= 1.0 - uCave * 0.95;
         gl_FragColor = vec4(col, 1.0);
       }
     `,
@@ -1018,6 +1067,58 @@ export function makeContactShadowMaterial(p: Palette) {
         float a = smoothstep(1.0, 0.1, d) * 0.3;
         if(a < 0.01) discard;
         gl_FragColor = vec4(uInk, a);
+      }
+    `,
+  });
+}
+
+/* ------------------------------------------------------------------- glow */
+
+/**
+ * A soft point of light: a lamp in a window, a torch, the glimmer at the far end
+ * of a passage. Additive, so it lights nothing but reads as light, and depth
+ * tested, so a hill hides it the way it would hide a real one.
+ *
+ * `aAlways` marks the ones that burn in daylight too — the light at the mouth of
+ * the cave is meant to be seen at any hour, a lamp in a window only after dark.
+ */
+export function makeGlowMaterial() {
+  return new THREE.ShaderMaterial({
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    uniforms: { uTime: shared.uTime, uHour: shared.uHour, uCave: shared.uCave },
+    vertexShader: /* glsl */ `
+      attribute float aSize;
+      attribute float aAlways;
+      attribute vec3 aColor;
+      attribute float aSeed;
+      uniform float uTime, uHour, uCave;
+      varying vec3 vColor;
+      varying float vA;
+      void main(){
+        vec4 mv = modelViewMatrix * vec4(position, 1.0);
+        float night = smoothstep(0.5, 0.86, uHour);
+        // Always-on lights, and every light once the world has gone dark.
+        float on = max(max(aAlways, night), uCave);
+        // Fire never holds still.
+        float flicker = 0.78 + 0.22 * sin(uTime * 7.0 + aSeed * 40.0) * sin(uTime * 3.1 + aSeed * 13.0);
+        vA = on * flicker;
+        vColor = aColor;
+        gl_PointSize = clamp(aSize * 300.0 / max(-mv.z, 1.0), 2.0, 260.0);
+        gl_Position = projectionMatrix * mv;
+      }
+    `,
+    fragmentShader: /* glsl */ `
+      varying vec3 vColor;
+      varying float vA;
+      void main(){
+        float d = length(gl_PointCoord * 2.0 - 1.0);
+        // A hot core inside a wide, fast-falling halo.
+        float a = pow(max(1.0 - d, 0.0), 2.2) + pow(max(1.0 - d * 1.6, 0.0), 3.0) * 0.8;
+        a *= vA;
+        if(a < 0.01) discard;
+        gl_FragColor = vec4(vColor * a, a);
       }
     `,
   });

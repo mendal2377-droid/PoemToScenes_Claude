@@ -8,6 +8,7 @@ import { ambience } from '@/lib/ambience';
 import type { PoemScene } from '@/lib/types';
 import { bodies, shared } from './materials';
 import { clockToShader, shaderToClock, skyAt } from '@/lib/time';
+import { smoothstep } from '@/lib/noise';
 import { useWorld } from './useWorld';
 import { WorldView } from './World';
 import { RoamRig, ViewRig } from './Roam';
@@ -82,6 +83,14 @@ function Ticker({ scene }: { scene: PoemScene }) {
     approach(shared.uCloud, st.sky.cloud);
     approach(shared.uRain, st.sky.rain);
     approach(shared.uWSnow, st.sky.snow);
+
+    // The dark of a cave is a property of where the camera is. It comes in
+    // quickly — walking into a cave is a step, not a fade — and goes the same way.
+    const cave = scene.cave;
+    const caveTarget = cave
+      ? cave.depth * (1 - smoothstep(cave.r, cave.r + cave.fade, Math.hypot(camera.position.x - cave.x, camera.position.z - cave.z)))
+      : 0;
+    shared.uCave.value += (caveTarget - shared.uCave.value) * (snap.current ? 1 : 1 - Math.exp(-dt * 3.2));
 
     // Snow lies down slowly and goes slowly; the sky can change faster than the ground.
     const lying = Math.max(shared.uSnow.value * shared.uAccum.value, shared.uWSnow.value);

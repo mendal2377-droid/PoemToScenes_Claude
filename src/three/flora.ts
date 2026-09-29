@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { Rng } from '@/lib/noise';
-import { terrainHeight } from '@/lib/terrain';
+import { inWater, terrainHeight } from '@/lib/terrain';
 import type { TerrainSpec } from '@/lib/terrain';
 
 const c = (hex: string) => new THREE.Color(hex);
@@ -220,6 +220,7 @@ export function buildPines(
       const r = Math.sqrt(rng.next()) * cl.r;
       const x = cl.x + Math.cos(a) * r;
       const z = cl.z + Math.sin(a) * r;
+      if (inWater(x, z, spec)) continue;
       const y = terrainHeight(x, z, spec);
       addPine(tr, lf, x, z, y, rng.range(8, 15), rng, dark, light);
     }
@@ -315,6 +316,7 @@ export function buildBamboo(
       const r = Math.sqrt(rng.next()) * g.r;
       const x = g.x + Math.cos(a) * r;
       const z = g.z + Math.sin(a) * r;
+      if (inWater(x, z, spec)) continue;
       addBamboo(tr, lf, x, z, terrainHeight(x, z, spec), rng.range(6, 12), rng, dark, light);
     }
   }
@@ -418,6 +420,7 @@ export function buildBroadleaf(
       const r = Math.sqrt(rng.next()) * cl.r;
       const x = cl.x + Math.cos(a) * r;
       const z = cl.z + Math.sin(a) * r;
+      if (inWater(x, z, spec)) continue;
       addBroadleaf(tr, lf, x, z, terrainHeight(x, z, spec), rng.range(7, 12), rng, trunkCol, tint);
     }
   }
@@ -480,6 +483,7 @@ export function buildGrass(
     // Nothing grows in the 留白 — that emptiness is deliberate, and a tuft
     // standing in the middle of it undoes the whole effect.
     if (paper && paper(cx, cz) > 0.56) skip = true;
+    if (inWater(cx, cz, spec)) skip = true;
     if (skip) continue;
 
     const spread = rng.range(0.7, 2.2);
@@ -725,6 +729,16 @@ export function scatterRocks(
       const r = Math.sqrt(rng.next()) * spec.extent * 0.8;
       x = Math.cos(a) * r;
       z = Math.sin(a) * r;
+    }
+    // Stones in a brook are the point; stones in the middle of a river or pond are not.
+    if (spec.rivers?.length || spec.basins.length) {
+      let drown = false;
+      for (const b of spec.basins) if (Math.hypot(x - b.x, z - b.z) < b.r * 0.9) drown = true;
+      if (!drown && spec.rivers) {
+        const w = { ...spec, basins: [], channels: [] };
+        if (inWater(x, z, w)) drown = true;
+      }
+      if (drown) continue;
     }
     out.push({ x, y: terrainHeight(x, z, spec), z, s: rng.range(0.2, 0.85), seed: rng.next() });
   }
