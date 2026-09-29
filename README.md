@@ -29,10 +29,12 @@ Five more poems sit greyed out on the shelf as sketches.
 - **对仗** — the matched couplets are bracketed together. In 山居秋暝 those are
   明月松间照/清泉石上流 and 竹喧归浣女/莲动下渔舟, where every character answers its
   opposite: 明月↔清泉, 松间↔石上, 照↔流.
-- **韵脚** — rhyming characters wear a vermilion ring. 秋·流·舟·留 in 山居秋暝 (下平十一尤);
-  绝·灭·雪 in 江雪, which rhymes on the 入声 and so marks three of its four lines.
-- **平仄** — an optional toggle puts a hollow dot beside every 平 and a filled one beside
-  every 仄, so the tonal pattern of a 五言律诗 runs down each column as a visible stripe.
+- **平仄 · 韵脚** — one optional toggle brings up the tonal apparatus: a hollow dot beside
+  every 平, a filled one beside every 仄, so the pattern of a 五言律诗 runs down each column
+  as a visible stripe, and a vermilion ring on the rhyming characters — 秋·流·舟·留 in
+  山居秋暝 (下平十一尤), and 绝·灭·雪 in 江雪, which rhymes on the 入声 and so marks three
+  of its four lines. Off by default: the poem reads better plain, and the apparatus is
+  there for when you want it.
   Tones are from 平水韵, which means 月, 石, 竹, 歇, 绝, 灭 and 雪 all count as 仄 even where
   modern Mandarin has flattened them.
 - **注释** — a sentence on whichever line is under your eye.
