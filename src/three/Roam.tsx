@@ -273,9 +273,8 @@ export function ViewRig({ scene }: { scene: PoemScene }) {
   useFrame((_, rawDt) => {
     if (mode === 'roam') return;
     const dt = Math.min(rawDt, 0.05);
-    // A slow drift, so a scene left alone still breathes.
-    state.current.yaw += dt * 0.012;
-
+    // No auto-rotation: the default framing is composed around the moon, and a
+    // slow drift kept carrying it out of shot.
     const { yaw, pitch, dist } = state.current;
     const cp = Math.cos(pitch);
     const desired = new THREE.Vector3(

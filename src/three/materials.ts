@@ -46,7 +46,7 @@ vec3 applyHour(vec3 col){
   float dawn = 1.0 - smoothstep(0.0, 0.34, uHour);
   vec3 cool = vec3(0.46, 0.53, 0.72);
   vec3 warm = vec3(1.06, 0.92, 0.74);
-  col = mix(col, col * cool + cool * 0.12, night * 0.72);
+  col = mix(col, col * cool + cool * 0.1, night * 0.56);
   col = mix(col, col * warm, dawn * 0.5);
   return col;
 }
@@ -83,7 +83,13 @@ export function makeTerrainMaterial(p: Palette) {
       uInk: { value: c(p.ink) },
       uWater: { value: c(p.waterDeep) },
       uMask: { value: null as THREE.Texture | null },
+      uPaperField: { value: null as THREE.Texture | null },
       uExtent: { value: 1 },
+      uPaper: { value: c(p.paper) },
+      uMoonDir: { value: new THREE.Vector3(0, 1, 0) },
+      uMoonColor: { value: c(p.moon) },
+      uGrove: { value: new THREE.Vector2(0, 0) },
+      uGroveR: { value: 1 },
     },
     vertexShader: /* glsl */ `
       varying vec3 vW;
@@ -99,9 +105,12 @@ export function makeTerrainMaterial(p: Palette) {
       PRELUDE +
       ATMOS_FN +
       /* glsl */ `
-      uniform vec3 uHigh, uLow, uOchre, uInk, uWater;
-      uniform float uSnow, uExtent;
+      uniform vec3 uHigh, uLow, uOchre, uInk, uWater, uPaper, uMoonColor, uMoonDir;
+      uniform float uSnow, uExtent, uGroveR;
+      uniform float uTime;
+      uniform vec2 uGrove;
       uniform sampler2D uMask;
+      uniform sampler2D uPaperField;
       varying vec3 vW;
       varying vec3 vN;
 
@@ -131,11 +140,19 @@ export function makeTerrainMaterial(p: Palette) {
         float cun = cunTexture(vW, vN, 0.55);
         col = mix(col, uInk, cun * slope * 0.5);
 
+        // 留白. Large patches where the brush simply never went — the ground
+        // washes back to bare paper and everything else stops there too.
+        float bai = smoothstep(0.58, 0.86, texture2D(uPaperField, maskUv).r);
+        col = mix(col, uPaper * 1.02, bai * 0.72);
+
         // The trail the poem walks you along — but 万径人踪灭: once the snow
         // comes down, the paths go under it.
-        float trail = smoothstep(0.18, 0.72, vTrail) * (1.0 - uSnow * 0.8);
+        float trail = smoothstep(0.24, 0.78, vTrail) * (1.0 - uSnow * 0.8);
         float trailEdge = fbm2(vW.xz * 1.1) * 0.3;
-        col = mix(col, uOchre * (0.92 + trailEdge), trail * 0.66);
+        col = mix(col, uOchre * (0.92 + trailEdge), trail * 0.62);
+        // Grit underfoot, so the path is not a flat band of colour.
+        float grit = step(0.88, hash21(floor(vW.xz * 5.5)));
+        col = mix(col, uInk, trail * grit * 0.16);
 
         // Damp ground beside the water.
         col = mix(col, uWater, smoothstep(0.2, 1.0, vWet) * 0.4);
@@ -143,6 +160,17 @@ export function makeTerrainMaterial(p: Palette) {
         // Snow settles on the flat, clings less to the steep.
         float snow = uSnow * smoothstep(0.55, 0.15, slope);
         col = mix(col, vec3(0.96, 0.97, 0.95), snow * (0.72 + wash * 0.3));
+
+        // 明月松间照 — pools of moonlight on the ground beneath the pines,
+        // stretched along the moon's bearing and drifting as the branches move.
+        // Without this the scene has the moon and the pines but not the 照.
+        float night = smoothstep(0.46, 1.0, uHour);
+        float grove = 1.0 - smoothstep(uGroveR * 0.3, uGroveR * 1.7, distance(vW.xz, uGrove));
+        vec2 md = normalize(uMoonDir.xz + vec2(1e-4));
+        vec2 q = vec2(dot(vW.xz, md), dot(vW.xz, vec2(-md.y, md.x)));
+        float dapple = fbm2(q * vec2(0.13, 0.52) + vec2(uTime * 0.016, 0.0));
+        float shafts = smoothstep(0.46, 0.78, dapple);
+        col = mix(col, uMoonColor, grove * shafts * night * 0.5);
 
         col = pigmentGrain(col, vW, 0.2);
         col = applyHour(col);
@@ -276,6 +304,8 @@ export function makeFoliageMaterial(p: Palette, kind: FoliageKind, stiffness = 1
       uStiffness: { value: stiffness },
       uStrokeCurl: { value: 0.35 },
       uInkTone: { value: 0.5 },
+      uMoonDir: { value: new THREE.Vector3(0, 1, 0) },
+      uMoonColor: { value: c(p.moon) },
     },
     vertexShader:
       PRELUDE +
@@ -292,7 +322,9 @@ export function makeFoliageMaterial(p: Palette, kind: FoliageKind, stiffness = 1
       varying vec3 vTint;
       varying vec3 vW;
       varying float vUp;
+      varying vec3 vN;
       void main(){
+        vN = normalize(mat3(modelMatrix) * normal);
         vec4 wp = modelMatrix * vec4(position, 1.0);
         vec3 anchor = (modelMatrix * vec4(aBase, 1.0)).xyz;
         float bend = aUp * aUp;
@@ -311,13 +343,14 @@ export function makeFoliageMaterial(p: Palette, kind: FoliageKind, stiffness = 1
       PRELUDE +
       ATMOS_FN +
       /* glsl */ `
-      uniform vec3 uDark, uLight, uInk;
+      uniform vec3 uDark, uLight, uInk, uMoonColor, uMoonDir;
       uniform float uSnow, uInkTone;
       varying vec2 vUv;
       varying float vSeed;
       varying vec3 vTint;
       varying vec3 vW;
       varying float vUp;
+      varying vec3 vN;
 
       void main(){
         float a = ${maskCall};
@@ -336,6 +369,11 @@ export function makeFoliageMaterial(p: Palette, kind: FoliageKind, stiffness = 1
 
         col = mix(col, vec3(0.95, 0.96, 0.95), uSnow * 0.55 * smoothstep(0.3, 1.0, vUp));
 
+        // Leaves turned toward the moon catch a silver edge.
+        float night = smoothstep(0.46, 1.0, uHour);
+        float facing = max(0.0, dot(normalize(vN), normalize(uMoonDir)));
+        col += uMoonColor * pow(facing, 1.5) * night * 0.34;
+
         col = applyHour(col);
         float d = length(vW - cameraPosition);
         col = applyMist(col, d, 1.0);
@@ -353,7 +391,7 @@ export function makeGrassMaterial(p: Palette) {
     uniforms: {
       ...COMMON_UNIFORMS(p),
       uDark: { value: c(p.groundLow) },
-      uLight: { value: c(p.foliageLight) },
+      uLight: { value: c(p.grassTip) },
       uInk: { value: c(p.ink) },
       uAccent: { value: c(p.accent) },
     },
@@ -387,10 +425,12 @@ export function makeGrassMaterial(p: Palette) {
       varying float vSeed;
       varying vec3 vW;
       void main(){
-        vec3 col = mix(uDark * 0.8, uLight, vUp * 0.85 + vSeed * 0.15);
+        // Sitting close to the ground in value is what stops each blade reading
+        // as a separate prop stuck in the lawn.
+        vec3 col = mix(uDark * 0.95, uLight, vUp * 0.8 + vSeed * 0.2);
         // A few tufts go autumn-coloured.
-        col = mix(col, uAccent, step(0.93, vSeed) * vUp * 0.5);
-        col = mix(col, uInk, (1.0 - vUp) * 0.3);
+        col = mix(col, uAccent, step(0.95, vSeed) * vUp * 0.45);
+        col = mix(col, uInk, (1.0 - vUp) * 0.16);
         col = mix(col, vec3(0.95, 0.96, 0.94), uSnow * vUp * 0.7);
         col = applyHour(col);
         float d = length(vW - cameraPosition);
@@ -538,11 +578,14 @@ export function makeWaterMaterial(p: Palette) {
         // 留白 — the water is mostly bare paper with a few drawn ripple lines.
         float flow = fbm2(vec2(vW.x * 0.12, vW.z * 0.12 - t));
         float ripple = fract(flow * 4.0 + vW.z * 0.06 - t * 1.4);
-        float line = smoothstep(0.0, 0.07, ripple) * smoothstep(0.2, 0.09, ripple);
+        float line = smoothstep(0.0, 0.045, ripple) * smoothstep(0.14, 0.06, ripple);
 
         vec3 col = mix(uDeep, uWater, 0.35 + flow * 0.6);
-        col = mix(col, uPaper, line * 0.44);
-        col = mix(col, uInk, smoothstep(0.7, 0.95, flow) * 0.14);
+        // Water in this tradition is nearly colourless — mostly paper, with a
+        // few ripple lines drawn over it and a little ink pooled in the depths.
+        col = mix(col, uPaper, 0.24);
+        col = mix(col, uPaper, line * 0.5);
+        col = mix(col, uInk, smoothstep(0.7, 0.95, flow) * 0.12);
 
         // A streak of moonlight lying on the surface.
         float glint = smoothstep(7.0, 0.0, abs(vW.x + 4.0)) * (0.5 + 0.5 * sin(vW.z * 0.5 + t * 2.0));
@@ -608,8 +651,8 @@ export function makeSkyMaterial(p: Palette, luminary: { x: number; y: number; z:
         // The moon (or a low sun) with a soft halo.
         float ang = dot(d, normalize(uDir));
         float disc = smoothstep(1.0 - uSize * uSize * 0.5, 1.0 - uSize * uSize * 0.42, ang);
-        float halo = pow(clamp(ang, 0.0, 1.0), 220.0);
-        col = mix(col, uMoon, halo * 0.5);
+        float halo = pow(clamp(ang, 0.0, 1.0), 130.0);
+        col = mix(col, uMoon, halo * 0.45);
         col = mix(col, uMoon, disc);
 
         // Haze piling up on the horizon.

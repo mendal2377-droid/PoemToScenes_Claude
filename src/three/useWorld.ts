@@ -4,7 +4,7 @@ import { useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import { basinWaterLevel, terrainHeight } from '@/lib/terrain';
 import type { PoemScene } from '@/lib/types';
-import { buildGroundMask } from './groundMask';
+import { buildGroundMask, buildPaperField } from './groundMask';
 import {
   buildMistBanks,
   buildMountainRing,
@@ -54,6 +54,8 @@ function buildWorld(scene: PoemScene) {
   // Keep grass out of the water and off the trail-worn ground.
   const avoid = spec.basins.map((b) => ({ x: b.x, z: b.z, r: b.r * 0.95 }));
 
+  const paper = buildPaperField(spec, spec.seed + 313);
+
   const pines = buildPines(
     scene.flora.pines.clusters,
     spec,
@@ -90,7 +92,14 @@ function buildWorld(scene: PoemScene) {
     bamboo,
     broadleaf,
     lotus,
-    grass: buildGrass(scene.flora.grass.count, scene.flora.grass.radius, spec, spec.seed + 5, avoid),
+    grass: buildGrass(
+      scene.flora.grass.count,
+      scene.flora.grass.radius,
+      spec,
+      spec.seed + 5,
+      avoid,
+      paper.sample
+    ),
     reeds: buildReeds(
       scene.flora.reeds.count,
       spec,
@@ -150,14 +159,26 @@ function buildWorld(scene: PoemScene) {
 
   const mask = buildGroundMask(spec, trail);
   mat.terrain.uniforms.uMask.value = mask;
+  mat.terrain.uniforms.uPaperField.value = paper.texture;
   mat.terrain.uniforms.uExtent.value = spec.extent;
+
+  // 明月松间照 needs to know where the moon is and where the pines are.
+  const moonDir = new THREE.Vector3(scene.luminary.x, scene.luminary.y, scene.luminary.z).normalize();
+  const grove = scene.flora.pines.clusters[0];
+  mat.terrain.uniforms.uMoonDir.value = moonDir;
+  mat.terrain.uniforms.uGrove.value = new THREE.Vector2(grove?.x ?? 0, grove?.z ?? 0);
+  mat.terrain.uniforms.uGroveR.value = grove?.r ?? 1;
+
+  for (const m of [mat.needle, mat.bambooLeaf, mat.dab, mat.reed, mat.pad]) {
+    m.uniforms.uMoonDir.value = moonDir;
+  }
 
   const heights = {
     pavilion: scene.pavilion ? terrainHeight(scene.pavilion.x, scene.pavilion.z, spec) : 0,
     waterLevel,
   };
 
-  return { geo, mat, mask, trail, heights, basin };
+  return { geo, mat, mask, paper, trail, heights, basin };
 }
 
 /** Builds the whole world once per poem, and tears it down on the way out. */
@@ -177,6 +198,7 @@ export function useWorld(scene: PoemScene): World {
       walk(world.geo);
       walk(world.mat);
       world.mask.dispose();
+      world.paper.texture.dispose();
     };
   }, [world]);
 

@@ -75,6 +75,22 @@ src/
 
 ### A few decisions worth knowing about
 
+**留白 is a real field, not a look.** A low-resolution noise field marks where the
+brush never went. The terrain shader washes those patches back to bare paper, and the
+grass builder samples the *same array* through a matching bilinear filter, so nothing
+gets planted in the emptiness. Painting every square metre is what made the first pass
+read as a nature park rather than a scroll.
+
+**明月松间照 is rendered, not implied.** The scene had a moon and it had pines, but not
+the 照. The terrain shader now lays pools of moonlight on the ground beneath the pine
+cluster, stretched along the moon's bearing and drifting slowly; foliage facing the moon
+picks up a silver edge. Five of the poem's eight lines are verbs — this is the first one
+to actually happen.
+
+**The palette follows the season, and the evergreens don't.** 秋暝 is an autumn dusk, so
+the ground cover turns gold while the pines and bamboo stay deep green. That contrast is
+the poem's own: 明月松间照 and 竹喧 both lean on plants that keep their colour.
+
 **The terrain is one function.** `terrainHeight(x, z, spec)` builds the mesh, drops every
 pine and stone onto the ground, and glues the walking figure's feet to it. Nothing can
 drift out of agreement because nothing has its own copy.
@@ -115,3 +131,9 @@ route, the loading card and the poem sheet all read from that one object. A land
   first and covers it, but it is a blocking build, not a worker.
 - **Placed props are session-only.** Nothing persists across a reload.
 - The five greyed poems on the shelf are titles and palettes, not worlds.
+- **江雪's river is a circular basin**, so its shoreline reads as a pond rather than a
+  river running through. It wants an elongated or path-shaped basin.
+- **The poem is presented as eight independent lines.** 山居秋暝 is a 五言律诗 whose
+  middle couplets are 对仗 — 明月↔清泉, 松间↔石上, 照↔流. Collecting them one at a time
+  flattens the structure, and there is no 注释, no rhyme marking (秋·流·舟·留) and no
+  sound, all of which this audience would want.

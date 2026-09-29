@@ -17,6 +17,8 @@ export type Palette = {
   waterDeep: string;
   foliageDark: string;
   foliageLight: string;
+  /** Tip colour of the ground cover — golden in autumn, dry in winter. */
+  grassTip: string;
   trunk: string;
   accent: string;
   /** 赭石 — ochre, for paths and thatch. */

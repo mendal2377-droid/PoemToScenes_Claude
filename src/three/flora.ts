@@ -453,7 +453,8 @@ export function buildGrass(
   radius: number,
   spec: TerrainSpec,
   seed: number,
-  avoid: readonly { x: number; z: number; r: number }[] = []
+  avoid: readonly { x: number; z: number; r: number }[] = [],
+  paper?: (x: number, z: number) => number
 ): THREE.BufferGeometry | null {
   if (count <= 0) return null;
   const rng = new Rng(seed);
@@ -475,6 +476,9 @@ export function buildGrass(
     for (const av of avoid) {
       if (Math.hypot(cx - av.x, cz - av.z) < av.r) skip = true;
     }
+    // Nothing grows in the 留白 — that emptiness is deliberate, and a tuft
+    // standing in the middle of it undoes the whole effect.
+    if (paper && paper(cx, cz) > 0.56) skip = true;
     if (skip) continue;
 
     const spread = rng.range(0.7, 2.2);
@@ -483,8 +487,8 @@ export function buildGrass(
       const x = cx + rng.range(-spread, spread);
       const z = cz + rng.range(-spread, spread);
       const y = terrainHeight(x, z, spec);
-      const h = rng.range(0.35, 1.05);
-      const w = rng.range(0.05, 0.11);
+      const h = rng.range(0.2, 0.58);
+      const w = rng.range(0.04, 0.078);
       const a = rng.range(0, Math.PI * 2);
       const leanX = Math.cos(a) * rng.range(0.1, 0.5);
       const leanZ = Math.sin(a) * rng.range(0.1, 0.5);
@@ -553,7 +557,7 @@ export function buildReeds(
     const anchor = new THREE.Vector3(x, y, z);
     const stalks = rng.int(3, 7);
     for (let k = 0; k < stalks; k++) {
-      const h = rng.range(1.1, 2.4);
+      const h = rng.range(0.8, 1.7);
       const ang = rng.range(0, Math.PI * 2);
       const tilt = rng.range(0.1, 0.45);
       const dir = new THREE.Vector3(Math.cos(ang) * tilt, 1, Math.sin(ang) * tilt).normalize();

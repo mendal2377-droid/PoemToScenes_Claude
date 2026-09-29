@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { clamp, fbm } from '@/lib/noise';
 import type { TerrainSpec } from '@/lib/terrain';
 
 const SIZE = 1024;
@@ -56,7 +57,7 @@ export function buildGroundMask(
     }
   };
 
-  strokePath(trail, 2.6, 'r');
+  strokePath(trail, 1.9, 'r');
 
   for (const ch of spec.channels) strokePath(ch.path, ch.width * 1.5, 'g');
 
@@ -79,4 +80,61 @@ export function buildGroundMask(
   tex.generateMipmaps = true;
   tex.needsUpdate = true;
   return tex;
+}
+
+/**
+ * 留白 — the bare paper.
+ *
+ * In a landscape scroll something like a third of the silk is never touched, and
+ * that absence is what gives the ink somewhere to sit. The scene was painting
+ * every square metre, so this field marks out where it should stop: the terrain
+ * shader washes those patches back to paper, and the grass builder reads the
+ * same numbers so it doesn't plant tufts in the emptiness.
+ *
+ * The CPU sampler bilinearly filters the identical array the GPU samples, so the
+ * two never disagree about where the paper is.
+ */
+export type PaperField = {
+  texture: THREE.DataTexture;
+  sample: (x: number, z: number) => number;
+};
+
+const FIELD = 128;
+
+export function buildPaperField(spec: TerrainSpec, seed: number): PaperField {
+  const data = new Uint8Array(FIELD * FIELD);
+  const span = spec.extent * 2;
+
+  for (let j = 0; j < FIELD; j++) {
+    for (let i = 0; i < FIELD; i++) {
+      const x = (i / (FIELD - 1)) * span - spec.extent;
+      const z = (j / (FIELD - 1)) * span - spec.extent;
+      // Large, soft patches. Anything higher-frequency reads as noise, not 留白.
+      const v = fbm(x * 0.0115 + 40, z * 0.0115 + 40, 3, seed);
+      data[j * FIELD + i] = Math.round(clamp(v, 0, 1) * 255);
+    }
+  }
+
+  const texture = new THREE.DataTexture(data, FIELD, FIELD, THREE.RedFormat, THREE.UnsignedByteType);
+  texture.minFilter = THREE.LinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  texture.wrapS = THREE.ClampToEdgeWrapping;
+  texture.wrapT = THREE.ClampToEdgeWrapping;
+  texture.needsUpdate = true;
+
+  const sample = (x: number, z: number) => {
+    const u = clamp((x + spec.extent) / span, 0, 1) * (FIELD - 1);
+    const v = clamp((z + spec.extent) / span, 0, 1) * (FIELD - 1);
+    const i0 = Math.floor(u);
+    const j0 = Math.floor(v);
+    const i1 = Math.min(FIELD - 1, i0 + 1);
+    const j1 = Math.min(FIELD - 1, j0 + 1);
+    const fu = u - i0;
+    const fv = v - j0;
+    const top = data[j0 * FIELD + i0] + (data[j0 * FIELD + i1] - data[j0 * FIELD + i0]) * fu;
+    const bot = data[j1 * FIELD + i0] + (data[j1 * FIELD + i1] - data[j1 * FIELD + i0]) * fu;
+    return (top + (bot - top) * fv) / 255;
+  };
+
+  return { texture, sample };
 }
