@@ -100,7 +100,7 @@ export const XI_JIANG: PoemScene = {
   },
   landmarks: [
     // 明月别枝惊鹊 — the tree, and the magpies that have just left it.
-    { id: 'jingque', line: 0, label: '惊鹊', x: 2, z: 68, radius: 12, look: [14, 60, 5], zoom: 1.2 },
+    { id: 'jingque', line: 0, label: '惊鹊', x: 21, z: 86, radius: 12, look: 'moon', zoom: 1.0 },
     // 清风半夜鸣蝉 — the pines, where the cicadas are.
     { id: 'mingchan', line: 1, label: '鸣蝉', x: 44, z: 6, radius: 12, look: [60, 10, 6], zoom: 1.2 },
     // 稻花香里说丰年 — the rice, standing gold in the dark.
@@ -110,7 +110,7 @@ export const XI_JIANG: PoemScene = {
     // 七八个星天外 — up, at the few stars the cloud has left.
     { id: 'tianwai', line: 4, label: '天外', x: 66, z: -30, radius: 13, look: [66, -230, 170] },
     // 两三点雨山前 — the foot of the hills, and rain that is only a few drops.
-    { id: 'shanqian', line: 5, label: '山前', x: 0, z: -76, radius: 13, look: [0, -150, 12] },
+    { id: 'shanqian', line: 5, label: '山前', x: 0, z: -48, radius: 13, look: [0, -140, 14] },
     // 旧时茅店社林边 — the inn, at the edge of the trees, with its lamp.
     { id: 'maodian', line: 6, label: '茅店', x: 22, z: 20, radius: 12, look: [36, 30, 1.9], zoom: 1.3 },
     // 路转溪桥忽见 — round the turn of the path, across the bridge, there it is.
@@ -128,7 +128,7 @@ export const XI_JIANG: PoemScene = {
   // The innkeeper, at his door in the light of his own lamp.
   people: [{ x: 33, z: 33.5, rot: 3.6, role: 'farmer' }],
   // 惊鹊 — magpies up out of the tree.
-  flocks: [{ x: 14, z: 60, y: 7, count: 3, radius: 6, speed: 0.75 }],
+  flocks: [{ x: 13, z: 58, y: 11, count: 4, radius: 4, speed: 0.6 }],
   sounds: [
     { kind: 'birdsong', x: 14, z: 60, r: 20 },
     { kind: 'cicada', x: 60, z: 10, r: 26 },

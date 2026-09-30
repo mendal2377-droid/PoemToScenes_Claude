@@ -150,19 +150,19 @@ export const BAO_CHAN_SHAN: PoemScene = {
     // 洞之内平旷，有泉侧出 — the front hall: level, bright, and full of names.
     { id: 'qiandong', line: 3, label: '前洞', x: -24, z: -20, radius: 10, look: [-26, -30, 1.4], zoom: 1.2 },
     // 有穴窈然，入之甚寒 — the mouth of the other one, and the dark in it.
-    { id: 'houdong', line: 4, label: '后洞', x: 26, z: -44, radius: 7, look: [24, -56, -3], zoom: 1.2 },
+    { id: 'houdong', line: 4, label: '后洞', x: 34, z: -50, radius: 7, look: [29, -62, -1], zoom: 1.2 },
     // 余与四人拥火以入 — the five of them, with their torches, at the mouth.
-    { id: 'yonghuo', line: 5, label: '拥火', x: 25, z: -56, radius: 6, look: [30, -65, 0.5] },
+    { id: 'yonghuo', line: 5, label: '拥火', x: 31, z: -56, radius: 6, look: [30, -65, 0.5] },
     // 入之愈深，其进愈难 — the way narrowing, and going down.
-    { id: 'yujin', line: 6, label: '愈难', x: 33, z: -65, radius: 6, look: [29, -74, -4] },
+    { id: 'yujin', line: 6, label: '愈难', x: 39, z: -59, radius: 6, look: [29, -74, -4] },
     // 而其见愈奇 — and the strange things the torches find.
-    { id: 'yuqi', line: 7, label: '愈奇', x: 28, z: -75, radius: 6, look: [20, -80, 1.6], zoom: 1.3 },
+    { id: 'yuqi', line: 7, label: '愈奇', x: 31, z: -66, radius: 6, look: [20, -80, 1.6], zoom: 1.2 },
     // 有怠而欲出者，曰：不出，火且尽 — the one who wants to go back, and his torch.
     { id: 'huojin', line: 8, label: '火尽', x: 14, z: -83, radius: 6, look: [12, -79, 1.3], zoom: 1.7 },
     // 遂与之俱出 — and out, into daylight.
     { id: 'jinchu', line: 9, label: '俱出', x: 46, z: -52, radius: 8, look: [100, -40, 10] },
     // 世之奇伟瑰怪非常之观 — the summit, and what can be seen from it.
-    { id: 'qiwei', line: 10, label: '奇伟', x: -8, z: -74, radius: 10, look: [-8, -200, 32] },
+    { id: 'qiwei', line: 10, label: '奇伟', x: -8, z: -74, radius: 10, look: [30, 40, 12] },
     // 常在于险远，而人之所罕至焉 — the far edge, where hardly anyone goes.
     { id: 'xianyuan', line: 11, label: '险远', x: -32, z: -94, radius: 10, look: [-72, -140, 0] },
     // 故非有志者不能至也 — the far ridge, and the long way to it.

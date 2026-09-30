@@ -70,7 +70,8 @@ export const CHUN_JIANG: PoemScene = {
     rim: { start: 92, amp: 26 },
     basins: [],
     channels: [],
-    flats: [],
+    // 汀 — a low shelf of sand where the bank comes down to the water.
+    flats: [{ x: 58, z: -77, r: 15, h: -0.3 }],
     // The Yangtze at its widest: not a river you look at but one you look
     // across. A hundred and twenty metres of channel, and the banks shelve away
     // from it for another forty, so the water is some 170 metres from shore to
@@ -126,7 +127,7 @@ export const CHUN_JIANG: PoemScene = {
     // 空里流霜不觉飞 — frost hanging in the air, that you cannot see move.
     { id: 'liushuang', line: 6, label: '流霜', x: 44, z: -84, radius: 13, look: [52, -64, 5], zoom: 1.2 },
     // 汀上白沙看不见 — the white sand of the bar, lost in the same light.
-    { id: 'baisha', line: 7, label: '白沙', x: 62, z: -76, radius: 13, look: [60, -70, 0.2], zoom: 1.6 },
+    { id: 'baisha', line: 7, label: '白沙', x: 50, z: -86, radius: 13, look: [60, -76, 0.3], zoom: 1.5 },
   ],
   start: { x: 0, z: -110, heading: Math.PI },
   fall: { kind: 'petal', color: '#f0dbe2', size: 1.1, accumulate: 0 },
@@ -136,7 +137,7 @@ export const CHUN_JIANG: PoemScene = {
   boat: { x: -10, z: -12, rot: 0.3, on: 'river' },
   glows: FROST,
   // 汀上白沙 — a bar of it at the water's edge, and pale birds standing off it.
-  sand: [{ x: 60, z: -70, r: 12 }],
-  flocks: [{ x: 60, z: -62, y: 7, count: 4, radius: 9, speed: 0.28, pale: true }],
+  sand: [{ x: 60, z: -75, r: 10 }, { x: 50, z: -80, r: 6 }],
+  flocks: [{ x: 60, z: -68, y: 6, count: 4, radius: 9, speed: 0.28, pale: true }],
 };
 

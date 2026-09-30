@@ -161,7 +161,7 @@ export const TAO_HUA_YUAN: PoemScene = {
   },
   landmarks: [
     // 晋太元中，武陵人捕鱼为业 — the fisherman, and his boat on the stream.
-    { id: 'wuling', line: 0, label: '武陵', x: 28, z: 100, radius: 12, look: [14, 92, 0.9], zoom: 1.4 },
+    { id: 'wuling', line: 0, label: '武陵', x: 22, z: 76, radius: 12, look: [14, 92, 1.6], zoom: 1.3 },
     // 缘溪行，忘路之远近 — the stream, going on ahead, and no thought of how far.
     { id: 'yuanxi', line: 1, label: '缘溪', x: 10, z: 74, radius: 12, look: [-8, 66, 0.5], zoom: 1.2 },
     // 忽逢桃花林，夹岸数百步 — and there is the wood, on both banks.
@@ -171,9 +171,9 @@ export const TAO_HUA_YUAN: PoemScene = {
     // 林尽水源，便得一山 — the wood ends where the water does, at the foot of a mountain.
     { id: 'shuiyuan', line: 4, label: '水源', x: 18, z: 4, radius: 11, look: [10, -28, 9] },
     // 山有小口，仿佛若有光 — and in it a small opening, and something like light.
-    { id: 'xiaokou', line: 5, label: '小口', x: 20, z: -10, radius: 9, look: [10, -50, 3.4], zoom: 1.7 },
+    { id: 'xiaokou', line: 5, label: '小口', x: 10, z: -4, radius: 9, look: [10, -52, 5], zoom: 1.4 },
     // 便舍船，从口入 — the boat, left on the bank.
-    { id: 'sheshuan', line: 6, label: '舍船', x: 12, z: -26, radius: 8, look: [16, -20, 0.7], zoom: 1.9 },
+    { id: 'sheshuan', line: 6, label: '舍船', x: 6, z: -34, radius: 8, look: [16, -20, 0.7], zoom: 1.5 },
     // 初极狭，才通人 — the slot, barely wide enough.
     { id: 'jixia', line: 7, label: '极狭', x: 10, z: -38, radius: 8, look: [10, -60, 2], zoom: 1.2 },
     // 复行数十步，豁然开朗 — and then it opens.
@@ -183,9 +183,9 @@ export const TAO_HUA_YUAN: PoemScene = {
     // 阡陌交通，鸡犬相闻 — the little paths crossing, and the sound of hens and dogs.
     { id: 'qianmo', line: 10, label: '阡陌', x: 18, z: -70, radius: 12, look: [4, -78, 1], zoom: 1.2 },
     // 黄发垂髫，并怡然自乐 — the old and the young, at their ease.
-    { id: 'huangfa', line: 11, label: '怡然', x: -20, z: -86, radius: 12, look: [-17, -93, 1.2], zoom: 2 },
+    { id: 'huangfa', line: 11, label: '怡然', x: -24, z: -82, radius: 12, look: [-18, -93, 1.0], zoom: 1.4 },
     // 乃不知有汉，无论魏晋 — the fisherman and the elder, talking.
-    { id: 'wuhan', line: 12, label: '不知', x: 16, z: -96, radius: 12, look: [22, -100, 1.3], zoom: 1.9 },
+    { id: 'wuhan', line: 12, label: '不知', x: 12, z: -90, radius: 12, look: [22, -100, 1.0], zoom: 1.4 },
     // 遂迷，不复得路 — and back, through the gap, to where the way in was.
     { id: 'suimi', line: 13, label: '遂迷', x: -4, z: -104, radius: 11, look: [10, -44, 3] },
   ],

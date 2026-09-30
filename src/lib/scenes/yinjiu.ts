@@ -109,9 +109,9 @@ export const YIN_JIU: PoemScene = {
     // 悠然见南山 — and then, looking up, the mountain.
     { id: 'nanshan', line: 5, label: '南山', x: 2, z: -30, radius: 15, look: [10, -150, 38] },
     // 山气日夕佳 — the sun going down behind the ridge, and the haze on it.
-    { id: 'shanqi', line: 6, label: '山气', x: -48, z: -44, radius: 14, look: 'sun' },
+    { id: 'shanqi', line: 6, label: '山气', x: -28, z: -20, radius: 14, look: 'sun' },
     // 飞鸟相与还 — the birds, going back together.
-    { id: 'feiniao', line: 7, label: '飞鸟', x: 40, z: -30, radius: 14, look: [46, -46, 16], zoom: 1.4 },
+    { id: 'feiniao', line: 7, label: '飞鸟', x: 12, z: -8, radius: 14, look: [38, -38, 14], zoom: 1.3 },
     // 此中有真意 — all of it, taken in at once.
     { id: 'zhenyi', line: 8, label: '真意', x: -66, z: 6, radius: 13, look: [-20, -40, 8] },
     // 欲辨已忘言 — and the hut again, small, a long way off, with nothing to say.
@@ -139,7 +139,7 @@ export const YIN_JIU: PoemScene = {
     { x: -16, z: 44, rot: 2.6, role: 'scholar' },
   ],
   // 飞鸟相与还 — seven of them, together, turning for home.
-  flocks: [{ x: 46, z: -46, y: 16, count: 7, radius: 9, speed: 0.32 }],
+  flocks: [{ x: 36, z: -36, y: 14, count: 8, radius: 8, speed: 0.32 }],
   sounds: [{ kind: 'birdsong', x: 46, z: -44, r: 32 }],
 };
 

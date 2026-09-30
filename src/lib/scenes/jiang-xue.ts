@@ -96,7 +96,7 @@ export const JIANG_XUE: PoemScene = {
     // 孤舟蓑笠翁 — the boat, as close as the bank allows.
     { id: 'guzhou', line: 2, label: '孤舟', x: 28, z: 52, radius: 13, look: [28, 14, 0.9], zoom: 2.4 },
     // 独钓寒江雪 — and the river he is fishing in.
-    { id: 'duchao', line: 3, label: '寒江', x: 70, z: 58, radius: 13, look: [118, -12, 0.3], zoom: 1.2 },
+    { id: 'duchao', line: 3, label: '寒江', x: 60, z: 54, radius: 13, look: [28, 14, 0.9], zoom: 1.0 },
   ],
   start: { x: 0, z: 94, heading: 0 },
   fall: { kind: 'snow', color: '#ffffff', size: 1, accumulate: 1 },

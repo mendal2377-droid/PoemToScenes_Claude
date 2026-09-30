@@ -116,9 +116,9 @@ export const SHAN_JU: PoemScene = {
     rocks: { count: 130 },
   },
   landmarks: [
-    { id: 'kongshan', line: 0, label: '空山', x: -4, z: -66, radius: 13, look: [-4, -140, 28] },
+    { id: 'kongshan', line: 0, label: '空山', x: -4, z: -40, radius: 13, look: [-4, -140, -14] },
     { id: 'wanqiu', line: 1, label: '晚秋', x: 58, z: 30, radius: 13, look: 'sun' },
-    { id: 'songjian', line: 2, label: '松间', x: -28, z: -34, radius: 14, look: 'moon' },
+    { id: 'songjian', line: 2, label: '松间', x: -30, z: -28, radius: 14, look: 'moon' },
     { id: 'qingquan', line: 3, label: '清泉', x: -6, z: -8, radius: 11, look: [2, 10, 0.3], zoom: 1.5 },
     { id: 'zhuxuan', line: 4, label: '竹林', x: 22, z: -6, radius: 13, look: [36, -9, 1.3], zoom: 1.3 },
     { id: 'liandong', line: 5, label: '莲塘', x: 30, z: 56, radius: 12, look: [-6, 62, 0.4], zoom: 1.4 },

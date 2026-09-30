@@ -116,9 +116,9 @@ export const DENG_GAO: PoemScene = {
   },
   landmarks: [
     // 风急天高猿啸哀 — the cliff, and the apes on it, calling.
-    { id: 'fengji', line: 0, label: '风急', x: -64, z: -74, radius: 13, look: [-70, -104, 30], zoom: 1.5 },
+    { id: 'fengji', line: 0, label: '风急', x: -76, z: -60, radius: 13, look: [-69, -99, 2.6], zoom: 1.7 },
     // 渚清沙白鸟飞回 — the bar of white sand, and birds wheeling back over it.
-    { id: 'zhuqing', line: 1, label: '渚清', x: -44, z: -42, radius: 13, look: [-32, -58, 6], zoom: 1.3 },
+    { id: 'zhuqing', line: 1, label: '渚清', x: -44, z: -42, radius: 13, look: [-34, -62, 6], zoom: 1.2 },
     // 无边落木萧萧下 — the trees, being stripped.
     { id: 'luomu', line: 2, label: '落木', x: -44, z: -2, radius: 14, look: [-58, -6, 8], zoom: 1.2 },
     // 不尽长江滚滚来 — the river, coming down out of the north and on towards you.
@@ -126,9 +126,9 @@ export const DENG_GAO: PoemScene = {
     // 万里悲秋常作客 — the horizon, and how far it is from home.
     { id: 'beiqiu', line: 4, label: '悲秋', x: -50, z: 70, radius: 13, look: [40, -220, 44] },
     // 百年多病独登台 — the terrace, and the river a long way below it.
-    { id: 'dengtai', line: 5, label: '登台', x: -84, z: -30, radius: 11, look: [20, 10, 0.3] },
+    { id: 'dengtai', line: 5, label: '登台', x: -92, z: -32, radius: 11, look: [20, 10, 0.3] },
     // 艰难苦恨繁霜鬓 — the ground, close: frost on dead grass.
-    { id: 'shuangbin', line: 6, label: '霜鬓', x: -90, z: 20, radius: 12, look: [-98, 36, 0.8], zoom: 1.8 },
+    { id: 'shuangbin', line: 6, label: '霜鬓', x: -62, z: 48, radius: 12, look: [-76, 52, 0.6], zoom: 1.6 },
     // 潦倒新停浊酒杯 — the jar, and the cup put down beside it.
     { id: 'zhuobei', line: 7, label: '浊酒', x: -60, z: 84, radius: 12, look: [-54, 88, 0.85], zoom: 2.2 },
   ],
@@ -139,11 +139,11 @@ export const DENG_GAO: PoemScene = {
   pavilion: { x: -84, z: -30, rot: 0.6 },
   // 猿啸哀 — apes on the rock, and birds over the bar.
   people: [
-    { x: -69, z: -99, rot: 0.4, role: 'monkey' },
-    { x: -73, z: -96, rot: 0.9, role: 'monkey', scale: 0.85 },
-    { x: -66, z: -101, rot: 0.1, role: 'monkey', scale: 0.7 },
+    { x: -69, z: -99, rot: 0.4, role: 'monkey', scale: 1.7 },
+    { x: -73, z: -96, rot: 0.9, role: 'monkey', scale: 1.4 },
+    { x: -66, z: -101, rot: 0.1, role: 'monkey', scale: 1.2 },
   ],
-  flocks: [{ x: -30, z: -58, y: 9, count: 6, radius: 12, speed: 0.4 }],
+  flocks: [{ x: -20, z: -68, y: 14, count: 6, radius: 8, speed: 0.4, size: 0.8 }],
   sand: [{ x: -48, z: -56, r: 10 }],
   // 浊酒杯 — set down.
   props: [{ kind: 'winejar', x: -54, z: 88, rot: 0.5 }],

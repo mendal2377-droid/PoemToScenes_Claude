@@ -98,7 +98,7 @@ export const NIAO_MING: PoemScene = {
     // 夜静春山空 — up the empty ravine to the mountain at its head.
     { id: 'chunshan', line: 1, label: '春山', x: 0, z: -56, radius: 14, look: [0, -100, 28] },
     // 月出惊山鸟 — the moon coming up, and the birds it has startled.
-    { id: 'yuechu', line: 2, label: '月出', x: 34, z: -18, radius: 13, look: 'moon' },
+    { id: 'yuechu', line: 2, label: '月出', x: 0, z: 88, radius: 13, look: 'moon' },
     // 时鸣春涧中 — the brook, and somewhere along it a bird.
     { id: 'jianzhong', line: 3, label: '春涧', x: 6, z: 14, radius: 12, look: [-6, -20, 0.5], zoom: 1.2 },
   ],
@@ -109,7 +109,7 @@ export const NIAO_MING: PoemScene = {
   // 人闲 — a man with nothing to do, sitting under the tree.
   people: [{ x: -22, z: 41, rot: -1.0, role: 'scholar', sit: true }],
   // 惊山鸟 — a few birds up off the ridge, and the sounds of one in the brook.
-  flocks: [{ x: 38, z: -36, y: 20, count: 5, radius: 7, speed: 0.55 }],
+  flocks: [{ x: 4.5, z: 53, y: 45, count: 5, radius: 5, speed: 0.5 }],
   sounds: [
     { kind: 'birdsong', x: 34, z: -30, r: 24 },
     { kind: 'birdsong', x: 4, z: 8, r: 26 },
