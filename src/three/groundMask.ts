@@ -17,7 +17,8 @@ const SIZE = 1024;
 export function buildGroundMask(
   spec: TerrainSpec,
   trail: readonly (readonly [number, number])[],
-  extraPaths: readonly (readonly (readonly [number, number])[])[] = []
+  extraPaths: readonly (readonly (readonly [number, number])[])[] = [],
+  sand: readonly { x: number; z: number; r: number }[] = []
 ): THREE.CanvasTexture {
   const canvas = document.createElement('canvas');
   canvas.width = SIZE;
@@ -74,6 +75,19 @@ export function buildGroundMask(
     ctx.fillStyle = grad;
     ctx.beginPath();
     ctx.arc(toX(b.x), toY(b.z), b.r * 1.35 * pxPerUnit, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Sand goes in the blue channel: a soft-edged disc, brightest at the middle.
+  for (const b of sand) {
+    const rad = b.r * pxPerUnit;
+    const g = ctx.createRadialGradient(toX(b.x), toY(b.z), 0, toX(b.x), toY(b.z), rad);
+    g.addColorStop(0, 'rgba(0,0,255,0.95)');
+    g.addColorStop(0.65, 'rgba(0,0,255,0.7)');
+    g.addColorStop(1, 'rgba(0,0,255,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(toX(b.x), toY(b.z), rad, 0, Math.PI * 2);
     ctx.fill();
   }
 

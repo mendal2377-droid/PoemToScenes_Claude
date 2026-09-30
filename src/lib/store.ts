@@ -155,7 +155,7 @@ export const useScene = create<SceneState>((set, get) => ({
       mode: 'view',
     }),
 
-  setMode: (mode) => set({ mode, brush: mode === 'compose' ? get().brush : null }),
+  setMode: (mode) => set({ mode, focus: null, brush: mode === 'compose' ? get().brush : null }),
 
   setAtmosphere: (patch) => set({ atmosphere: { ...get().atmosphere, ...patch } }),
 

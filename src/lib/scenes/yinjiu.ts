@@ -96,20 +96,50 @@ export const YIN_JIU: PoemScene = {
     rocks: { count: 60 },
   },
   landmarks: [
-    { id: 'jielu', line: 0, label: '结庐', x: -34, z: 22, radius: 13 },
-    { id: 'wuxuan', line: 1, label: '无喧', x: -6, z: 60, radius: 13 },
-    { id: 'wenjun', line: 2, label: '问君', x: 46, z: 46, radius: 13 },
-    { id: 'xinyuan', line: 3, label: '心远', x: 74, z: -6, radius: 13 },
-    { id: 'caiju', line: 4, label: '东篱', x: -12, z: 12, radius: 13 },
-    { id: 'nanshan', line: 5, label: '南山', x: 10, z: -56, radius: 15 },
-    { id: 'shanqi', line: 6, label: '山气', x: -48, z: -44, radius: 14 },
-    { id: 'feiniao', line: 7, label: '飞鸟', x: 40, z: -30, radius: 14 },
-    { id: 'zhenyi', line: 8, label: '真意', x: -66, z: 6, radius: 13 },
-    { id: 'wangyan', line: 9, label: '忘言', x: 22, z: 78, radius: 13 },
+    // 结庐在人境 — the hut, which is built where people are.
+    { id: 'jielu', line: 0, label: '结庐', x: -22, z: 32, radius: 13, look: [-34, 22, 1.6], zoom: 1.2 },
+    // 而无车马喧 — the road, empty, and not a sound on it.
+    { id: 'wuxuan', line: 1, label: '无喧', x: -6, z: 60, radius: 13, look: [6, 108, 0.3] },
+    // 问君何能尔 — a visitor at the gate, asking.
+    { id: 'wenjun', line: 2, label: '问君', x: 12, z: 46, radius: 13, look: [-16, 44, 1.4], zoom: 1.4 },
+    // 心远地自偏 — the far country, and how far away it is.
+    { id: 'xinyuan', line: 3, label: '心远', x: 74, z: -6, radius: 13, look: [150, -24, 32] },
+    // 采菊东篱下 — the hedge, and the chrysanthemums under it.
+    { id: 'caiju', line: 4, label: '东篱', x: 4, z: 10, radius: 13, look: [-12, 14, 1.2], zoom: 1.3 },
+    // 悠然见南山 — and then, looking up, the mountain.
+    { id: 'nanshan', line: 5, label: '南山', x: 2, z: -30, radius: 15, look: [10, -150, 38] },
+    // 山气日夕佳 — the sun going down behind the ridge, and the haze on it.
+    { id: 'shanqi', line: 6, label: '山气', x: -48, z: -44, radius: 14, look: 'sun' },
+    // 飞鸟相与还 — the birds, going back together.
+    { id: 'feiniao', line: 7, label: '飞鸟', x: 40, z: -30, radius: 14, look: [46, -46, 16], zoom: 1.4 },
+    // 此中有真意 — all of it, taken in at once.
+    { id: 'zhenyi', line: 8, label: '真意', x: -66, z: 6, radius: 13, look: [-20, -40, 8] },
+    // 欲辨已忘言 — and the hut again, small, a long way off, with nothing to say.
+    { id: 'wangyan', line: 9, label: '忘言', x: 22, z: 78, radius: 13, look: [-24, 22, 3] },
   ],
   start: { x: 2, z: 94, heading: 0 },
   fall: { kind: 'petal', color: '#e6c860', size: 0.8, accumulate: 0 },
   // Low and gold, from the left: 山气日夕佳.
   luminary: { x: -0.55, y: 0.2, z: -0.81, size: 0.09, kind: 'sun' },
   huts: [{ x: -34, z: 22, rot: 0.5, scale: 1.1 }],
+  // 无车马喧 — the road that has no carriages on it, and comes right up to the door.
+  extraPaths: [
+    [
+      [8, 130],
+      [4, 96],
+      [-8, 64],
+      [-22, 42],
+      [-31, 27],
+    ],
+  ],
+  people: [
+    // 采菊 — the man himself, at his hedge.
+    { x: -8.5, z: 9, rot: 0.6, role: 'poet' },
+    // 问君 — the friend who has walked out to ask.
+    { x: -16, z: 44, rot: 2.6, role: 'scholar' },
+  ],
+  // 飞鸟相与还 — seven of them, together, turning for home.
+  flocks: [{ x: 46, z: -46, y: 16, count: 7, radius: 9, speed: 0.32 }],
+  sounds: [{ kind: 'birdsong', x: 46, z: -44, r: 32 }],
 };
+

@@ -20,6 +20,7 @@ function Line({
   scene,
   inked,
   near,
+  standing,
   tones,
   onPick,
   onHover,
@@ -29,6 +30,7 @@ function Line({
   scene: PoemScene;
   inked: boolean;
   near: boolean;
+  standing: boolean;
   tones: boolean;
   onPick: (index: number) => void;
   onHover: (index: number | null) => void;
@@ -42,6 +44,7 @@ function Line({
       className="inscription__line"
       data-inked={inked}
       data-near={near}
+      data-standing={standing}
       data-tones={tones}
       disabled={!place}
       onClick={() => onPick(index)}
@@ -82,6 +85,7 @@ export function Inscription({ scene }: { scene: PoemScene }) {
   const mode = useScene((s) => s.mode);
   const open = useScene((s) => s.inscriptionOpen);
   const toggleInscription = useScene((s) => s.toggleInscription);
+  const focus = useScene((s) => s.focus);
   const setFocus = useScene((s) => s.setFocus);
   const find = useScene((s) => s.find);
 
@@ -104,7 +108,12 @@ export function Inscription({ scene }: { scene: PoemScene }) {
   const pick = (index: number) => {
     const place = placeOf.get(index);
     if (!place || mode === 'roam') return;
-    // Free view has no walking, so the inscription is how you travel.
+    // Free view has no walking, so the inscription is how you travel: you stand
+    // where the poet stood. Choosing the same line again steps back up.
+    if (focus === place.id) {
+      setFocus(null);
+      return;
+    }
     setFocus(place.id);
     find(place.id);
   };
@@ -117,6 +126,7 @@ export function Inscription({ scene }: { scene: PoemScene }) {
       scene,
       inked: inked.has(i),
       near: !!place && near === place.id,
+      standing: !!place && focus === place.id,
       tones,
       onPick: pick,
       onHover: setHover,
@@ -141,7 +151,10 @@ export function Inscription({ scene }: { scene: PoemScene }) {
     }
   }
 
-  const noted = hover !== null ? scene.lines[hover] : null;
+  // The line under the pointer, or failing that the one you are standing in.
+  const standing = scene.landmarks.find((l) => l.id === focus)?.line ?? null;
+  const shown = hover !== null ? hover : standing;
+  const noted = shown !== null ? scene.lines[shown] : null;
 
   return (
     <div
@@ -186,7 +199,7 @@ export function Inscription({ scene }: { scene: PoemScene }) {
 
           {/* 注释 — one sentence on whichever line the reader is looking at. */}
           {noted && (
-            <div className="gloss" key={hover}>
+            <div className="gloss" key={shown}>
               <span className="gloss__line">{noted.text}</span>
               <span className="gloss__text">{noted.note}</span>
             </div>

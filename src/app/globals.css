@@ -1210,3 +1210,28 @@ input[type='range']::-moz-range-thumb {
   opacity: 0.38;
   cursor: default;
 }
+
+/* the line you are standing in — the poet's eye */
+
+.inscription__line[data-standing='true'] {
+  color: var(--seal);
+}
+
+.inscription__line[data-standing='true'][data-inked='true'] {
+  color: var(--seal);
+}
+
+.pill--rise {
+  animation: rise-in 420ms ease;
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

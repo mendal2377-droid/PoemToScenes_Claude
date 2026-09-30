@@ -19,7 +19,18 @@ export type River = {
   width: number;
   level: number;
   depth: number;
+  /**
+   * Starting width as a fraction of `width`, widening to the full width over the
+   * first 40% of the path. A brook that becomes a river is narrow at its source.
+   */
+  taper?: number;
 };
+
+/** The river's full width at a point `t` (0–1) along its path. */
+export function riverWidth(rv: River, t: number): number {
+  if (rv.taper === undefined) return rv.width;
+  return rv.width * (rv.taper + (1 - rv.taper) * smoothstep(0, 0.4, t));
+}
 
 export type TerrainSpec = {
   seed: number;
@@ -87,8 +98,9 @@ export function terrainHeight(x: number, z: number, spec: TerrainSpec): number {
   if (spec.rivers) {
     for (const rv of spec.rivers) {
       const { dist, t } = distToPath(x, z, rv.path);
-      const core = rv.width * 0.5;
-      const bank = rv.width * 0.36;
+      const width = riverWidth(rv, t);
+      const core = width * 0.5;
+      const bank = width * 0.36;
       // Fade the carve at both ends so the river meets rising ground.
       const end = smoothstep(0.02, 0.16, t) * (1 - smoothstep(0.84, 0.98, t));
       const w = (1 - smoothstep(core, core + bank, dist)) * end;
@@ -115,7 +127,8 @@ export function inWater(x: number, z: number, spec: TerrainSpec): boolean {
     for (const rv of spec.rivers) {
       const { dist, t } = distToPath(x, z, rv.path);
       const end = smoothstep(0.02, 0.16, t) * (1 - smoothstep(0.84, 0.98, t));
-      if (end > 0.5 && dist < rv.width * 0.5 + rv.width * 0.36 * 0.45) return true;
+      const width = riverWidth(rv, t);
+      if (end > 0.5 && dist < width * 0.5 + width * 0.36 * 0.45) return true;
     }
   }
   return false;

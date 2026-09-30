@@ -70,9 +70,9 @@ export const XI_JIANG: PoemScene = {
     hills: { amp: 2.6, freq: 0.017 },
     swell: { amp: 4.6, freq: 0.0058 },
     rim: { start: 80, amp: 26 },
-    // 稻花 — a flooded paddy, shallow enough that it is mostly reflected sky.
-    basins: [{ x: -38, z: -30, r: 20, depth: 1.0 }],
-    channels: [{ path: BROOK, width: 6, depth: 1.6 }],
+    basins: [],
+    // 溪 — the brook is the water in this poem, and it is wide enough to want a bridge.
+    channels: [{ path: BROOK, width: 8, depth: 1.8 }],
     flats: [{ x: 36, z: 30, r: 13, h: 2.6 }],
   },
   skyline: 0.85,
@@ -99,14 +99,22 @@ export const XI_JIANG: PoemScene = {
     rocks: { count: 90 },
   },
   landmarks: [
-    { id: 'jingque', line: 0, label: '惊鹊', x: 14, z: 58, radius: 13 },
-    { id: 'mingchan', line: 1, label: '鸣蝉', x: 58, z: 12, radius: 13 },
-    { id: 'daohua', line: 2, label: '稻花', x: -52, z: -8, radius: 13 },
-    { id: 'washeng', line: 3, label: '蛙声', x: -44, z: -62, radius: 13 },
-    { id: 'tianwai', line: 4, label: '天外', x: 66, z: -30, radius: 13 },
-    { id: 'shanqian', line: 5, label: '山前', x: 0, z: -76, radius: 13 },
-    { id: 'maodian', line: 6, label: '茅店', x: 30, z: 26, radius: 12 },
-    { id: 'xiqiao', line: 7, label: '溪桥', x: 0, z: 6, radius: 12 },
+    // 明月别枝惊鹊 — the tree, and the magpies that have just left it.
+    { id: 'jingque', line: 0, label: '惊鹊', x: 2, z: 68, radius: 12, look: [14, 60, 5], zoom: 1.2 },
+    // 清风半夜鸣蝉 — the pines, where the cicadas are.
+    { id: 'mingchan', line: 1, label: '鸣蝉', x: 44, z: 6, radius: 12, look: [60, 10, 6], zoom: 1.2 },
+    // 稻花香里说丰年 — the rice, standing gold in the dark.
+    { id: 'daohua', line: 2, label: '稻花', x: -52, z: -8, radius: 13, look: [-84, -28, 1.4] },
+    // 听取蛙声一片 — the brook's edge, where the frogs are.
+    { id: 'washeng', line: 3, label: '蛙声', x: -44, z: 40, radius: 12, look: [-36, 26, 0.3], zoom: 1.5 },
+    // 七八个星天外 — up, at the few stars the cloud has left.
+    { id: 'tianwai', line: 4, label: '天外', x: 66, z: -30, radius: 13, look: [66, -230, 170] },
+    // 两三点雨山前 — the foot of the hills, and rain that is only a few drops.
+    { id: 'shanqian', line: 5, label: '山前', x: 0, z: -76, radius: 13, look: [0, -150, 12] },
+    // 旧时茅店社林边 — the inn, at the edge of the trees, with its lamp.
+    { id: 'maodian', line: 6, label: '茅店', x: 22, z: 20, radius: 12, look: [36, 30, 1.9], zoom: 1.3 },
+    // 路转溪桥忽见 — round the turn of the path, across the bridge, there it is.
+    { id: 'xiqiao', line: 7, label: '溪桥', x: -8, z: 19, radius: 12, look: [36, 30, 2], zoom: 1.15 },
   ],
   start: { x: -4, z: 92, heading: 0 },
   // Fireflies more than weather: small, slow, and the colour of the lamp.
@@ -117,4 +125,15 @@ export const XI_JIANG: PoemScene = {
   // you had forgotten was there.
   glows: [{ x: 34.6, z: 30.2, h: 1.9, color: '#ffb864', size: 2.6 }],
   bridges: [{ x: 0, z: 6, rot: -1.0, length: 11 }],
+  // The innkeeper, at his door in the light of his own lamp.
+  people: [{ x: 33, z: 33.5, rot: 3.6, role: 'farmer' }],
+  // 惊鹊 — magpies up out of the tree.
+  flocks: [{ x: 14, z: 60, y: 7, count: 3, radius: 6, speed: 0.75 }],
+  sounds: [
+    { kind: 'birdsong', x: 14, z: 60, r: 20 },
+    { kind: 'cicada', x: 60, z: 10, r: 26 },
+    { kind: 'frogs', x: -40, z: 30, r: 28 },
+    { kind: 'frogs', x: -8, z: 14, r: 22 },
+  ],
 };
+

@@ -89,14 +89,18 @@ export const JIANG_XUE: PoemScene = {
     rocks: { count: 70 },
   },
   landmarks: [
-    { id: 'qianshan', line: 0, label: '千山', x: -70, z: 62, radius: 13 },
-    { id: 'wanjing', line: 1, label: '万径', x: -28, z: 76, radius: 13 },
-    { id: 'guzhou', line: 2, label: '孤舟', x: 28, z: 76, radius: 13 },
-    { id: 'duchao', line: 3, label: '寒江', x: 70, z: 62, radius: 13 },
+    // 千山鸟飞绝 — look at the mountains, and at an empty sky above them.
+    { id: 'qianshan', line: 0, label: '千山', x: -70, z: 58, radius: 13, look: [-60, -150, 44] },
+    // 万径人踪灭 — look along the bank, at snow with nothing in it.
+    { id: 'wanjing', line: 1, label: '万径', x: -28, z: 62, radius: 13, look: [70, 62, 0.3] },
+    // 孤舟蓑笠翁 — the boat, as close as the bank allows.
+    { id: 'guzhou', line: 2, label: '孤舟', x: 28, z: 52, radius: 13, look: [28, 14, 0.9], zoom: 2.4 },
+    // 独钓寒江雪 — and the river he is fishing in.
+    { id: 'duchao', line: 3, label: '寒江', x: 70, z: 58, radius: 13, look: [118, -12, 0.3], zoom: 1.2 },
   ],
   start: { x: 0, z: 94, heading: 0 },
   fall: { kind: 'snow', color: '#ffffff', size: 1, accumulate: 1 },
   luminary: { x: 0.28, y: 0.3, z: -0.91, size: 0.07, kind: 'sun' },
   // One boat, a long way out, and no one within sight of it.
-  boat: { x: 28, z: -8, rot: -0.4, on: 'river' },
+  boat: { x: 28, z: 14, rot: -0.4, on: 'river' },
 };

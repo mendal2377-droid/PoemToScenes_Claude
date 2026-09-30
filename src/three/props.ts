@@ -297,3 +297,56 @@ export function buildGlowPoints(
   geo.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, 0, 0), 400);
   return geo;
 }
+
+/**
+ * Birds in flight, every one of them in a single buffer.
+ *
+ * Each bird is four vertices — a beak and a tail with a wingtip either side —
+ * and the whole flight happens in the vertex shader: a circuit round the
+ * flock's centre at its own radius and height, and a flap that lifts the
+ * wingtips. Nothing is updated from JavaScript, so a flock costs a draw call and
+ * no per-frame work, which is why there can be a few of them in every world.
+ */
+export function buildFlocks(
+  flocks: readonly { x: number; y: number; z: number; count: number; radius: number; speed: number; size?: number; pale?: boolean }[]
+): THREE.BufferGeometry | null {
+  if (!flocks.length) return null;
+  const pos: number[] = [];
+  const center: number[] = [];
+  const params: number[] = [];
+  const pale: number[] = [];
+  const idx: number[] = [];
+  let v = 0;
+
+  flocks.forEach((f, fi) => {
+    const rng = new Rng(9000 + fi * 31);
+    for (let i = 0; i < f.count; i++) {
+      const phase = rng.next() * Math.PI * 2;
+      const size = (f.size ?? 1) * rng.range(0.85, 1.2);
+      // beak, left wingtip, tail, right wingtip: x is span, z is forward.
+      const local = [
+        [0, 0, 0.55],
+        [-1, 0, -0.35],
+        [0, 0, -0.12],
+        [1, 0, -0.35],
+      ];
+      for (const [lx, ly, lz] of local) {
+        pos.push(lx, ly, lz);
+        center.push(f.x, f.y, f.z);
+        params.push(f.radius, f.speed * rng.range(0.85, 1.15), phase, size);
+        pale.push(f.pale ? 1 : 0);
+      }
+      idx.push(v, v + 1, v + 2, v, v + 2, v + 3);
+      v += 4;
+    }
+  });
+
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute('aCenter', new THREE.Float32BufferAttribute(center, 3));
+  g.setAttribute('aParams', new THREE.Float32BufferAttribute(params, 4));
+  g.setAttribute('aPale', new THREE.Float32BufferAttribute(pale, 1));
+  g.setIndex(idx);
+  g.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, 0, 0), 400);
+  return g;
+}

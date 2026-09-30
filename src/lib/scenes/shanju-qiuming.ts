@@ -1,13 +1,12 @@
 import type { PoemScene } from '../types';
 
+/** 清泉 — the brook, from the high ground down over its stones. */
 const STREAM_PATH = [
   [-72, -80],
   [-48, -54],
   [-24, -28],
   [-6, -8],
-  [4, 14],
-  [12, 34],
-  [18, 46],
+  [0, 6],
 ] as const;
 
 /**
@@ -64,9 +63,30 @@ export const SHAN_JU: PoemScene = {
     hills: { amp: 3.4, freq: 0.019 },
     swell: { amp: 6.8, freq: 0.0062 },
     rim: { start: 74, amp: 30 },
-    basins: [{ x: 18, z: 46, r: 27, depth: 3.4 }],
+    basins: [],
     channels: [{ path: STREAM_PATH, width: 5.2, depth: 1.5 }],
     flats: [{ x: -46, z: 28, r: 13, h: 3.2 }],
+    // 莲动下渔舟 — the brook does not end in a pond. It widens as it comes down
+    // out of the hills and becomes a river, slow enough for lotus, wide enough
+    // for a boat, and it leaves the valley to the west.
+    rivers: [
+      {
+        path: [
+          [-6, -8],
+          [4, 14],
+          [10, 34],
+          [6, 54],
+          [-14, 70],
+          [-44, 80],
+          [-84, 84],
+          [-120, 92],
+        ],
+        width: 30,
+        taper: 0.2,
+        level: -0.8,
+        depth: 3.5,
+      },
+    ],
   },
   atmosphere: { hour: 0.78, wind: 0.5, mist: 0.32, snow: 0, cloud: 0.3 },
   flora: {
@@ -96,18 +116,26 @@ export const SHAN_JU: PoemScene = {
     rocks: { count: 130 },
   },
   landmarks: [
-    { id: 'kongshan', line: 0, label: '空山', x: -4, z: -66, radius: 13 },
-    { id: 'wanqiu', line: 1, label: '晚秋', x: 58, z: 30, radius: 13 },
-    { id: 'songjian', line: 2, label: '松间', x: -28, z: -34, radius: 14 },
-    { id: 'qingquan', line: 3, label: '清泉', x: -6, z: -8, radius: 11 },
-    { id: 'zhuxuan', line: 4, label: '竹林', x: 44, z: -12, radius: 14 },
-    { id: 'liandong', line: 5, label: '莲塘', x: 18, z: 14, radius: 14 },
-    { id: 'chunfang', line: 6, label: '春芳', x: -58, z: -6, radius: 13 },
-    { id: 'wangsun', line: 7, label: '茅亭', x: -46, z: 28, radius: 13 },
+    { id: 'kongshan', line: 0, label: '空山', x: -4, z: -66, radius: 13, look: [-4, -140, 28] },
+    { id: 'wanqiu', line: 1, label: '晚秋', x: 58, z: 30, radius: 13, look: 'sun' },
+    { id: 'songjian', line: 2, label: '松间', x: -28, z: -34, radius: 14, look: 'moon' },
+    { id: 'qingquan', line: 3, label: '清泉', x: -6, z: -8, radius: 11, look: [2, 10, 0.3], zoom: 1.5 },
+    { id: 'zhuxuan', line: 4, label: '竹林', x: 22, z: -6, radius: 13, look: [36, -9, 1.3], zoom: 1.3 },
+    { id: 'liandong', line: 5, label: '莲塘', x: 30, z: 56, radius: 12, look: [-6, 62, 0.4], zoom: 1.4 },
+    { id: 'chunfang', line: 6, label: '春芳', x: -44, z: -2, radius: 12, look: [-58, -6, 3], zoom: 1.2 },
+    { id: 'wangsun', line: 7, label: '茅亭', x: -34, z: 36, radius: 12, look: [-45, 28, 1.6], zoom: 1.2 },
   ],
-  start: { x: 4, z: 84, heading: 0 },
+  start: { x: 26, z: 92, heading: 0 },
   fall: { kind: 'leaf', color: '#b4694a', size: 1.3, accumulate: 0 },
   luminary: { x: -0.3, y: 0.34, z: -0.9, size: 0.1, kind: 'moon' },
-  boat: { x: 14, z: 36, rot: 0.6 },
+  boat: { x: -6, z: 62, rot: 0.7, on: 'river' },
   pavilion: { x: -46, z: 28, rot: 0.35 },
+  // 竹喧归浣女 — three women coming back through the bamboo with their baskets;
+  // 王孙自可留 — a scholar, sitting at the edge of the pavilion, in no hurry.
+  people: [
+    { x: 33, z: -10, rot: Math.PI / 2, role: 'washer' },
+    { x: 36, z: -5, rot: Math.PI / 2 + 0.2, role: 'washer' },
+    { x: 31, z: -15, rot: Math.PI / 2 - 0.2, role: 'washer' },
+    { x: -41.6, z: 26, rot: 2.6, role: 'scholar', sit: true },
+  ],
 };

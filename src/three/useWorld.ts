@@ -3,7 +3,7 @@
 import { useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import { Rng } from '@/lib/noise';
-import { basinWaterLevel, terrainHeight } from '@/lib/terrain';
+import { basinWaterLevel, riverWidth, terrainHeight } from '@/lib/terrain';
 import type { PoemScene } from '@/lib/types';
 import { buildGroundMask, buildPaperField } from './groundMask';
 import {
@@ -26,10 +26,11 @@ import {
   buildRocks,
   scatterRocks,
 } from './flora';
-import { buildBoatCanopy, buildBoatHull, buildCape, buildGlowPoints, buildHat, buildHerd, buildPavilionRoof } from './props';
+import { buildBoatCanopy, buildBoatHull, buildCape, buildFlocks, buildGlowPoints, buildHat, buildHerd, buildPavilionRoof } from './props';
 import { bodies, shared } from './materials';
 import {
   makeBarkMaterial,
+  makeBirdMaterial,
   makeFoliageMaterial,
   makeGlowMaterial,
   makeGrassMaterial,
@@ -71,9 +72,10 @@ function buildWorld(scene: PoemScene) {
       'catmullrom',
       0.5
     );
-    const edge = rv.width * 0.5 + rv.width * 0.36 * 0.36;
     for (let i = 4; i <= 96; i += 2) {
       const t = i / 100;
+      const w = riverWidth(rv, t);
+      const edge = w * 0.5 + w * 0.36 * 0.36;
       const q = curve.getPoint(t);
       const tan = curve.getTangent(t);
       const nl = Math.hypot(tan.x, tan.z) || 1;
@@ -82,30 +84,78 @@ function buildWorld(scene: PoemScene) {
       }
     }
   }
+  // A brook has reeds too, closer in: its bank is only half its width from the middle.
+  for (const ch of spec.channels) {
+    const curve = new THREE.CatmullRomCurve3(
+      ch.path.map((q) => new THREE.Vector3(q[0], 0, q[1])),
+      false,
+      'catmullrom',
+      0.5
+    );
+    for (let i = 4; i <= 96; i += 3) {
+      const t = i / 100;
+      const q = curve.getPoint(t);
+      const tan = curve.getTangent(t);
+      const nl = Math.hypot(tan.x, tan.z) || 1;
+      for (const side of [-1, 1]) {
+        riverSpots.push({
+          x: q.x + (-tan.z / nl) * ch.width * 0.55 * side,
+          z: q.z + (tan.x / nl) * ch.width * 0.55 * side,
+          r: 1.4,
+        });
+      }
+    }
+  }
   const reedSpots = [...spec.basins.map((b) => ({ x: b.x, z: b.z, r: b.r })), ...riverSpots];
 
+  // Every spot a line is read from is kept clear of trunks.
+  const eyes = scene.landmarks.map((l) => ({ x: l.x, z: l.z }));
   const pines = buildPines(
     scene.flora.pines.clusters,
     spec,
     { dark: p.foliageDark, light: p.foliageLight },
-    spec.seed + 1
+    spec.seed + 1,
+    eyes
   );
   const bamboo = buildBamboo(
     scene.flora.bamboo.groves,
     spec,
     { dark: p.foliageDark, light: p.foliageLight },
-    spec.seed + 2
+    spec.seed + 2,
+    eyes
   );
-  const broadleaf = buildBroadleaf(scene.flora.broadleaf.clusters, spec, p.trunk, spec.seed + 3);
+  const broadleaf = buildBroadleaf(scene.flora.broadleaf.clusters, spec, p.trunk, spec.seed + 3, eyes);
 
-  const lotus = basin
-    ? buildLotus(
-        scene.flora.lotus.count,
-        basin,
-        waterLevel,
-        { pad: p.foliageLight, flower: '#f0d9dd' },
-        spec.seed + 4
-      )
+  // 莲 grows where the water is slow: the whole of a pond, or one reach of a river.
+  const river0 = spec.rivers?.[0];
+  let lotusLevel = waterLevel;
+  let lotusPlace: ((rng: Rng) => [number, number]) | null = null;
+  if (river0) {
+    const curve = new THREE.CatmullRomCurve3(
+      river0.path.map((q) => new THREE.Vector3(q[0], 0, q[1])),
+      false,
+      'catmullrom',
+      0.5
+    );
+    lotusLevel = river0.level;
+    lotusPlace = (rng) => {
+      const t = rng.range(0.24, 0.62);
+      const q = curve.getPoint(t);
+      const tan = curve.getTangent(t);
+      const nl = Math.hypot(tan.x, tan.z) || 1;
+      // Keep to the middle two thirds of the channel, off the banks.
+      const off = rng.range(-1, 1) * riverWidth(river0, t) * 0.36;
+      return [q.x + (-tan.z / nl) * off, q.z + (tan.x / nl) * off];
+    };
+  } else if (basin) {
+    lotusPlace = (rng) => {
+      const a = rng.range(0, Math.PI * 2);
+      const r = Math.sqrt(rng.next()) * basin.r * 0.82;
+      return [basin.x + Math.cos(a) * r, basin.z + Math.sin(a) * r];
+    };
+  }
+  const lotus = lotusPlace
+    ? buildLotus(scene.flora.lotus.count, lotusPlace, lotusLevel, { pad: p.foliageLight, flower: '#f0d9dd' }, spec.seed + 4)
     : { pads: null, flowers: null };
 
   const geo = {
@@ -118,15 +168,32 @@ function buildWorld(scene: PoemScene) {
     ponds: spec.basins.map((b) => buildPond(b, basinWaterLevel(b, spec))),
     stream: spec.channels[0] ? buildStream(spec.channels[0].path, spec.channels[0].width, spec) : null,
     rivers: (spec.rivers ?? []).map((rv) => buildRiver(rv)),
-    glows: buildGlowPoints(
-      (scene.glows ?? []).map((g) => ({
+    glows: buildGlowPoints([
+      ...(scene.glows ?? []).map((g) => ({
         x: g.x,
         y: terrainHeight(g.x, g.z, spec) + (g.h ?? 2.2),
         z: g.z,
         color: g.color,
         size: g.size,
         always: !!g.always,
-      }))
+      })),
+      // Each torch a companion holds is a flame at the end of the stick, turned
+      // with the figure — offset (0.4, 1.35, 0.3) in its own frame.
+      ...(scene.people ?? [])
+        .filter((q) => q.torch)
+        .map((q) => {
+          const k = q.scale ?? 1;
+          const c = Math.cos(q.rot);
+          const sn = Math.sin(q.rot);
+          const ox = 0.4 * k;
+          const oz = 0.3 * k;
+          const wx = q.x + ox * c + oz * sn;
+          const wz = q.z - ox * sn + oz * c;
+          return { x: wx, y: terrainHeight(q.x, q.z, spec) + 1.42 * k, z: wz, color: '#ffb35c', size: 1.5, always: true };
+        }),
+    ]),
+    flocks: buildFlocks(
+      (scene.flocks ?? []).map((f) => ({ ...f, y: terrainHeight(f.x, f.z, spec) + f.y }))
     ),
     torchGlow: scene.torch
       ? buildGlowPoints([{ x: 0.42, y: 1.55, z: 0.32, color: '#ffb35c', size: 2.4, always: true }])
@@ -214,6 +281,7 @@ function buildWorld(scene: PoemScene) {
     wood: makeInkMaterial(p, p.trunk),
     herd: null as THREE.ShaderMaterial | null,
     plaster: makeInkMaterial(p, '#d8c8a2'),
+    bird: makeBirdMaterial(p),
     glow: makeGlowMaterial(),
   };
 
@@ -227,7 +295,7 @@ function buildWorld(scene: PoemScene) {
     mat.herd = makeInkMaterial(p, scene.herd.color);
   }
 
-  const mask = buildGroundMask(spec, trail, scene.extraPaths ?? []);
+  const mask = buildGroundMask(spec, trail, scene.extraPaths ?? [], scene.sand ?? []);
   mat.terrain.uniforms.uMask.value = mask;
   mat.terrain.uniforms.uPaperField.value = paper.texture;
   mat.terrain.uniforms.uExtent.value = spec.extent;

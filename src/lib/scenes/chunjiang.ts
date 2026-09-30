@@ -1,5 +1,14 @@
 import type { PoemScene } from '../types';
 
+/** 空里流霜 — points of frost hanging in the air over the bank, at a scatter of heights. */
+const FROST = Array.from({ length: 18 }, (_, i) => ({
+  x: 34 + ((i * 37) % 36),
+  z: -94 + ((i * 53) % 34),
+  h: 2 + ((i * 29) % 7),
+  color: '#eaf1ff',
+  size: 0.55,
+}));
+
 /**
  * 春江花月夜 — Zhang Ruoxu. The poem runs to thirty-six lines; these are its
  * opening eight, where the river meets the sea and the moon comes up out of the
@@ -102,14 +111,22 @@ export const CHUN_JIANG: PoemScene = {
     rocks: { count: 50 },
   },
   landmarks: [
-    { id: 'chaoping', line: 0, label: '连海', x: -64, z: -76, radius: 13 },
-    { id: 'chaosheng', line: 1, label: '潮生', x: -46, z: -84, radius: 13 },
-    { id: 'suibo', line: 2, label: '随波', x: -28, z: -90, radius: 13 },
-    { id: 'yueming', line: 3, label: '月明', x: -10, z: -92, radius: 13 },
-    { id: 'fangdian', line: 4, label: '芳甸', x: 8, z: -92, radius: 13 },
-    { id: 'hualin', line: 5, label: '花林', x: 26, z: -90, radius: 13 },
-    { id: 'liushuang', line: 6, label: '流霜', x: 44, z: -84, radius: 13 },
-    { id: 'baisha', line: 7, label: '白沙', x: 62, z: -76, radius: 13 },
+    // 春江潮水连海平 — across the river to a horizon where it meets the sky.
+    { id: 'chaoping', line: 0, label: '连海', x: -64, z: -76, radius: 13, look: [0, 126, 0.4] },
+    // 海上明月共潮生 — the moon coming up with the tide.
+    { id: 'chaosheng', line: 1, label: '潮生', x: -46, z: -84, radius: 13, look: 'moon' },
+    // 滟滟随波千万里 — the moon's road across the water, going away for ever.
+    { id: 'suibo', line: 2, label: '随波', x: -28, z: -90, radius: 13, look: [-18, 56, 3.4], zoom: 1.25 },
+    // 何处春江无月明 — the whole river, and the same moon over every stretch of it.
+    { id: 'yueming', line: 3, label: '月明', x: -10, z: -92, radius: 13, look: 'moon', zoom: 1.1 },
+    // 江流宛转绕芳甸 — the river bending round a meadow.
+    { id: 'fangdian', line: 4, label: '芳甸', x: 8, z: -92, radius: 13, look: [90, -40, 2] },
+    // 月照花林皆似霰 — the blossom, and the moon on it like sleet.
+    { id: 'hualin', line: 5, label: '花林', x: 26, z: -90, radius: 13, look: [10, -100, 4], zoom: 1.3 },
+    // 空里流霜不觉飞 — frost hanging in the air, that you cannot see move.
+    { id: 'liushuang', line: 6, label: '流霜', x: 44, z: -84, radius: 13, look: [52, -64, 5], zoom: 1.2 },
+    // 汀上白沙看不见 — the white sand of the bar, lost in the same light.
+    { id: 'baisha', line: 7, label: '白沙', x: 62, z: -76, radius: 13, look: [60, -70, 0.2], zoom: 1.6 },
   ],
   start: { x: 0, z: -110, heading: Math.PI },
   fall: { kind: 'petal', color: '#f0dbe2', size: 1.1, accumulate: 0 },
@@ -117,4 +134,9 @@ export const CHUN_JIANG: PoemScene = {
   // as long as the river is wide.
   luminary: { x: 0.04, y: 0.2, z: 0.98, size: 0.2, kind: 'moon' },
   boat: { x: -10, z: -12, rot: 0.3, on: 'river' },
+  glows: FROST,
+  // 汀上白沙 — a bar of it at the water's edge, and pale birds standing off it.
+  sand: [{ x: 60, z: -70, r: 12 }],
+  flocks: [{ x: 60, z: -62, y: 7, count: 4, radius: 9, speed: 0.28, pale: true }],
 };
+

@@ -201,11 +201,22 @@ function addPine(
   }
 }
 
+/**
+ * Where a person stands to read a line the trees keep back, so the first thing
+ * the poet's eye meets is the view and not a trunk a metre from the lens.
+ */
+export type Clearing = readonly { x: number; z: number }[];
+const EYE_CLEAR = 4.5;
+function cleared(x: number, z: number, clear?: Clearing): boolean {
+  return !!clear && clear.some((p) => Math.hypot(x - p.x, z - p.z) < EYE_CLEAR);
+}
+
 export function buildPines(
   clusters: readonly { x: number; z: number; r: number; count: number }[],
   spec: TerrainSpec,
   colors: { dark: string; light: string },
-  seed: number
+  seed: number,
+  clear?: Clearing
 ): PlantGeometry {
   if (!clusters.length) return EMPTY;
   const rng = new Rng(seed);
@@ -220,7 +231,7 @@ export function buildPines(
       const r = Math.sqrt(rng.next()) * cl.r;
       const x = cl.x + Math.cos(a) * r;
       const z = cl.z + Math.sin(a) * r;
-      if (inWater(x, z, spec)) continue;
+      if (inWater(x, z, spec) || cleared(x, z, clear)) continue;
       const y = terrainHeight(x, z, spec);
       addPine(tr, lf, x, z, y, rng.range(8, 15), rng, dark, light);
     }
@@ -301,7 +312,8 @@ export function buildBamboo(
   groves: readonly { x: number; z: number; r: number; count: number }[],
   spec: TerrainSpec,
   colors: { dark: string; light: string },
-  seed: number
+  seed: number,
+  clear?: Clearing
 ): PlantGeometry {
   if (!groves.length) return EMPTY;
   const rng = new Rng(seed);
@@ -316,7 +328,7 @@ export function buildBamboo(
       const r = Math.sqrt(rng.next()) * g.r;
       const x = g.x + Math.cos(a) * r;
       const z = g.z + Math.sin(a) * r;
-      if (inWater(x, z, spec)) continue;
+      if (inWater(x, z, spec) || cleared(x, z, clear)) continue;
       addBamboo(tr, lf, x, z, terrainHeight(x, z, spec), rng.range(6, 12), rng, dark, light);
     }
   }
@@ -405,7 +417,8 @@ export function buildBroadleaf(
   clusters: readonly { x: number; z: number; r: number; count: number; tint: string }[],
   spec: TerrainSpec,
   trunkColor: string,
-  seed: number
+  seed: number,
+  clear?: Clearing
 ): PlantGeometry {
   if (!clusters.length) return EMPTY;
   const rng = new Rng(seed);
@@ -420,7 +433,7 @@ export function buildBroadleaf(
       const r = Math.sqrt(rng.next()) * cl.r;
       const x = cl.x + Math.cos(a) * r;
       const z = cl.z + Math.sin(a) * r;
-      if (inWater(x, z, spec)) continue;
+      if (inWater(x, z, spec) || cleared(x, z, clear)) continue;
       addBroadleaf(tr, lf, x, z, terrainHeight(x, z, spec), rng.range(7, 12), rng, trunkCol, tint);
     }
   }
@@ -588,7 +601,8 @@ export function buildReeds(
 
 export function buildLotus(
   count: number,
-  basin: { x: number; z: number; r: number },
+  /** Where one pad goes. A pond scatters them round a disc; a river reach runs them along its slow water. */
+  place: (rng: Rng) => [number, number],
   level: number,
   colors: { pad: string; flower: string },
   seed: number
@@ -601,10 +615,7 @@ export function buildLotus(
   const flowerCol = c(colors.flower);
 
   for (let i = 0; i < count; i++) {
-    const a = rng.range(0, Math.PI * 2);
-    const r = Math.sqrt(rng.next()) * basin.r * 0.82;
-    const x = basin.x + Math.cos(a) * r;
-    const z = basin.z + Math.sin(a) * r;
+    const [x, z] = place(rng);
     const anchor = new THREE.Vector3(x, level, z);
     const s = rng.range(0.5, 1.15);
 

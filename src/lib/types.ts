@@ -91,7 +91,69 @@ export type Landmark = {
   x: number;
   z: number;
   radius: number;
+  /**
+   * What the poet is looking at from here. Choosing a line in the free view puts
+   * the camera at eye height on this spot, facing this point: [x, z, height above
+   * the ground there]. Or 'moon' / 'sun', for a line whose subject is in the sky.
+   */
+  look?: [number, number, number?] | 'moon' | 'sun';
+  /** Narrow the field of view to look at something small or far, 1 = normal. */
+  zoom?: number;
 };
+
+/** Who is in the picture. Each role is a costume and a posture, not a person. */
+export type Role =
+  | 'washer' // 浣女 — pale blue, a basket on the hip
+  | 'scholar' // 王孙, a visitor — pale robe, a black cap
+  | 'poet' // a man in a dark robe and cap, alone
+  | 'elder' // 黄发 — white hair, a staff
+  | 'child' // 垂髫 — small, red, two tufts of hair
+  | 'farmer' // a straw hat and a brown tunic
+  | 'herdsman' // dark coat, tall hat, a staff
+  | 'companion' // one of the four, with a torch
+  | 'fisher' // 蓑笠 — straw cape and rain hat
+  | 'monkey'; // 猿 — small, brown, on a rock
+
+export type Person = {
+  x: number;
+  z: number;
+  rot: number;
+  role: Role;
+  scale?: number;
+  /** Sitting rather than standing. */
+  sit?: boolean;
+  /** Lit torch, held out to the side. */
+  torch?: boolean;
+};
+
+/** Birds on the wing, circling a point. */
+export type Flock = {
+  x: number;
+  z: number;
+  /** Height above the ground. */
+  y: number;
+  count: number;
+  radius: number;
+  /** Radians per second; the sign is the direction of circling. */
+  speed: number;
+  size?: number;
+  /** White — cranes and egrets — rather than ink. */
+  pale?: boolean;
+};
+
+/** Where a sound comes from. The sound itself is synthesised; see ambience.ts. */
+export type SoundSource = {
+  kind: 'frogs' | 'cicada' | 'birdsong' | 'gibbon' | 'poultry';
+  x: number;
+  z: number;
+  r: number;
+};
+
+/** A set piece too small to be its own feature. */
+export type Prop = { kind: 'winejar'; x: number; z: number; rot: number };
+
+/** A patch of bare, pale ground: a sandbar, a shingle bank. */
+export type Patch = { x: number; z: number; r: number };
 
 /** A lamp, a torch, a light at the end of a passage. */
 export type Glow = {
@@ -156,6 +218,12 @@ export type PoemScene = {
   boat?: { x: number; z: number; rot: number; on?: 'basin' | 'river' | 'stream' | 'ground' };
   /** Further boats, for stories that have more than one. */
   boats?: readonly { x: number; z: number; rot: number; on?: 'basin' | 'river' | 'stream' | 'ground' }[];
+  people?: readonly Person[];
+  flocks?: readonly Flock[];
+  sounds?: readonly SoundSource[];
+  props?: readonly Prop[];
+  /** 汀上白沙 — sandbars and the like, painted into the ground. */
+  sand?: readonly Patch[];
   /** A footbridge over a brook. */
   bridges?: readonly { x: number; z: number; rot: number; length?: number }[];
   /** Huts and houses, for the worlds that have people in them. */

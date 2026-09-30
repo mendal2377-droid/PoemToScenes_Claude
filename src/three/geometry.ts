@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { Rng, ridge } from '@/lib/noise';
-import { terrainHeight } from '@/lib/terrain';
+import { riverWidth, terrainHeight } from '@/lib/terrain';
+import type { River } from '@/lib/terrain';
 import type { TerrainSpec } from '@/lib/terrain';
 import type { PoemScene } from '@/lib/types';
 
@@ -271,11 +272,7 @@ export function buildSnow(count: number, radius: number, seed: number): THREE.Bu
  * terrain to hide it wherever the bank rises above the water. It only runs
  * where the carve is strongest; past that the ground has risen to meet it.
  */
-export function buildRiver(rv: {
-  path: readonly (readonly [number, number])[];
-  width: number;
-  level: number;
-}): THREE.BufferGeometry {
+export function buildRiver(rv: River): THREE.BufferGeometry {
   const curve = new THREE.CatmullRomCurve3(
     rv.path.map((p) => new THREE.Vector3(p[0], 0, p[1])),
     false,
@@ -283,8 +280,6 @@ export function buildRiver(rv: {
     0.5
   );
   const steps = 260;
-  // Reach a little past the banks; the terrain trims it back to the waterline.
-  const half = rv.width * 0.5 + rv.width * 0.36 * 0.62;
   const positions: number[] = [];
   const uvs: number[] = [];
   const indices: number[] = [];
@@ -299,6 +294,9 @@ export function buildRiver(rv: {
     const nx = -tan.z;
     const nz = tan.x;
     const len = Math.hypot(nx, nz) || 1;
+    // Reach a little past the banks; the terrain trims it back to the waterline.
+    const w = riverWidth(rv, t);
+    const half = w * 0.5 + w * 0.36 * 0.62;
     positions.push(p.x - (nx / len) * half, rv.level, p.z - (nz / len) * half);
     positions.push(p.x + (nx / len) * half, rv.level, p.z + (nz / len) * half);
     uvs.push(0, t * 30, 1, t * 30);

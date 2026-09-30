@@ -57,6 +57,8 @@ export function SceneView({ scene }: { scene: PoemScene }) {
   const revealing = useScene((s) => s.revealing);
   const clearRevealing = useScene((s) => s.clearRevealing);
   const panelOpen = useScene((s) => s.panelOpen);
+  const focus = useScene((s) => s.focus);
+  const setFocus = useScene((s) => s.setFocus);
   const togglePanel = useScene((s) => s.togglePanel);
 
   const [phase, setPhase] = useState<'card' | 'build' | 'done'>('card');
@@ -97,11 +99,14 @@ export function SceneView({ scene }: { scene: PoemScene }) {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') togglePanel(false);
+      if (e.key === 'Escape') {
+        togglePanel(false);
+        setFocus(null);
+      }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [togglePanel]);
+  }, [togglePanel, setFocus]);
 
   const found = useScene((s) => s.found);
   const complete = found.length === scene.lines.length;
@@ -148,6 +153,12 @@ export function SceneView({ scene }: { scene: PoemScene }) {
         <button type="button" className="pill" data-on={sound} onClick={toggleSound} title="松风 · 泉声 · 竹喧">
           {sound ? '闻声' : '寂'}
         </button>
+
+        {mode === 'view' && focus && (
+          <button type="button" className="pill pill--rise" onClick={() => setFocus(null)} title="回到高处 (Esc)">
+            俯瞰
+          </button>
+        )}
 
         <div className="topbar__spacer" />
       </div>

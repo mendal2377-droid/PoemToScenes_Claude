@@ -61,6 +61,23 @@ export const CHI_LE: PoemScene = {
     basins: [],
     channels: [],
     flats: [],
+    // 阴山下 — a river along the foot of the range, in long slow bends. The steppe
+    // has no other water, so this is the only thing in it that shines.
+    rivers: [
+      {
+        path: [
+          [-150, -76],
+          [-70, -92],
+          [-10, -84],
+          [50, -96],
+          [110, -82],
+          [150, -98],
+        ],
+        width: 18,
+        level: -1.4,
+        depth: 3.4,
+      },
+    ],
   },
   // 阴山 — a long, low range across the whole far side, and nothing tall
   // anywhere else: the sky is meant to be most of the picture.
@@ -82,16 +99,26 @@ export const CHI_LE: PoemScene = {
     rocks: { count: 60 },
   },
   landmarks: [
-    { id: 'chuan', line: 0, label: '川', x: 0, z: 40, radius: 16 },
-    { id: 'yinshan', line: 1, label: '阴山', x: 0, z: -84, radius: 16 },
-    { id: 'qionglu', line: 2, label: '穹庐', x: 56, z: -20, radius: 16 },
-    { id: 'siye', line: 3, label: '四野', x: -58, z: -18, radius: 16 },
-    { id: 'cangcang', line: 4, label: '苍苍', x: 46, z: 34, radius: 16 },
-    { id: 'mangmang', line: 5, label: '茫茫', x: -48, z: 36, radius: 16 },
-    { id: 'niuyang', line: 6, label: '牛羊', x: 6, z: -30, radius: 20 },
+    // 敕勒川 — the plain, and how far it goes.
+    { id: 'chuan', line: 0, label: '川', x: 0, z: 40, radius: 16, look: [0, -40, 1] },
+    // 阴山下 — the range, with the river in front of it.
+    { id: 'yinshan', line: 1, label: '阴山', x: 0, z: -56, radius: 16, look: [0, -170, 34] },
+    // 天似穹庐 — up: the sky as a tent over the whole world.
+    { id: 'qionglu', line: 2, label: '穹庐', x: 56, z: -20, radius: 16, look: [56, -260, 210], zoom: 0.85 },
+    // 笼盖四野 — out: the edge of the sky, on every side.
+    { id: 'siye', line: 3, label: '四野', x: -58, z: -18, radius: 16, look: [-200, 20, 4], zoom: 0.9 },
+    // 天苍苍 — up again, at blue.
+    { id: 'cangcang', line: 4, label: '苍苍', x: 46, z: 34, radius: 16, look: [46, -200, 200], zoom: 0.85 },
+    // 野茫茫 — the grass, going away.
+    { id: 'mangmang', line: 5, label: '茫茫', x: -48, z: 36, radius: 16, look: [-150, 60, 1] },
+    // 风吹草低见牛羊 — and there they are.
+    { id: 'niuyang', line: 6, label: '牛羊', x: 6, z: -2, radius: 18, look: [6, -30, 1.3], zoom: 1.35 },
   ],
   start: { x: 0, z: 78, heading: 0 },
   fall: { kind: 'snow', color: '#ffffff', size: 1, accumulate: 1 },
   luminary: { x: 0.2, y: 0.62, z: -0.75, size: 0.07, kind: 'sun' },
   herd: { count: 22, x: 6, z: -30, r: 34, color: '#6b5a47', scale: 2.4 },
+  // The man who keeps them, standing in the grass at the edge of the herd.
+  people: [{ x: 15, z: -20, rot: -1.0, role: 'herdsman' }],
 };
+

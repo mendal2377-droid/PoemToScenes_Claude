@@ -1,5 +1,5 @@
 import { distToPath, smoothstep } from './noise';
-import { inWater, terrainHeight } from './terrain';
+import { inWater, riverWidth, terrainHeight } from './terrain';
 import type { PoemScene } from './types';
 
 /**
@@ -66,7 +66,8 @@ export function validateScene(s: PoemScene): string[] {
     for (const rv of s.terrain.rivers ?? []) {
       const { dist, t } = distToPath(x, z, rv.path);
       const end = smoothstep(0.02, 0.16, t) * (1 - smoothstep(0.84, 0.98, t));
-      const reach = rv.width * 0.5 + rv.width * 0.36 * 0.45 + margin;
+      const w = riverWidth(rv, t);
+      const reach = w * 0.5 + w * 0.36 * 0.45 + margin;
       if (end > 0.5 && dist < reach) {
         e.push(
           at(
@@ -108,8 +109,8 @@ export function validateScene(s: PoemScene): string[] {
       if (!floating) e.push(at(`boat at (${boat.x}, ${boat.z}) is not on any pond`));
     } else if (on === 'river') {
       const afloat = (s.terrain.rivers ?? []).some((rv) => {
-        const { dist } = distToPath(boat!.x, boat!.z, rv.path);
-        return dist < rv.width * 0.42;
+        const { dist, t } = distToPath(boat!.x, boat!.z, rv.path);
+        return dist < riverWidth(rv, t) * 0.42;
       });
       if (!afloat) e.push(at(`boat at (${boat.x}, ${boat.z}) is not on the river`));
     } else if (on === 'stream') {
@@ -119,6 +120,25 @@ export function validateScene(s: PoemScene): string[] {
       e.push(at(`boat at (${boat.x}, ${boat.z}) is meant to be on the bank but is in the water`));
     }
   }
+
+  // --- every line has something to look at ----------------------------------
+  // Choosing a line stands you where the poet stood, facing its subject. A
+  // landmark with nothing to face would drop you on the spot looking at nothing
+  // in particular, so every one has to say what it is looking at.
+  for (const lm of s.landmarks) {
+    if (!lm.look) e.push(at(`landmark ${lm.id} (line ${lm.line}) has no look target`));
+  }
+
+  // --- the people, the birds, and the things that are heard ------------------
+  s.people?.forEach((q, i) => {
+    if (inWater(q.x, q.z, s.terrain)) e.push(at(`person ${i} (${q.role}) at (${q.x}, ${q.z}) is standing in the water`));
+  });
+  s.props?.forEach((q, i) => {
+    if (inWater(q.x, q.z, s.terrain)) e.push(at(`prop ${i} at (${q.x}, ${q.z}) is in the water`));
+  });
+  s.sounds?.forEach((q, i) => {
+    if (q.r <= 0) e.push(at(`sound ${i} (${q.kind}) has no radius`));
+  });
 
   // --- dry-land set pieces --------------------------------------------------
   s.huts?.forEach((h, i) => {

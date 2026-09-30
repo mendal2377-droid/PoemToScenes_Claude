@@ -174,9 +174,10 @@ export function makeTerrainMaterial(p: Palette) {
 
       void main(){
         vec2 maskUv = vW.xz / (uExtent * 2.0) + 0.5;
-        vec2 mask = texture2D(uMask, maskUv).rg;
+        vec3 mask = texture2D(uMask, maskUv).rgb;
         float vTrail = mask.r;
         float vWet = mask.g;
+        float vSand = mask.b;
         float slope = clamp(1.0 - vN.y, 0.0, 1.0);
         float h = clamp(vW.y * 0.045 + 0.45, 0.0, 1.0);
 
@@ -232,6 +233,9 @@ export function makeTerrainMaterial(p: Palette) {
         // Grit underfoot, so the path is not a flat band of colour.
         float grit = step(0.88, hash21(floor(vW.xz * 5.5)));
         col = mix(col, uInk, trail * grit * 0.16);
+
+        // 汀上白沙 — a sandbar or a shingle bank: the ground gone pale.
+        col = mix(col, vec3(0.94, 0.92, 0.84), smoothstep(0.22, 0.62, vSand) * 0.92);
 
         // Damp ground beside the water.
         col = mix(col, uWater, smoothstep(0.2, 1.0, vWet) * 0.4);
@@ -1119,6 +1123,66 @@ export function makeGlowMaterial() {
         a *= vA;
         if(a < 0.01) discard;
         gl_FragColor = vec4(vColor * a, a);
+      }
+    `,
+  });
+}
+
+/* ------------------------------------------------------------------- birds */
+
+export function makeBirdMaterial(p: Palette) {
+  return new THREE.ShaderMaterial({
+    side: THREE.DoubleSide,
+    uniforms: {
+      ...COMMON_UNIFORMS(p),
+      uInk: { value: c(p.ink) },
+      uPale: { value: c('#f2f0e8') },
+    },
+    vertexShader: /* glsl */ `
+      attribute vec3 aCenter;
+      attribute vec4 aParams;   // radius, angular speed, phase, size
+      attribute float aPale;
+      uniform float uTime;
+      varying vec3 vW;
+      varying float vPale;
+      void main(){
+        float r = aParams.x;
+        float sp = aParams.y;
+        float ph = aParams.z;
+        float sz = aParams.w;
+        float a = uTime * sp + ph;
+        // Every bird flies its own circuit: a slightly different radius, and
+        // rising and sinking a little on its own rhythm.
+        float rr = r * (0.55 + 0.45 * fract(ph * 7.31));
+        vec3 orb = aCenter + vec3(
+          cos(a) * rr,
+          sin(uTime * 0.9 + ph * 5.0) * 1.3 + fract(ph * 3.7) * 3.2,
+          sin(a) * rr
+        );
+        vec3 tang = normalize(vec3(-sin(a), 0.0, cos(a)) * sign(sp));
+        vec3 right = vec3(-tang.z, 0.0, tang.x);
+        float flap = sin(uTime * (9.0 + fract(ph * 5.3) * 4.0) + ph * 20.0);
+        vec3 wp = orb
+          + right * position.x * sz
+          + tang * position.z * sz
+          + vec3(0.0, abs(position.x) * flap * 0.55 * sz, 0.0);
+        vW = wp;
+        vPale = aPale;
+        gl_Position = projectionMatrix * viewMatrix * vec4(wp, 1.0);
+      }
+    `,
+    fragmentShader:
+      PRELUDE +
+      ATMOS_FN +
+      /* glsl */ `
+      uniform vec3 uInk, uPale;
+      varying vec3 vW;
+      varying float vPale;
+      void main(){
+        vec3 col = mix(uInk, uPale, vPale);
+        col = applyHour(col);
+        col = applyMist(col, length(vW - cameraPosition), 1.0);
+        gl_FragColor = vec4(col, 1.0);
       }
     `,
   });

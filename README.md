@@ -65,7 +65,13 @@ legitimate way to read a poem.
 
 **Three modes.**
 
-- **自由观看** — orbit the valley the way you would walk around a hanging scroll.
+- **自由观看** — orbit the valley the way you would walk around a hanging scroll. **Click a
+  line and the camera comes down to the poet's eye**: it stands where the poem was written,
+  at a person's eye height, and turns to what the line is about — the moon, the far bank,
+  the washerwomen coming out of the bamboo. Drag to turn your head, wheel to look closer,
+  and press 俯瞰 (or Esc) to rise back to the overview. A line that faces the sky keeps
+  following the sun or moon as the clock turns. Every landmark carries a `look` target, and
+  the build fails without one.
 - **漫游** — WASD to walk, Shift to run, drag to look. A figure in a straw hat and rain
   cape follows the ochre trail. Coming near a place stirs its line in the inscription;
   arriving inks it. Clicking a line in free view travels to the place it names.
@@ -210,6 +216,15 @@ Beyond text and palette, a `PoemScene` can carry:
 - **`massifs` / `skyline`** — a peak that dominates the horizon at a chosen bearing, and a
   height scale for every range (0.5 is a low horizon, 1.3 closes in).
 - **`glows`, `huts`, `steles`, `bridges`, `boats`, `herd`** — set pieces.
+- **`people`** — costumed figures by role (washerwoman, scholar, elder, child, farmer,
+  herdsman, companion with a torch, fisher, monkey), built from a cone, a sphere and a hat,
+  so a scene is populated without any model files. **`flocks`** are birds, **`props`** are
+  things like a jar of wine, **`sand`** paints a bar into the ground mask, and **`sounds`**
+  are localized sources — frogs, cicadas, birdsong, a gibbon, poultry — that come up as you
+  approach them.
+- **Small rivers taper.** A river can narrow along its length (`taper`), so 山居秋暝 has a
+  stream that widens into a river, not a pond. Trees, reeds and rocks keep out of the
+  standing point of every line so the first thing the poet's eye meets is the view.
 - **`cave`** and **`torch`** — the world goes dark round the camera, and only what the torch
   reaches stays lit. Without a torch it is merely dim, which is what the slot in 桃花源记 is.
 - **`view`** — where the free view opens. A slot in a wall wants the camera high and back.
@@ -242,6 +257,11 @@ under the surface; the messages say how far to move the entry.
   reads as enclosed from inside, but seen from directly above it is an open pit.
 - **The prose inscriptions are wide.** Fifteen columns of clause-length text take a good
   part of the screen, and on a narrow window they cover a lot of the picture.
+- **The poet's eye stands on the ground.** In the cave scene the eye sits at the bottom of a
+  pit, so some lines show a wall of hillside rather than a passage; the torch glow and the
+  dark carry it.
+- **People are silhouettes.** No faces, no walking; a figure is a robe, a hat and something
+  carried.
 - **Placed props are session-only.** Nothing persists across a reload.
 - **平仄 is hand-encoded per poem**, not looked up. Adding a poem means writing its tones
   out; there is no 平水韵 table in the project.

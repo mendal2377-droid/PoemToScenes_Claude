@@ -4,11 +4,12 @@ import { useEffect, useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { clamp, distToPath, smoothstep } from '@/lib/noise';
-import { terrainHeight } from '@/lib/terrain';
+import { riverWidth, terrainHeight } from '@/lib/terrain';
 import { useScene } from '@/lib/store';
 import { touchInput } from '@/lib/touch';
 import type { PoemScene } from '@/lib/types';
-import { Figure } from './World';
+import { Figure } from './Figure';
+import { bodies } from './materials';
 import type { World } from './useWorld';
 
 const MOVE_KEYS: Record<string, [number, number]> = {
@@ -192,7 +193,8 @@ export function RoamRig({ scene, world }: { scene: PoemScene; world: World }) {
     for (const rv of scene.terrain.rivers ?? []) {
       const near = distToPath(pos.current.x, pos.current.z, rv.path);
       const end = smoothstep(0.02, 0.16, near.t) * (1 - smoothstep(0.84, 0.98, near.t));
-      const shore = rv.width * 0.5 + rv.width * 0.36 * 0.3;
+      const w = riverWidth(rv, near.t);
+      const shore = w * 0.5 + w * 0.36 * 0.3;
       if (end > 0.5 && near.dist < shore && near.dist > 1e-3) {
         const dx = pos.current.x - near.px;
         const dz = pos.current.z - near.pz;
@@ -281,28 +283,72 @@ export function ViewRig({ scene }: { scene: PoemScene }) {
   );
   const state = useRef({ yaw: scene.start.heading, pitch: home.pitch, dist: home.dist });
   const target = useMemo(() => new THREE.Vector3(...home.at), [home]);
-  const wanted = useMemo(() => new THREE.Vector3(...home.at), [home]);
+
+  /**
+   * The poet's eye.
+   *
+   * Choosing a line stands the camera on the spot the poet stood, at the height
+   * of a person's eyes, turned to what the line is about. `want` is where it is
+   * going and `cur` is where it is; they are kept apart so the move is a glide,
+   * and so a drag can turn the head without fighting the flight.
+   */
+  const eye = useRef({
+    want: { pos: new THREE.Vector3(), yaw: 0, pitch: 0, fov: 52 },
+    cur: { pos: new THREE.Vector3(), yaw: 0, pitch: 0, fov: 52 },
+    active: false,
+    zoom: 1,
+    /** A body in the sky is followed as it moves, until the visitor turns their own head. */
+    sky: null as 'sun' | 'moon' | null,
+  });
 
   useEffect(() => {
     state.current = { yaw: scene.start.heading, pitch: home.pitch, dist: home.dist };
     target.set(...home.at);
-    wanted.set(...home.at);
-  }, [scene, target, wanted, home]);
+    eye.current.active = false;
+  }, [scene, target, home]);
 
-  // Choosing a line from the inscription moves the view to the place it names.
+  // A line was chosen: work out where to stand and what to face.
   useEffect(() => {
     const lm = scene.landmarks.find((l) => l.id === focus);
-    if (!lm) {
-      wanted.set(...home.at);
-      state.current.dist = home.dist;
+    if (!lm || mode !== 'view') {
+      eye.current.active = false;
       return;
     }
-    wanted.set(lm.x, terrainHeight(lm.x, lm.z, scene.terrain) + 9, lm.z);
-    state.current.dist = 42;
-  }, [focus, scene, wanted, home]);
+    const gy = terrainHeight(lm.x, lm.z, scene.terrain);
+    const pos = new THREE.Vector3(lm.x, gy + 1.65, lm.z);
+
+    // What is it looking at? A point on the ground, or a body in the sky.
+    const look = lm.look;
+    let aim: THREE.Vector3;
+    if (look === 'moon' || look === 'sun') {
+      aim = pos.clone().addScaledVector(look === 'moon' ? bodies.moon : bodies.sun, 400);
+    } else if (look) {
+      aim = new THREE.Vector3(look[0], terrainHeight(look[0], look[1], scene.terrain) + (look[2] ?? 1.5), look[1]);
+    } else {
+      // No composed view: face the middle of the world.
+      aim = new THREE.Vector3(0, gy + 6, 0);
+    }
+    const d = aim.clone().sub(pos);
+    const e = eye.current;
+    e.want.pos.copy(pos);
+    e.want.yaw = Math.atan2(d.x, d.z);
+    e.want.pitch = Math.atan2(d.y, Math.hypot(d.x, d.z));
+    e.zoom = lm.zoom ?? 1;
+    e.want.fov = 52 / e.zoom;
+    e.sky = look === 'moon' || look === 'sun' ? look : null;
+    if (!e.active) {
+      // Begin the glide from wherever the camera is now.
+      e.cur.pos.copy(camera.position);
+      const f = camera.getWorldDirection(new THREE.Vector3());
+      e.cur.yaw = Math.atan2(f.x, f.z);
+      e.cur.pitch = Math.asin(clamp(f.y, -1, 1));
+      e.cur.fov = (camera as THREE.PerspectiveCamera).fov;
+    }
+    e.active = true;
+  }, [focus, mode, scene, camera]);
 
   useEffect(() => {
-    if (mode !== 'view') return;
+    if (mode === 'roam') return;
     const el = gl.domElement;
     let dragging = false;
     let lastX = 0;
@@ -316,8 +362,17 @@ export function ViewRig({ scene }: { scene: PoemScene }) {
     };
     const move = (e: PointerEvent) => {
       if (!dragging) return;
-      state.current.yaw -= (e.clientX - lastX) * 0.004;
-      state.current.pitch = clamp(state.current.pitch + (e.clientY - lastY) * 0.003, 0.02, 1.2);
+      const dx = e.clientX - lastX;
+      const dy = e.clientY - lastY;
+      if (eye.current.active) {
+        // Turning the head: drag the world, so dragging right turns to the left.
+        eye.current.sky = null;
+        eye.current.want.yaw += dx * 0.0042;
+        eye.current.want.pitch = clamp(eye.current.want.pitch + dy * 0.0032, -0.6, 1.25);
+      } else {
+        state.current.yaw -= dx * 0.004;
+        state.current.pitch = clamp(state.current.pitch + dy * 0.003, 0.02, 1.2);
+      }
       lastX = e.clientX;
       lastY = e.clientY;
     };
@@ -326,7 +381,12 @@ export function ViewRig({ scene }: { scene: PoemScene }) {
     };
     const wheel = (e: WheelEvent) => {
       e.preventDefault();
-      state.current.dist = clamp(state.current.dist + e.deltaY * 0.09, 24, 220);
+      if (eye.current.active) {
+        eye.current.zoom = clamp(eye.current.zoom * (e.deltaY > 0 ? 0.92 : 1.08), 0.7, 5);
+        eye.current.want.fov = 52 / eye.current.zoom;
+      } else {
+        state.current.dist = clamp(state.current.dist + e.deltaY * 0.09, 24, 220);
+      }
     };
 
     el.addEventListener('pointerdown', down);
@@ -342,11 +402,58 @@ export function ViewRig({ scene }: { scene: PoemScene }) {
   }, [gl, mode]);
 
   useFrame((_, rawDt) => {
-    if (mode === 'roam') return;
+    const cam = camera as THREE.PerspectiveCamera;
+    if (mode === 'roam') {
+      // Leaving an eye view for the walk: put the ordinary lens back.
+      if (Math.abs(cam.fov - 52) > 0.05) {
+        cam.fov = 52;
+        cam.updateProjectionMatrix();
+      }
+      return;
+    }
     const dt = Math.min(rawDt, 0.05);
+    const e = eye.current;
+
+    if (e.active) {
+      if (e.sky) {
+        const b = bodies[e.sky];
+        e.want.yaw = Math.atan2(b.x, b.z);
+        e.want.pitch = Math.atan2(b.y, Math.hypot(b.x, b.z));
+      }
+      // Glide to the eye, and turn the head the short way round.
+      const k = 1 - Math.pow(0.02, dt);
+      e.cur.pos.lerp(e.want.pos, k);
+      let dy = e.want.yaw - e.cur.yaw;
+      dy = Math.atan2(Math.sin(dy), Math.cos(dy));
+      e.cur.yaw += dy * k;
+      e.cur.pitch += (e.want.pitch - e.cur.pitch) * k;
+      e.cur.fov += (e.want.fov - e.cur.fov) * k;
+
+      // Never through the hillside on the way there.
+      const floor = terrainHeight(e.cur.pos.x, e.cur.pos.z, scene.terrain) + 1.2;
+      if (e.cur.pos.y < floor) e.cur.pos.y = floor;
+
+      cam.position.copy(e.cur.pos);
+      const cp = Math.cos(e.cur.pitch);
+      cam.lookAt(
+        e.cur.pos.x + Math.sin(e.cur.yaw) * cp,
+        e.cur.pos.y + Math.sin(e.cur.pitch),
+        e.cur.pos.z + Math.cos(e.cur.yaw) * cp
+      );
+      if (Math.abs(cam.fov - e.cur.fov) > 0.01) {
+        cam.fov = e.cur.fov;
+        cam.updateProjectionMatrix();
+      }
+      return;
+    }
+
+    // Overview. Ease the field of view back if we have just come down from an eye.
+    if (Math.abs(cam.fov - 52) > 0.05) {
+      cam.fov += (52 - cam.fov) * (1 - Math.pow(0.02, dt));
+      cam.updateProjectionMatrix();
+    }
     // No auto-rotation: the default framing is composed around the moon, and a
     // slow drift kept carrying it out of shot.
-    target.lerp(wanted, 1 - Math.pow(0.02, dt));
     const { yaw, pitch, dist } = state.current;
     const cp = Math.cos(pitch);
     const desired = new THREE.Vector3(

@@ -82,9 +82,22 @@ export const BAO_CHAN_SHAN: PoemScene = {
     hills: { amp: 2.6, freq: 0.02 },
     swell: { amp: 4.2, freq: 0.006 },
     rim: { start: 88, amp: 24 },
-    // The spring in the front cave.
-    basins: [{ x: -27, z: -30, r: 5, depth: 1.1 }],
-    channels: [],
+    basins: [],
+    // 有泉侧出 — the spring in the front hall, which runs out of it and down the
+    // mountain as a brook.
+    channels: [
+      {
+        path: [
+          [-27, -31],
+          [-34, -10],
+          [-40, 20],
+          [-34, 48],
+          [-22, 80],
+        ],
+        width: 4,
+        depth: 1.3,
+      },
+    ],
     // The floor of the front hall, cut level into the slope.
     flats: [{ x: -26, z: -26, r: 11, h: 22 }],
     bumps: [
@@ -128,21 +141,36 @@ export const BAO_CHAN_SHAN: PoemScene = {
     rocks: { count: 250 },
   },
   landmarks: [
-    { id: 'baochan', line: 0, label: '华山', x: 10, z: 90, radius: 13 },
-    { id: 'beipu', line: 1, label: '仆碑', x: 2, z: 62, radius: 10 },
-    { id: 'huashan', line: 2, label: '花山', x: -12, z: 48, radius: 9 },
-    { id: 'qiandong', line: 3, label: '前洞', x: -24, z: -20, radius: 10 },
-    { id: 'houdong', line: 4, label: '后洞', x: 26, z: -44, radius: 7 },
-    { id: 'yonghuo', line: 5, label: '拥火', x: 25, z: -56, radius: 6 },
-    { id: 'yujin', line: 6, label: '愈难', x: 33, z: -65, radius: 6 },
-    { id: 'yuqi', line: 7, label: '愈奇', x: 28, z: -75, radius: 6 },
-    { id: 'huojin', line: 8, label: '火尽', x: 14, z: -83, radius: 6 },
-    { id: 'jinchu', line: 9, label: '俱出', x: 46, z: -52, radius: 8 },
-    { id: 'qiwei', line: 10, label: '奇伟', x: -8, z: -74, radius: 10 },
-    { id: 'xianyuan', line: 11, label: '险远', x: -32, z: -94, radius: 10 },
-    { id: 'youzhi', line: 12, label: '有志', x: 34, z: -100, radius: 10 },
-    { id: 'jinzhi', line: 13, label: '尽志', x: -58, z: -62, radius: 10 },
-    { id: 'wuhui', line: 14, label: '无悔', x: 2, z: -106, radius: 9 },
+    // 褒禅山亦谓之华山 — the mountain, from the foot of it.
+    { id: 'baochan', line: 0, label: '华山', x: 10, z: 90, radius: 13, look: [-8, -74, 44] },
+    // 距洞百余步，有碑仆道 — the stele, down across the road.
+    { id: 'beipu', line: 1, label: '仆碑', x: 6, z: 66, radius: 10, look: [0, 60, 0.4], zoom: 1.6 },
+    // 其文漫灭，独其为文犹可识 — the one still standing, worn almost smooth.
+    { id: 'huashan', line: 2, label: '花山', x: -6, z: 58, radius: 9, look: [-14, 50, 1.4], zoom: 1.7 },
+    // 洞之内平旷，有泉侧出 — the front hall: level, bright, and full of names.
+    { id: 'qiandong', line: 3, label: '前洞', x: -24, z: -20, radius: 10, look: [-26, -30, 1.4], zoom: 1.2 },
+    // 有穴窈然，入之甚寒 — the mouth of the other one, and the dark in it.
+    { id: 'houdong', line: 4, label: '后洞', x: 26, z: -44, radius: 7, look: [24, -56, -3], zoom: 1.2 },
+    // 余与四人拥火以入 — the five of them, with their torches, at the mouth.
+    { id: 'yonghuo', line: 5, label: '拥火', x: 25, z: -56, radius: 6, look: [30, -65, 0.5] },
+    // 入之愈深，其进愈难 — the way narrowing, and going down.
+    { id: 'yujin', line: 6, label: '愈难', x: 33, z: -65, radius: 6, look: [29, -74, -4] },
+    // 而其见愈奇 — and the strange things the torches find.
+    { id: 'yuqi', line: 7, label: '愈奇', x: 28, z: -75, radius: 6, look: [20, -80, 1.6], zoom: 1.3 },
+    // 有怠而欲出者，曰：不出，火且尽 — the one who wants to go back, and his torch.
+    { id: 'huojin', line: 8, label: '火尽', x: 14, z: -83, radius: 6, look: [12, -79, 1.3], zoom: 1.7 },
+    // 遂与之俱出 — and out, into daylight.
+    { id: 'jinchu', line: 9, label: '俱出', x: 46, z: -52, radius: 8, look: [100, -40, 10] },
+    // 世之奇伟瑰怪非常之观 — the summit, and what can be seen from it.
+    { id: 'qiwei', line: 10, label: '奇伟', x: -8, z: -74, radius: 10, look: [-8, -200, 32] },
+    // 常在于险远，而人之所罕至焉 — the far edge, where hardly anyone goes.
+    { id: 'xianyuan', line: 11, label: '险远', x: -32, z: -94, radius: 10, look: [-72, -140, 0] },
+    // 故非有志者不能至也 — the far ridge, and the long way to it.
+    { id: 'youzhi', line: 12, label: '有志', x: 34, z: -100, radius: 10, look: [84, -150, 22] },
+    // 尽吾志也而不能至者 — a place short of the top, where the road gives out.
+    { id: 'jinzhi', line: 13, label: '尽志', x: -58, z: -62, radius: 10, look: [-102, -92, 14] },
+    // 可以无悔矣 — and the mountain, from the far side, having been walked.
+    { id: 'wuhui', line: 14, label: '无悔', x: 2, z: -106, radius: 9, look: [-8, -74, 30], zoom: 0.9 },
   ],
   start: { x: 8, z: 108, heading: 0 },
   fall: { kind: 'leaf', color: '#9bb060', size: 1.0, accumulate: 0 },
@@ -168,4 +196,17 @@ export const BAO_CHAN_SHAN: PoemScene = {
     { x: 14, z: -84, h: 1.2, color: '#ffe0b0', size: 2.7 },
     { x: 11, z: -88, h: 2.0, color: '#c8f4ff', size: 3.2 },
   ],
+  people: [
+    // 记游者甚众 — two who have come to read the names on the walls of the hall.
+    { x: -20, z: -23, rot: 0.8, role: 'scholar' },
+    { x: -22, z: -30, rot: -0.6, role: 'scholar' },
+    // 余与四人拥火以入 — and the four with him, each with a torch.
+    { x: 29.1, z: -59.6, rot: 2.7, role: 'companion', torch: true },
+    { x: 25.8, z: -61.6, rot: 2.6, role: 'companion', torch: true },
+    { x: 31.2, z: -62.4, rot: 2.6, role: 'companion', torch: true },
+    { x: 27, z: -64.6, rot: 2.5, role: 'companion', torch: true },
+    // 有怠而欲出者 — the one who says the fire is running out.
+    { x: 12, z: -79, rot: 2.4, role: 'companion', torch: true },
+  ],
 };
+

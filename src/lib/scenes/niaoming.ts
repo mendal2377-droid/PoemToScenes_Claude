@@ -60,8 +60,7 @@ export const NIAO_MING: PoemScene = {
     swell: { amp: 9, freq: 0.0075 },
     // A bowl: the walls stand up all round at about forty metres out.
     rim: { start: 44, amp: 62 },
-    // A pool at the foot of the ravine, where the brook slows.
-    basins: [{ x: 22, z: 60, r: 11, depth: 2.6 }],
+    basins: [],
     channels: [{ path: RAVINE, width: 7.4, depth: 3.2 }],
     flats: [],
     // Two shoulders of the mountain pressing in from either side, so the
@@ -94,13 +93,26 @@ export const NIAO_MING: PoemScene = {
     rocks: { count: 210 },
   },
   landmarks: [
-    { id: 'guihua', line: 0, label: '桂花', x: -26, z: 38, radius: 13 },
-    { id: 'chunshan', line: 1, label: '春山', x: 0, z: -56, radius: 14 },
-    { id: 'yuechu', line: 2, label: '月出', x: 34, z: -18, radius: 13 },
-    { id: 'jianzhong', line: 3, label: '春涧', x: 6, z: 14, radius: 12 },
+    // 人闲桂花落 — the osmanthus, seen from a little way off, and someone idle under it.
+    { id: 'guihua', line: 0, label: '桂花', x: -12, z: 46, radius: 13, look: [-28, 38, 4], zoom: 1.25 },
+    // 夜静春山空 — up the empty ravine to the mountain at its head.
+    { id: 'chunshan', line: 1, label: '春山', x: 0, z: -56, radius: 14, look: [0, -100, 28] },
+    // 月出惊山鸟 — the moon coming up, and the birds it has startled.
+    { id: 'yuechu', line: 2, label: '月出', x: 34, z: -18, radius: 13, look: 'moon' },
+    // 时鸣春涧中 — the brook, and somewhere along it a bird.
+    { id: 'jianzhong', line: 3, label: '春涧', x: 6, z: 14, radius: 12, look: [-6, -20, 0.5], zoom: 1.2 },
   ],
   start: { x: -14, z: 94, heading: 0 },
   // Petals so small and slow they are barely weather at all.
   fall: { kind: 'petal', color: '#e2cc6a', size: 0.7, accumulate: 0 },
   luminary: { x: 0.12, y: 0.34, z: -0.93, size: 0.13, kind: 'moon' },
+  // 人闲 — a man with nothing to do, sitting under the tree.
+  people: [{ x: -22, z: 41, rot: -1.0, role: 'scholar', sit: true }],
+  // 惊山鸟 — a few birds up off the ridge, and the sounds of one in the brook.
+  flocks: [{ x: 38, z: -36, y: 20, count: 5, radius: 7, speed: 0.55 }],
+  sounds: [
+    { kind: 'birdsong', x: 34, z: -30, r: 24 },
+    { kind: 'birdsong', x: 4, z: 8, r: 26 },
+  ],
 };
+

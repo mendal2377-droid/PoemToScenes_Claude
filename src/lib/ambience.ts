@@ -1,6 +1,7 @@
 'use client';
 
 import { clamp, distToPath } from './noise';
+import { riverWidth } from './terrain';
 import type { PoemScene } from './types';
 
 /**
@@ -29,6 +30,8 @@ class Ambience {
   private master: GainNode | null = null;
   private layers: Record<string, Layer> = {};
   private knockAt = 0;
+  /** When each living sound next speaks, in seconds. */
+  private next: Record<string, number> = { frogs: 0, birdsong: 0, gibbon: 2, poultry: 0 };
   private knockFilter: BiquadFilterNode | null = null;
 
   get running() {
@@ -154,6 +157,36 @@ class Ambience {
       return bp;
     });
 
+    // 蝉 — a saw-tooth held high and chopped fast: the sound of a cicada is a
+    // buzz that is really a rattle. The LFO is what makes it a cicada.
+    {
+      const osc = ctx.createOscillator();
+      osc.type = 'sawtooth';
+      osc.frequency.value = 3700;
+      const bp = ctx.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.value = 3900;
+      bp.Q.value = 7;
+      const chop = ctx.createGain();
+      chop.gain.value = 0.5;
+      const lfo = ctx.createOscillator();
+      lfo.type = 'square';
+      lfo.frequency.value = 27;
+      const depth = ctx.createGain();
+      depth.gain.value = 0.5;
+      lfo.connect(depth);
+      depth.connect(chop.gain);
+      osc.connect(bp);
+      bp.connect(chop);
+      const layer = ctx.createGain();
+      layer.gain.value = 0;
+      chop.connect(layer);
+      layer.connect(master);
+      osc.start();
+      lfo.start();
+      this.layers['cicada'] = { gain: layer, peak: 0.055 };
+    }
+
     // A resonator the knocks are fired through — hollow, like a struck culm.
     const knock = ctx.createBiquadFilter();
     knock.type = 'bandpass';
@@ -213,6 +246,95 @@ class Ambience {
     src.start();
   }
 
+  /** A single pitched note that glides from one frequency to another. */
+  private tone(f0: number, f1: number, dur: number, gain: number, type: OscillatorType = 'sine', delay = 0) {
+    const ctx = this.ctx;
+    if (!ctx || !this.master) return;
+    const t = ctx.currentTime + delay;
+    const osc = ctx.createOscillator();
+    osc.type = type;
+    osc.frequency.setValueAtTime(f0, t);
+    osc.frequency.exponentialRampToValueAtTime(Math.max(f1, 20), t + dur);
+    const g = ctx.createGain();
+    // A fast attack and a fall to nothing: a note, not a tone.
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(Math.max(gain, 0.0002), t + Math.min(0.012, dur * 0.3));
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    osc.connect(g);
+    g.connect(this.master);
+    osc.start(t);
+    osc.stop(t + dur + 0.05);
+  }
+
+  /** A short burst of filtered noise: a frog's click, a dog's bark. */
+  private click(freq: number, q: number, dur: number, gain: number, delay = 0) {
+    const ctx = this.ctx;
+    if (!ctx || !this.master) return;
+    const t = ctx.currentTime + delay;
+    const frames = Math.max(8, Math.floor(ctx.sampleRate * dur));
+    const buf = ctx.createBuffer(1, frames, ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < frames; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / frames, 2);
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    const bp = ctx.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.frequency.value = freq;
+    bp.Q.value = q;
+    const g = ctx.createGain();
+    g.gain.value = gain;
+    src.connect(bp);
+    bp.connect(g);
+    g.connect(this.master);
+    src.start(t);
+  }
+
+  /** 蛙声一片 — a run of croaks, each on its own pitch, tumbling over the last. */
+  private frogs(amount: number) {
+    const n = 3 + Math.floor(Math.random() * 4);
+    const base = 620 + Math.random() * 500;
+    for (let i = 0; i < n; i++) {
+      this.click(base * (1 + Math.random() * 0.5), 9, 0.05 + Math.random() * 0.03, 0.55 * amount, i * (0.05 + Math.random() * 0.05));
+      this.tone(base * 0.7, base * 0.55, 0.06, 0.05 * amount, 'triangle', i * 0.07);
+    }
+  }
+
+  /** 时鸣春涧中 — a few notes, sweeping up, then a pause. */
+  private birdsong(amount: number) {
+    const notes = 2 + Math.floor(Math.random() * 3);
+    let t = 0;
+    const f = 2300 + Math.random() * 1200;
+    for (let i = 0; i < notes; i++) {
+      const up = Math.random() < 0.65;
+      this.tone(f * (up ? 0.86 : 1.1), f * (up ? 1.18 : 0.8), 0.07 + Math.random() * 0.06, 0.11 * amount, 'sine', t);
+      t += 0.1 + Math.random() * 0.09;
+    }
+  }
+
+  /** 猿啸哀 — a rising whoop and a long, trembling fall. */
+  private gibbon(amount: number) {
+    this.tone(520, 1450, 0.42, 0.16 * amount, 'sine', 0);
+    // The fall carries a vibrato, made by stepping the pitch rather than a second oscillator.
+    let f = 1350;
+    for (let i = 0; i < 10; i++) {
+      const wob = i % 2 === 0 ? 1.06 : 0.94;
+      this.tone(f * wob, f * 0.93 * wob, 0.11, 0.14 * amount * (1 - i * 0.07), 'sine', 0.42 + i * 0.1);
+      f *= 0.955;
+    }
+  }
+
+  /** 鸡犬相闻 — clucking, and now and then a dog. */
+  private poultry(amount: number) {
+    if (Math.random() < 0.28) {
+      // a bark: a rough low tone and a burst of breath
+      this.tone(230, 130, 0.16, 0.13 * amount, 'sawtooth', 0);
+      this.click(700, 1.2, 0.1, 0.4 * amount, 0);
+      return;
+    }
+    const n = 2 + Math.floor(Math.random() * 3);
+    for (let i = 0; i < n; i++) this.tone(340 + Math.random() * 90, 210, 0.07, 0.09 * amount, 'triangle', i * 0.12);
+  }
+
   /** One bamboo culm knocking against another. */
   private knock() {
     const ctx = this.ctx;
@@ -267,7 +389,8 @@ class Ambience {
     // A river is water from a long way off.
     let river = 0;
     for (const rv of scene.terrain.rivers ?? []) {
-      river = Math.max(river, falloff(distToPath(x, z, rv.path).dist - rv.width * 0.5, 60));
+      const near = distToPath(x, z, rv.path);
+      river = Math.max(river, falloff(near.dist - riverWidth(rv, near.t) * 0.5, 60));
     }
 
     // Open water.
@@ -300,6 +423,32 @@ class Ambience {
 
     // 竹喧 — knocks get more frequent the harder the wind and the deeper in the
     // grove you stand.
+    // The sounds a scene names for itself. Each is loudest at its source and
+    // gone at twice its radius; the continuous ones ride a gain, the living
+    // ones speak now and then, more often the closer you stand.
+    const near = (kind: string) => {
+      let best = 0;
+      for (const src of scene.sounds ?? []) {
+        if (src.kind !== kind) continue;
+        best = Math.max(best, falloff(Math.hypot(x - src.x, z - src.z), src.r * 2));
+      }
+      return best;
+    };
+    set('cicada', near('cicada'));
+    const speak = (kind: 'frogs' | 'birdsong' | 'gibbon' | 'poultry', gap: [number, number], fn: (a: number) => void) => {
+      const amount = near(kind);
+      if (amount < 0.06) return;
+      this.next[kind] -= dt;
+      if (this.next[kind] <= 0) {
+        fn(amount);
+        this.next[kind] = (gap[0] + Math.random() * (gap[1] - gap[0])) / (0.4 + amount);
+      }
+    };
+    speak('frogs', [0.06, 0.4], (a) => this.frogs(a));
+    speak('birdsong', [1.4, 5.0], (a) => this.birdsong(a));
+    speak('gibbon', [6, 11], (a) => this.gibbon(a));
+    speak('poultry', [0.9, 3.2], (a) => this.poultry(a));
+
     this.knockAt -= dt;
     if (bamboo > 0.25 && this.knockAt <= 0) {
       this.knock();
