@@ -5,6 +5,7 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useScene } from '@/lib/store';
 import type { PoemScene } from '@/lib/types';
+import type { WeatherId } from '@/lib/weather';
 
 /**
  * Film mode — `/scene/<id>?film`.
@@ -48,6 +49,9 @@ declare global {
       rise: () => void;
       /** Render one frame, 1/30 s later than the last. */
       step: () => void;
+      /** The hour on the 24-hour dial, and the weather. */
+      clock: (hour: number) => void;
+      weather: (id: WeatherId) => void;
     };
   }
 }
@@ -72,6 +76,8 @@ export function installFilm(scene: PoemScene) {
       film.t += 1 / 30;
       film.advance?.(film.t);
     },
+    clock: (hour) => useScene.getState().setClock(hour),
+    weather: (id) => useScene.getState().setWeather(id),
   };
   return () => {
     delete window.__film;

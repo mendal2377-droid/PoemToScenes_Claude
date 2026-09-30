@@ -1,5 +1,6 @@
 import { SHELF } from '@/lib/poems';
 import { HeroFilm } from '@/ui/HeroFilm';
+import { IntroButton } from '@/ui/IntroButton';
 import { ScrollStrip } from '@/ui/ScrollStrip';
 
 export default function Home() {
@@ -26,6 +27,7 @@ export default function Home() {
 
       <footer className="shelf-foot">
         已绘 {open} 卷 · 余者待笔 — 悬停展卷，点击入山
+        <IntroButton />
       </footer>
     </main>
   );

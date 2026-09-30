@@ -120,6 +120,22 @@ WebCodecs (H.264) and muxes an mp4. The player (`ui/HeroFilm.tsx`) plays the cli
 and loops. It stays out of the way: no film for people who ask for reduced motion, on a
 data saver, or on a phone, where the shelf sits on plain paper.
 
+## The film about the app
+
+`public/film/intro.mp4` is a 65-second film about the app, opened from **观片 · Watch the
+film** at the foot of the shelf (it is not downloaded until asked for). Like the clips behind
+the shelf it is made from the app itself: six chapters — choose a poem and walk in, stand where
+the poet stood, one line one step one world, people and animals in the picture, day and night
+and wind and rain (the same view swept from dawn to dusk, then a storm, then snow), ten poems
+ten landscapes — with **bilingual subtitles** (Chinese and English) on every line and chapter
+and a pentatonic score synthesised with Web Audio (plucked strings over a drone, with wind,
+a stream, rain and thunder that follow the story).
+
+`scripts/make-intro.js` builds it: each scene is loaded in a hidden frame in film mode and
+stepped frame by frame, the typography and the poem's inscription are drawn over it in ink on a
+2D canvas, and video (H.264) and audio (AAC) are encoded with WebCodecs and muxed into one mp4.
+Change a caption or a shot and run it again.
+
 ## Running it
 
 ```bash
@@ -284,7 +300,9 @@ under the surface; the messages say how far to move the entry.
 - **People are built from primitives.** They have a body, arms and hands, but a face is two ink
   dots, and nobody walks: they stand, sit, wash, lean on a staff. Animals are a little
   livelier, but nothing moves across the ground.
-- **The film is 960x540 and a fixed set of clips.** Adding a scene to it means recording a
+- **The intro film is a fixed edit.** Its captions and English translations are written into
+  `scripts/make-intro.js`; a new poem means a new shot and new subtitles.
+- **The clips behind the shelf are 960x540 and a fixed set.** Adding a scene to it means recording a
   clip and adding its name to `CLIPS` in `ui/HeroFilm.tsx`. The mp4s are H.264, which every
   current browser plays; the recorder needs a Chromium with WebCodecs.
 - **Placed props are session-only.** Nothing persists across a reload.
