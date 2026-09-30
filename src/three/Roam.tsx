@@ -4,7 +4,8 @@ import { useEffect, useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { clamp, distToPath, smoothstep } from '@/lib/noise';
-import { riverWidth, terrainHeight } from '@/lib/terrain';
+import { inWater, riverWidth, terrainHeight } from '@/lib/terrain';
+import { film } from './Film';
 import { useScene } from '@/lib/store';
 import { touchInput } from '@/lib/touch';
 import type { PoemScene } from '@/lib/types';
@@ -299,12 +300,16 @@ export function ViewRig({ scene }: { scene: PoemScene }) {
     zoom: 1,
     /** A body in the sky is followed as it moves, until the visitor turns their own head. */
     sky: null as 'sun' | 'moon' | null,
+    /** The first eye of a scene is arrived at, not flown to. */
+    seen: false,
+    snap: false,
   });
 
   useEffect(() => {
     state.current = { yaw: scene.start.heading, pitch: home.pitch, dist: home.dist };
     target.set(...home.at);
     eye.current.active = false;
+    eye.current.seen = false;
   }, [scene, target, home]);
 
   // A line was chosen: work out where to stand and what to face.
@@ -336,7 +341,11 @@ export function ViewRig({ scene }: { scene: PoemScene }) {
     e.zoom = lm.zoom ?? 1;
     e.want.fov = 52 / e.zoom;
     e.sky = look === 'moon' || look === 'sun' ? look : null;
-    if (!e.active) {
+    if (!e.seen || film.cut) {
+      film.cut = false;
+      e.seen = true;
+      e.snap = true;
+    } else if (!e.active) {
       // Begin the glide from wherever the camera is now.
       e.cur.pos.copy(camera.position);
       const f = camera.getWorldDirection(new THREE.Vector3());
@@ -420,6 +429,29 @@ export function ViewRig({ scene }: { scene: PoemScene }) {
         e.want.yaw = Math.atan2(b.x, b.z);
         e.want.pitch = Math.atan2(b.y, Math.hypot(b.x, b.z));
       }
+      if (e.snap) {
+        e.snap = false;
+        e.cur.pos.copy(e.want.pos);
+        e.cur.yaw = e.want.yaw;
+        e.cur.pitch = e.want.pitch;
+        e.cur.fov = e.want.fov;
+      }
+      // Film mode: the eye walks on at a stroller's pace, keeping to dry ground,
+      // and the head sways a little, the way a person's does.
+      let swayYaw = 0;
+      let swayPitch = 0;
+      let bob = 0;
+      if (film.active) {
+        const now = performance.now() / 1000;
+        const nx = e.want.pos.x + Math.sin(e.want.yaw) * film.walk * dt;
+        const nz = e.want.pos.z + Math.cos(e.want.yaw) * film.walk * dt;
+        if (!inWater(nx, nz, scene.terrain)) {
+          e.want.pos.set(nx, terrainHeight(nx, nz, scene.terrain) + 1.65, nz);
+        }
+        swayYaw = Math.sin(now * 0.31) * 0.045;
+        swayPitch = Math.sin(now * 0.23 + 1) * 0.015;
+        bob = Math.sin(now * 1.9) * 0.025;
+      }
       // Glide to the eye, and turn the head the short way round.
       const k = 1 - Math.pow(0.02, dt);
       e.cur.pos.lerp(e.want.pos, k);
@@ -434,11 +466,14 @@ export function ViewRig({ scene }: { scene: PoemScene }) {
       if (e.cur.pos.y < floor) e.cur.pos.y = floor;
 
       cam.position.copy(e.cur.pos);
-      const cp = Math.cos(e.cur.pitch);
+      cam.position.y += bob;
+      const yaw = e.cur.yaw + swayYaw;
+      const pitch = e.cur.pitch + swayPitch;
+      const cp = Math.cos(pitch);
       cam.lookAt(
-        e.cur.pos.x + Math.sin(e.cur.yaw) * cp,
-        e.cur.pos.y + Math.sin(e.cur.pitch),
-        e.cur.pos.z + Math.cos(e.cur.yaw) * cp
+        cam.position.x + Math.sin(yaw) * cp,
+        cam.position.y + Math.sin(pitch),
+        cam.position.z + Math.cos(yaw) * cp
       );
       if (Math.abs(cam.fov - e.cur.fov) > 0.01) {
         cam.fov = e.cur.fov;

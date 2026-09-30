@@ -109,6 +109,10 @@ type SceneState = {
   resetFound: () => void;
 };
 
+/** Every scene opens standing where its first line was written. */
+const firstEye = (scene: PoemScene | null): string | null =>
+  scene ? (scene.landmarks.find((l) => l.line === 0) ?? scene.landmarks[0])?.id ?? null : null;
+
 const DEFAULT_BRUSH = {
   strokeDensity: 1,
   strokeLength: 1,
@@ -148,14 +152,15 @@ export const useScene = create<SceneState>((set, get) => ({
       found: [],
       revealing: null,
       near: null,
-      focus: null,
+      focus: firstEye(scene),
       placed: [],
       selected: null,
       brush: null,
       mode: 'view',
     }),
 
-  setMode: (mode) => set({ mode, focus: null, brush: mode === 'compose' ? get().brush : null }),
+  setMode: (mode) =>
+    set({ mode, focus: mode === 'view' ? firstEye(get().scene) : null, brush: mode === 'compose' ? get().brush : null }),
 
   setAtmosphere: (patch) => set({ atmosphere: { ...get().atmosphere, ...patch } }),
 

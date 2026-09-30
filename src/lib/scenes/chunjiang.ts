@@ -139,5 +139,11 @@ export const CHUN_JIANG: PoemScene = {
   // 汀上白沙 — a bar of it at the water's edge, and pale birds standing off it.
   sand: [{ x: 60, z: -75, r: 10 }, { x: 50, z: -80, r: 6 }],
   flocks: [{ x: 60, z: -68, y: 6, count: 4, radius: 9, speed: 0.28, pale: true }],
+  // 汀上白沙 — pale herons on the bar, the same colour as the sand and the light.
+  animals: [
+    { kind: 'egret', x: 57, z: -76, rot: 0.2 },
+    { kind: 'egret', x: 61, z: -79, rot: -0.3, scale: 0.9 },
+    { kind: 'egret', x: 54, z: -81, rot: 0.6, scale: 0.95 },
+  ],
 };
 

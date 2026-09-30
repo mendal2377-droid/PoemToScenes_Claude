@@ -178,18 +178,18 @@ function buildWorld(scene: PoemScene) {
         always: !!g.always,
       })),
       // Each torch a companion holds is a flame at the end of the stick, turned
-      // with the figure — offset (0.4, 1.35, 0.3) in its own frame.
+      // with the figure — the raised right hand, at (0.19, 1.78, 0.54) in its own frame.
       ...(scene.people ?? [])
         .filter((q) => q.torch)
         .map((q) => {
           const k = q.scale ?? 1;
           const c = Math.cos(q.rot);
           const sn = Math.sin(q.rot);
-          const ox = 0.4 * k;
-          const oz = 0.3 * k;
+          const ox = 0.19 * k;
+          const oz = 0.54 * k;
           const wx = q.x + ox * c + oz * sn;
           const wz = q.z - ox * sn + oz * c;
-          return { x: wx, y: terrainHeight(q.x, q.z, spec) + 1.42 * k, z: wz, color: '#ffb35c', size: 1.5, always: true };
+          return { x: wx, y: terrainHeight(q.x, q.z, spec) + 1.78 * k, z: wz, color: '#ffb35c', size: 1.5, always: true };
         }),
     ]),
     flocks: buildFlocks(

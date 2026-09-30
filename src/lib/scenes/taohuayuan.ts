@@ -225,5 +225,14 @@ export const TAO_HUA_YUAN: PoemScene = {
   ],
   // 鸡犬相闻 — heard more than seen.
   sounds: [{ kind: 'poultry', x: 0, z: -72, r: 40 }],
+  // 鸡犬相闻 — hens at the doors, a dog, and the ploughing oxen beside the farmers.
+  animals: [
+    { kind: 'hen', x: 9, z: -59, rot: 0.8 },
+    { kind: 'hen', x: 10.5, z: -56.5, rot: 2.4 },
+    { kind: 'hen', x: 3, z: -66, rot: 4.0 },
+    { kind: 'dog', x: 8, z: -64, rot: 3.6 },
+    { kind: 'ox', x: -5.5, z: -72, rot: 1.4 },
+    { kind: 'ox', x: 27, z: -70, rot: -1.2 },
+  ],
 };
 

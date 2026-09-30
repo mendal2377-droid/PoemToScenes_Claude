@@ -138,4 +138,10 @@ export const SHAN_JU: PoemScene = {
     { x: 31, z: -15, rot: Math.PI / 2 - 0.2, role: 'washer' },
     { x: -41.6, z: 26, rot: 2.6, role: 'scholar', sit: true },
   ],
+  // Egrets at the shallows of the lotus reach, and one on the far bank.
+  animals: [
+    { kind: 'egret', x: 25, z: 44, rot: -1.57 },
+    { kind: 'egret', x: 26, z: 52, rot: -1.2, scale: 0.9 },
+    { kind: 'egret', x: -8, z: 38, rot: 1.6, scale: 0.95 },
+  ],
 };

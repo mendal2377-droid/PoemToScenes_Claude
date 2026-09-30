@@ -141,5 +141,11 @@ export const YIN_JIU: PoemScene = {
   // 飞鸟相与还 — seven of them, together, turning for home.
   flocks: [{ x: 36, z: -36, y: 14, count: 8, radius: 8, speed: 0.32 }],
   sounds: [{ kind: 'birdsong', x: 46, z: -44, r: 32 }],
+  // The hut's dog and hens: 结庐在人境, and so a household.
+  animals: [
+    { kind: 'dog', x: -30, z: 26, rot: 3.5 },
+    { kind: 'hen', x: -31, z: 19, rot: 1.0 },
+    { kind: 'hen', x: -29, z: 20, rot: 2.4 },
+  ],
 };
 

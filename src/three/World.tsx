@@ -8,6 +8,7 @@ import type { PoemScene } from '@/lib/types';
 import type { World } from './useWorld';
 import { Figure } from './Figure';
 import { People } from './People';
+import { Animals } from './Animals';
 
 export { Figure };
 
@@ -290,6 +291,7 @@ export function WorldView({
       <Steles scene={scene} world={world} />
       <Props scene={scene} world={world} />
       <People scene={scene} world={world} />
+      <Animals scene={scene} />
       {geo.flocks && <mesh geometry={geo.flocks} material={mat.bird} frustumCulled={false} />}
       {geo.glows && <points geometry={geo.glows} material={mat.glow} renderOrder={9} frustumCulled={false} />}
       <Boats scene={scene} world={world} />

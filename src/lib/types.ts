@@ -114,6 +114,22 @@ export type Role =
   | 'fisher' // 蓑笠 — straw cape and rain hat
   | 'monkey'; // 猿 — small, brown, on a rock
 
+/** Creatures placed by hand — the ones a line names, or one that would be there. */
+export type AnimalKind =
+  | 'hen' // 鸡 — a red comb and a fan of tail
+  | 'dog' // 犬 — a curled tail, ears, always near a door
+  | 'frog' // 蛙 — on the stones at the water's edge
+  | 'egret' // 鹭 — white, on one leg, at the shallows
+  | 'ox'; // 牛 — the plough animal, standing
+
+export type Animal = {
+  kind: AnimalKind;
+  x: number;
+  z: number;
+  rot: number;
+  scale?: number;
+};
+
 export type Person = {
   x: number;
   z: number;
@@ -219,6 +235,7 @@ export type PoemScene = {
   /** Further boats, for stories that have more than one. */
   boats?: readonly { x: number; z: number; rot: number; on?: 'basin' | 'river' | 'stream' | 'ground' }[];
   people?: readonly Person[];
+  animals?: readonly Animal[];
   flocks?: readonly Flock[];
   sounds?: readonly SoundSource[];
   props?: readonly Prop[];

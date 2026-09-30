@@ -207,14 +207,28 @@ export function buildHerd(
 ): THREE.BufferGeometry | null {
   if (!placements.length) return null;
 
-  const body = new THREE.SphereGeometry(1, 9, 7).toNonIndexed();
-  const head = new THREE.SphereGeometry(1, 7, 6).toNonIndexed();
-  const leg = new THREE.CylinderGeometry(1, 0.8, 1, 5).toNonIndexed();
+  const sphere = new THREE.SphereGeometry(1, 9, 7).toNonIndexed();
+  const cyl = new THREE.CylinderGeometry(1, 0.78, 1, 5).toNonIndexed();
+  const cone = new THREE.ConeGeometry(1, 1, 5).toNonIndexed();
   const out: number[] = [];
+  const world = new THREE.Matrix4();
   const m = new THREE.Matrix4();
+  const q = new THREE.Quaternion();
+  const e = new THREE.Euler();
   const v = new THREE.Vector3();
+  const one = new THREE.Vector3(1, 1, 1);
 
-  const stamp = (geo: THREE.BufferGeometry) => {
+  /** Stamp a part given in the animal's own frame (metres, forward is +z). */
+  const part = (
+    geo: THREE.BufferGeometry,
+    sx: number, sy: number, sz: number,
+    px: number, py: number, pz: number,
+    rx = 0, ry = 0, rz = 0
+  ) => {
+    e.set(rx, ry, rz);
+    q.setFromEuler(e);
+    m.compose(new THREE.Vector3(px, py, pz), q, new THREE.Vector3(sx, sy, sz));
+    m.premultiply(world);
     const arr = geo.attributes.position.array as Float32Array;
     for (let i = 0; i < arr.length; i += 3) {
       v.set(arr[i], arr[i + 1], arr[i + 2]).applyMatrix4(m);
@@ -222,41 +236,58 @@ export function buildHerd(
     }
   };
 
+  const legs = (spread: number, fore: number, aft: number, len: number, r: number) => {
+    for (const [ox, oz] of [
+      [-spread, fore],
+      [spread, fore],
+      [-spread, aft],
+      [spread, aft],
+    ]) {
+      part(cyl, r, len, r, ox, len / 2, oz);
+      part(cyl, r * 1.15, len * 0.12, r * 1.15, ox, len * 0.06, oz); // the hoof
+    }
+  };
+
   for (const p of placements) {
     const rng = new Rng(Math.floor(p.seed * 1e6) + 17);
     const face = rng.range(0, Math.PI * 2);
-    const s = p.s;
-    const bodyY = p.y + s * 0.62;
+    const grazing = rng.next() < 0.7;
+    const ox = rng.next() < 0.58;
+    world.compose(new THREE.Vector3(p.x, p.y, p.z), q.setFromEuler(e.set(0, face, 0)), one.clone().setScalar(p.s));
 
-    m.makeScale(s * 0.34, s * 0.3, s * 0.62);
-    m.premultiply(new THREE.Matrix4().makeRotationY(face));
-    m.setPosition(p.x, bodyY, p.z);
-    stamp(body);
-
-    // Head down in the grass, which is what grazing looks like.
-    const hx = p.x + Math.sin(face) * s * 0.6;
-    const hz = p.z + Math.cos(face) * s * 0.6;
-    m.makeScale(s * 0.19, s * 0.17, s * 0.23);
-    m.setPosition(hx, p.y + s * rng.range(0.3, 0.46), hz);
-    stamp(head);
-
-    for (const [ox, oz] of [
-      [-0.18, 0.34],
-      [0.18, 0.34],
-      [-0.18, -0.34],
-      [0.18, -0.34],
-    ]) {
-      const lx = p.x + (ox * Math.cos(face) + oz * Math.sin(face)) * s;
-      const lz = p.z + (-ox * Math.sin(face) + oz * Math.cos(face)) * s;
-      m.makeScale(s * 0.045, s * 0.62, s * 0.045);
-      m.setPosition(lx, p.y + s * 0.31, lz);
-      stamp(leg);
+    if (ox) {
+      // 牛 — a broad back with a shoulder hump, a thick neck, horns and a tail.
+      part(sphere, 0.36, 0.34, 0.62, 0, 0.72, 0);
+      part(sphere, 0.3, 0.27, 0.3, 0, 0.9, 0.36);
+      part(sphere, 0.34, 0.3, 0.3, 0, 0.74, -0.36);
+      const hy = grazing ? 0.36 : 0.72;
+      const hz = grazing ? 0.98 : 1.0;
+      part(sphere, 0.18, 0.2, 0.34, 0, grazing ? 0.6 : 0.76, 0.72, grazing ? 0.9 : 0.15);
+      part(sphere, 0.17, 0.17, 0.26, 0, hy, hz, grazing ? 0.5 : 0.1);
+      part(sphere, 0.12, 0.11, 0.13, 0, hy - (grazing ? 0.07 : 0.03), hz + 0.2);
+      for (const s of [-1, 1]) {
+        part(cone, 0.035, 0.3, 0.035, s * 0.16, hy + (grazing ? 0.1 : 0.15), hz - 0.02, 0, 0, -s * 1.0);
+        part(sphere, 0.07, 0.04, 0.09, s * 0.17, hy + 0.03, hz - 0.07, 0, 0, s * 0.4);
+      }
+      part(cyl, 0.03, 0.55, 0.03, 0, 0.5, -0.66, 0.15);
+      legs(0.18, 0.38, -0.36, 0.52, 0.055);
+    } else {
+      // 羊 — a round woolly body, a small dark head, thin legs.
+      part(sphere, 0.3, 0.29, 0.34, 0, 0.55, 0.06);
+      part(sphere, 0.27, 0.26, 0.3, 0, 0.52, -0.22);
+      part(sphere, 0.24, 0.24, 0.26, 0.05, 0.66, 0.14);
+      const hy = grazing ? 0.26 : 0.68;
+      part(sphere, 0.09, 0.1, 0.16, 0, hy, 0.66, grazing ? 0.7 : 0.1);
+      part(cone, 0.06, 0.17, 0.06, 0, hy - (grazing ? 0.1 : 0.03), 0.78, Math.PI / 2 - (grazing ? 0.6 : 0.1));
+      for (const s of [-1, 1]) part(sphere, 0.05, 0.02, 0.07, s * 0.09, hy + 0.07, 0.6, 0, 0, s * 0.7);
+      part(sphere, 0.05, 0.05, 0.05, 0, 0.52, -0.5);
+      legs(0.12, 0.26, -0.26, 0.38, 0.03);
     }
   }
 
-  body.dispose();
-  head.dispose();
-  leg.dispose();
+  sphere.dispose();
+  cyl.dispose();
+  cone.dispose();
 
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.Float32BufferAttribute(out, 3));
@@ -323,21 +354,37 @@ export function buildFlocks(
     for (let i = 0; i < f.count; i++) {
       const phase = rng.next() * Math.PI * 2;
       const size = (f.size ?? 1) * rng.range(0.85, 1.2);
-      // beak, left wingtip, tail, right wingtip: x is span, z is forward.
+      // A bird seen from below, twelve points: x is span, z is forward. The wing
+      // is two panels that sweep back, so the flap (which lifts a point in
+      // proportion to how far out it is) bends it like a real one.
       const local = [
-        [0, 0, 0.55],
-        [-1, 0, -0.35],
-        [0, 0, -0.12],
-        [1, 0, -0.35],
+        [0, 0, 0.62], //   0 beak
+        [-0.16, 0, 0.2], // 1 left shoulder
+        [0.16, 0, 0.2], //  2 right shoulder
+        [0, 0, -0.4], //    3 rump
+        [-0.85, 0, 0.12], // 4 left wing, leading edge
+        [-1.6, 0, -0.42], // 5 left wingtip
+        [-0.62, 0, -0.34], // 6 left wing, trailing edge
+        [0.85, 0, 0.12], //  7 right wing, leading edge
+        [1.6, 0, -0.42], //  8 right wingtip
+        [0.62, 0, -0.34], // 9 right wing, trailing edge
+        [-0.16, 0, -0.78], // 10 tail, left
+        [0.16, 0, -0.78], //  11 tail, right
       ];
       for (const [lx, ly, lz] of local) {
-        pos.push(lx, ly, lz);
+        pos.push(lx * 0.65, ly, lz * 0.65);
         center.push(f.x, f.y, f.z);
         params.push(f.radius, f.speed * rng.range(0.85, 1.15), phase, size);
         pale.push(f.pale ? 1 : 0);
       }
-      idx.push(v, v + 1, v + 2, v, v + 2, v + 3);
-      v += 4;
+      idx.push(
+        v, v + 1, v + 2, // head and chest
+        v + 1, v + 3, v + 2, // body
+        v + 1, v + 4, v + 5, v + 1, v + 5, v + 6, v + 1, v + 6, v + 3, // left wing
+        v + 2, v + 8, v + 7, v + 2, v + 9, v + 8, v + 2, v + 3, v + 9, // right wing
+        v + 3, v + 10, v + 11 // tail
+      );
+      v += 12;
     }
   });
 

@@ -65,8 +65,9 @@ legitimate way to read a poem.
 
 **Three modes.**
 
-- **自由观看** — orbit the valley the way you would walk around a hanging scroll. **Click a
-  line and the camera comes down to the poet's eye**: it stands where the poem was written,
+- **自由观看** — every scene opens **standing at the poet's eye**, at the place its first line
+  was written, and 俯瞰 (or Esc) is how you rise to look at the whole valley from above.
+  **Click a line and the camera moves to the poet's eye for that line**: it stands where the poem was written,
   at a person's eye height, and turns to what the line is about — the moon, the far bank,
   the washerwomen coming out of the bamboo. Drag to turn your head, wheel to look closer,
   and press 俯瞰 (or Esc) to rise back to the overview. A line that faces the sky keeps
@@ -103,6 +104,21 @@ legitimate way to read a poem.
 - **Precipitation follows the camera.** It used to sit at the origin with a fixed radius,
   so walking to the edge of the valley walked out from under the snow.
 - 风势, 云雾 and 落雪/落叶/落花 stay as sliders and sit on top of the presets.
+
+## The film behind the shelf
+
+The home page plays a slow wander through nine of the poems under the paper. It is not
+footage: `/scene/<id>?film` is a mode of the scene itself that takes the interface away,
+lets the eye walk on at a stroller's pace, and hangs a sheet of paper in front of the
+lens so a shot can be faded in and out *inside* the canvas. Each clip in `public/film/`
+is three shots of one poem, about 13 seconds and under 2 MB.
+
+Film mode renders on request rather than on animation frames (`window.__film.step()`),
+so a recording does not depend on the window being on screen and comes out at exactly
+30 fps; `scripts/record-film.js` steps the scene, downscales each frame, encodes it with
+WebCodecs (H.264) and muxes an mp4. The player (`ui/HeroFilm.tsx`) plays the clips in turn
+and loops. It stays out of the way: no film for people who ask for reduced motion, on a
+data saver, or on a phone, where the shelf sits on plain paper.
 
 ## Running it
 
@@ -216,9 +232,14 @@ Beyond text and palette, a `PoemScene` can carry:
 - **`massifs` / `skyline`** — a peak that dominates the horizon at a chosen bearing, and a
   height scale for every range (0.5 is a low horizon, 1.3 closes in).
 - **`glows`, `huts`, `steles`, `bridges`, `boats`, `herd`** — set pieces.
-- **`people`** — costumed figures by role (washerwoman, scholar, elder, child, farmer,
-  herdsman, companion with a torch, fisher, monkey), built from a cone, a sphere and a hat,
-  so a scene is populated without any model files. **`flocks`** are birds, **`props`** are
+- **`people`** — figures by role (washerwoman with her basket, scholar with a scroll, elder
+  with a staff and a white beard, child, farmer with a hoe, herdsman, companion with a torch,
+  fisher, ape). Each has a robe, sash, sleeves and hands, a head and a hat or hair, its own
+  posture and its own small thing to hold, and a little idle motion (a breath, a swaying arm,
+  a child's arms going). All primitives, no model files.
+- **`animals`** — hens (pecking in flurries), dogs (tail going), frogs (throat swelling), egrets
+  (standing still, head turning), oxen. **`herd`** is cattle with humps and horns and woolly
+  sheep, and **`flocks`** are birds with a head, body, tail and bent wings. **`props`** are
   things like a jar of wine, **`sand`** paints a bar into the ground mask, and **`sounds`**
   are localized sources — frogs, cicadas, birdsong, a gibbon, poultry — that come up as you
   approach them.
@@ -260,8 +281,12 @@ under the surface; the messages say how far to move the entry.
 - **The poet's eye stands on the ground.** In the cave scene the eye sits at the bottom of a
   pit, so some lines show a wall of hillside rather than a passage; the torch glow and the
   dark carry it.
-- **People are silhouettes.** No faces, no walking; a figure is a robe, a hat and something
-  carried.
+- **People are built from primitives.** They have a body, arms and hands, but a face is two ink
+  dots, and nobody walks: they stand, sit, wash, lean on a staff. Animals are a little
+  livelier, but nothing moves across the ground.
+- **The film is 960x540 and a fixed set of clips.** Adding a scene to it means recording a
+  clip and adding its name to `CLIPS` in `ui/HeroFilm.tsx`. The mp4s are H.264, which every
+  current browser plays; the recorder needs a Chromium with WebCodecs.
 - **Placed props are session-only.** Nothing persists across a reload.
 - **平仄 is hand-encoded per poem**, not looked up. Adding a poem means writing its tones
   out; there is no 平水韵 table in the project.

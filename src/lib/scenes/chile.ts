@@ -112,7 +112,7 @@ export const CHI_LE: PoemScene = {
     // 野茫茫 — the grass, going away.
     { id: 'mangmang', line: 5, label: '茫茫', x: -48, z: 36, radius: 16, look: [-150, 60, 1] },
     // 风吹草低见牛羊 — and there they are.
-    { id: 'niuyang', line: 6, label: '牛羊', x: 6, z: -2, radius: 18, look: [6, -30, 1.3], zoom: 1.35 },
+    { id: 'niuyang', line: 6, label: '牛羊', x: 12, z: -6, radius: 18, look: [24, -30, 1.4], zoom: 1.25 },
   ],
   start: { x: 0, z: 78, heading: 0 },
   fall: { kind: 'snow', color: '#ffffff', size: 1, accumulate: 1 },
@@ -120,5 +120,7 @@ export const CHI_LE: PoemScene = {
   herd: { count: 22, x: 6, z: -30, r: 34, color: '#6b5a47', scale: 2.4 },
   // The man who keeps them, standing in the grass at the edge of the herd.
   people: [{ x: 15, z: -20, rot: -1.0, role: 'herdsman' }],
+  // The herdsman's dog, at his heel.
+  animals: [{ kind: 'dog', x: 13, z: -17, rot: 0.6 }],
 };
 

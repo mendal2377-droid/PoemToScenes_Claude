@@ -139,9 +139,9 @@ export const DENG_GAO: PoemScene = {
   pavilion: { x: -84, z: -30, rot: 0.6 },
   // 猿啸哀 — apes on the rock, and birds over the bar.
   people: [
-    { x: -69, z: -99, rot: 0.4, role: 'monkey', scale: 1.7 },
-    { x: -73, z: -96, rot: 0.9, role: 'monkey', scale: 1.4 },
-    { x: -66, z: -101, rot: 0.1, role: 'monkey', scale: 1.2 },
+    { x: -69, z: -99, rot: -0.2, role: 'monkey', scale: 2.7 },
+    { x: -73, z: -96, rot: 0.15, role: 'monkey', scale: 2.3 },
+    { x: -66, z: -101, rot: -0.45, role: 'monkey', scale: 2.0 },
   ],
   flocks: [{ x: -20, z: -68, y: 14, count: 6, radius: 8, speed: 0.4, size: 0.8 }],
   sand: [{ x: -48, z: -56, r: 10 }],

@@ -14,6 +14,7 @@ import { WorldView } from './World';
 import { RoamRig, ViewRig } from './Roam';
 import { Landmarks } from './Landmarks';
 import { Composer } from './Composer';
+import { FilmVeil, film, installFilm } from './Film';
 
 /**
  * Runs the sky.
@@ -142,6 +143,8 @@ function Contents({ scene, onReady }: { scene: PoemScene; onReady?: () => void }
     [mode, brush, place, select]
   );
 
+  useEffect(() => installFilm(scene), [scene]);
+
   // The world is built synchronously above; by the time this effect runs the
   // first frame is on its way, so the loading card can step aside.
   useEffect(() => {
@@ -155,9 +158,10 @@ function Contents({ scene, onReady }: { scene: PoemScene; onReady?: () => void }
       <Ticker scene={scene} />
       <WorldView scene={scene} world={world} onGroundDown={mode === 'compose' ? onGroundDown : undefined} />
       <Composer scene={scene} />
-      <Landmarks scene={scene} />
+      {!film.active && <Landmarks scene={scene} />}
       <ViewRig scene={scene} />
       <RoamRig scene={scene} world={world} />
+      <FilmVeil paper={scene.palette.paper} />
     </>
   );
 }
@@ -167,9 +171,13 @@ export function SceneCanvas({ scene, onReady }: { scene: PoemScene; onReady?: ()
     <Canvas
       className="scene-canvas"
       dpr={[1, 1.75]}
-      gl={{ antialias: true, powerPreference: 'high-performance' }}
+      // Film mode renders frame by frame, on request, so a recording does not
+      // depend on the window being on screen.
+      frameloop={film.active ? 'never' : 'always'}
+      gl={{ antialias: true, powerPreference: 'high-performance', preserveDrawingBuffer: film.active }}
       camera={{ fov: 52, near: 0.4, far: 1600, position: [0, 30, 120] }}
-      onCreated={({ gl }) => {
+      onCreated={({ gl, advance }) => {
+        film.advance = advance;
         gl.setClearColor(new THREE.Color(scene.palette.paper), 1);
       }}
     >

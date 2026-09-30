@@ -133,6 +133,10 @@ export function validateScene(s: PoemScene): string[] {
   s.people?.forEach((q, i) => {
     if (inWater(q.x, q.z, s.terrain)) e.push(at(`person ${i} (${q.role}) at (${q.x}, ${q.z}) is standing in the water`));
   });
+  s.animals?.forEach((q, i) => {
+    // Egrets and frogs stand at the edge, so the water itself is the only thing ruled out.
+    if (inWater(q.x, q.z, s.terrain)) e.push(at(`animal ${i} (${q.kind}) at (${q.x}, ${q.z}) is in the water`));
+  });
   s.props?.forEach((q, i) => {
     if (inWater(q.x, q.z, s.terrain)) e.push(at(`prop ${i} at (${q.x}, ${q.z}) is in the water`));
   });
