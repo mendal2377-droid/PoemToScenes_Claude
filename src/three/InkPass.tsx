@@ -47,7 +47,8 @@ if (typeof window !== 'undefined') {
   ink.enabled = q.get('ink') !== '0';
   ink.hold = q.has('drop') ? Number(q.get('drop')) : null;
   const cores = navigator.hardwareConcurrency ?? 8;
-  ink.light = window.matchMedia('(max-width: 820px)').matches || cores <= 4;
+  // `?ink=full` keeps the full filter on a narrow frame — a vertical film is narrow but not a phone.
+  ink.light = q.get('ink') !== 'full' && (window.matchMedia('(max-width: 820px)').matches || cores <= 4);
 }
 
 /**
@@ -384,7 +385,8 @@ export function InkPass({ scene }: { scene: PoemScene }) {
   useFrame((_, dt) => {
     const cam = camera as THREE.PerspectiveCamera;
     const u = post.mat.uniforms;
-    if (!film.active && u.uBloom.value < 1) {
+    if (film.active) u.uBloom.value = film.bloom ?? 1;
+    else if (u.uBloom.value < 1) {
       drop.current += Math.min(dt, 0.05);
       u.uBloom.value = ink.hold ?? Math.min(1, Math.max(0, drop.current / 2.6));
     }

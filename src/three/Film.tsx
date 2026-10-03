@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import { useScene } from '@/lib/store';
 import type { PoemScene } from '@/lib/types';
 import type { WeatherId } from '@/lib/weather';
+import { terrainHeight } from '@/lib/terrain';
 
 /**
  * Film mode — `/scene/<id>?film`.
@@ -36,6 +37,14 @@ export const film = {
   t: 0,
   /** The ink pass draws the veil itself, on top of the painting. */
   inkVeil: false,
+  /**
+   * A scripted camera: where the lens is, what it looks at, its field of view
+   * and a little roll. While set it overrides the poet's eye entirely, so a
+   * director can crane, push in and hold.
+   */
+  pose: null as null | { pos: [number, number, number]; look: [number, number, number]; fov?: number; roll?: number },
+  /** The arriving ink drop, driven by hand (0 bare paper … 1 the painting); null leaves it off. */
+  bloom: null as number | null,
 };
 
 if (typeof window !== 'undefined') {
@@ -51,9 +60,18 @@ declare global {
       rise: () => void;
       /** Render one frame, 1/30 s later than the last. */
       step: () => void;
+      /** Render the same instant again — for a second camera in a dissolve. */
+      again: () => void;
       /** The hour on the 24-hour dial, and the weather. */
       clock: (hour: number) => void;
       weather: (id: WeatherId) => void;
+      /** Wind, mist and falling snow, 0–1 each. */
+      air: (patch: { wind?: number; mist?: number; snow?: number }) => void;
+      pose: (p: (typeof film)['pose']) => void;
+      bloom: (v: number | null) => void;
+      /** Height of the ground, and of the river, for placing a camera. */
+      ground: (x: number, z: number) => number;
+      water: number;
     };
   }
 }
@@ -78,8 +96,18 @@ export function installFilm(scene: PoemScene) {
       film.t += 1 / 30;
       film.advance?.(film.t);
     },
+    again: () => film.advance?.(film.t),
     clock: (hour) => useScene.getState().setClock(hour),
     weather: (id) => useScene.getState().setWeather(id),
+    air: (patch) => useScene.getState().setAtmosphere(patch),
+    pose: (p) => {
+      film.pose = p;
+    },
+    bloom: (v) => {
+      film.bloom = v;
+    },
+    ground: (x, z) => terrainHeight(x, z, scene.terrain),
+    water: scene.terrain.rivers?.[0]?.level ?? 0,
   };
   return () => {
     delete window.__film;

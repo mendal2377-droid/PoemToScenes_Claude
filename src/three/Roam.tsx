@@ -423,6 +423,21 @@ export function ViewRig({ scene }: { scene: PoemScene }) {
     const dt = Math.min(rawDt, 0.05);
     const e = eye.current;
 
+    // A director's camera, in film mode, overrides everything else.
+    if (film.active && film.pose) {
+      const p = film.pose;
+      cam.position.set(...p.pos);
+      cam.up.set(Math.sin(p.roll ?? 0), Math.cos(p.roll ?? 0), 0);
+      cam.lookAt(...p.look);
+      const fov = p.fov ?? 52;
+      if (Math.abs(cam.fov - fov) > 0.001) {
+        cam.fov = fov;
+        cam.updateProjectionMatrix();
+      }
+      return;
+    }
+    if (cam.up.x !== 0) cam.up.set(0, 1, 0);
+
     if (e.active) {
       if (e.sky) {
         const b = bodies[e.sky];

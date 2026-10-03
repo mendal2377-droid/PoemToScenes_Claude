@@ -198,6 +198,19 @@ stepped frame by frame, the typography and the poem's inscription are drawn over
 2D canvas, and video (H.264) and audio (AAC) are encoded with WebCodecs and muxed into one mp4.
 Change a caption or a shot and run it again.
 
+## 江雪, the vertical film
+
+`scripts/make-reel.js` makes a 48-second vertical film of 江雪 for Douyin, Reels and X
+(1080×1920, 30 fps, H.264 + AAC). It is the scene itself in film mode, driven by a
+scripted camera (`__film.pose`), with the ink drop opening it (`__film.bloom`); laid
+over it are ink-bleed dissolves, a line of footprints filling with snow, near snow,
+the last bird, every line written stroke by stroke with its brush sounds, English
+beneath, and the poet's seal on the whole poem at the end, where the river goes back
+to paper and only the boat is left. The score — 古琴 in the 羽 mode, harmonics, wind
+and water — is synthesised offline. Load mp4-muxer as a classic script on a page of
+the site and run `await __makeReel({ upload: '<endpoint>' })`; `preview: [seconds…]`
+renders stills instead.
+
 ## Running it
 
 ```bash
