@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import type { PaintStyle, PoemScene } from '@/lib/types';
@@ -39,9 +39,13 @@ export const ink = {
   enabled: true,
   /** Phones and small GPUs get a lighter wash filter. */
   light: false,
+  /** `?drop=0.4` holds the arriving ink drop at that stage, to look at it. */
+  hold: null as number | null,
 };
 if (typeof window !== 'undefined') {
-  ink.enabled = new URLSearchParams(window.location.search).get('ink') !== '0';
+  const q = new URLSearchParams(window.location.search);
+  ink.enabled = q.get('ink') !== '0';
+  ink.hold = q.has('drop') ? Number(q.get('drop')) : null;
   const cores = navigator.hardwareConcurrency ?? 8;
   ink.light = window.matchMedia('(max-width: 820px)').matches || cores <= 4;
 }
@@ -104,6 +108,8 @@ const FRAG = /* glsl */ `
   uniform vec3 uCorner;      // xy: the direction of the emptiness; z: how empty
   uniform vec3 uFarTint;     // the colour distance turns: 花青 for 浅绛, 石青 for 青绿
   uniform float uFarTintAmt;
+  uniform float uBloom;      // the ink drop: 0 is bare paper, 1 the whole painting
+  uniform vec2 uBloomAt;
 
   float hash(vec2 p) {
     p = fract(p * vec2(123.34, 456.21));
@@ -264,6 +270,28 @@ const FRAG = /* glsl */ `
     float edge = smoothstep(0.5, 1.0, r + 0.08 * (fbm(vUv * aspect * 4.0) - 0.5));
     col = mix(col, uPaper * 0.985, edge * 0.6);
 
+    // --- 墨滴: the painting arrives as a drop of ink spreading through wet paper ----------
+    if (uBloom < 1.0) {
+      vec2 q = (vUv - uBloomAt) * vec2(uRes.x / uRes.y, 1.0);
+      // A ragged, fingered front: ink runs further along the fibres in some places.
+      float d = length(q) * (1.0 + 0.5 * (fbm(q * 2.6 + 4.0) - 0.5)) + 0.06 * (fbm(q * 13.0 - 2.0) - 0.5);
+      float p = uBloom;
+      float R = 1.75 * (1.0 - pow(1.0 - p, 2.4));
+      float inside = 1.0 - smoothstep(R - 0.02, R + 0.006, d);
+      // Pigment piles up at the wet edge and clears behind it as the picture develops.
+      float rim = smoothstep(R - (0.05 + 0.12 * p), R, d) * inside;
+      float cloud = smoothstep(R - 0.45, R, d) * (1.0 - p);
+      vec3 ink = uInk * 0.9;
+      vec3 painted = mix(col, ink, clamp(rim * 0.88 + cloud * 0.5, 0.0, 1.0));
+      // Ahead of the pigment the water darkens the sheet, and the ink feathers out
+      // into it along the fibres — a soft bleed with a tide line, not a cut edge.
+      vec3 sheet = uPaper * (0.965 + 0.04 * fibre) * (0.94 + 0.08 * mottle);
+      sheet *= 1.0 - 0.08 * (1.0 - smoothstep(R, R + 0.1, d));
+      float feather = 1.0 - smoothstep(R, R + 0.02 + 0.05 * fbm(q * 40.0 + 1.3), d);
+      sheet = mix(sheet, ink, feather * (0.55 + 0.35 * fibre) * (1.0 - 0.6 * p));
+      col = mix(sheet, painted, inside);
+    }
+
     col = mix(col, uVeilColor, uVeil);
     gl_FragColor = vec4(col, 1.0);
   }
@@ -315,6 +343,8 @@ export function InkPass({ scene }: { scene: PoemScene }) {
         uCorner: { value: new THREE.Vector3(...(style.corner ?? [0, 0, 0])) },
         uFarTint: { value: new THREE.Color(style.farTint?.[0] ?? '#000000') },
         uFarTintAmt: { value: style.farTint?.[1] ?? 0 },
+        uBloom: { value: film.active ? 1 : 0 },
+        uBloomAt: { value: new THREE.Vector2(0.5, 0.52) },
       },
     });
     const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), mat);
@@ -343,10 +373,21 @@ export function InkPass({ scene }: { scene: PoemScene }) {
     };
   }, [target, post]);
 
+  // The drop lands a moment after the world is ready, and spreads for a couple
+  // of seconds; the film, which has its own fades, skips it.
+  const drop = useRef(-0.3);
+  useEffect(() => {
+    drop.current = -0.3;
+  }, [post]);
+
   // A priority above zero takes the render over from R3F.
-  useFrame(() => {
+  useFrame((_, dt) => {
     const cam = camera as THREE.PerspectiveCamera;
     const u = post.mat.uniforms;
+    if (!film.active && u.uBloom.value < 1) {
+      drop.current += Math.min(dt, 0.05);
+      u.uBloom.value = ink.hold ?? Math.min(1, Math.max(0, drop.current / 2.6));
+    }
     u.uNear.value = cam.near;
     u.uFar.value = cam.far;
     const f = film.active ? film.fade * film.fade * (3 - 2 * film.fade) : 0;
@@ -360,7 +401,7 @@ export function InkPass({ scene }: { scene: PoemScene }) {
     gl.render(post.scene, post.cam);
 
     // Then what falls, over the top — unless the film's paper veil is down.
-    if (u.uVeil.value > 0.6) {
+    if (u.uVeil.value > 0.6 || u.uBloom.value < 0.55) {
       camera.layers.enable(OVERLAY_LAYER);
       return;
     }

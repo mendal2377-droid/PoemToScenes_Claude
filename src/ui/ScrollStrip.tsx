@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import { InkLink } from './InkLink';
 import { Rng } from '@/lib/noise';
 import type { ShelfEntry } from '@/lib/poems';
 
@@ -152,9 +152,9 @@ export function ScrollStrip({ entry }: { entry: ShelfEntry }) {
   }
 
   return (
-    <Link href={`/scene/${entry.id}`} className="scroll-strip" title={entry.note}>
+    <InkLink href={`/scene/${entry.id}`} className="scroll-strip" title={entry.note}>
       {art}
       {caption}
-    </Link>
+    </InkLink>
   );
 }

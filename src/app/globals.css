@@ -1421,3 +1421,13 @@ html[data-film] .loading {
     opacity: 0;
   }
 }
+
+/* The wash that spreads over the shelf when a poem is chosen (InkLink.tsx). */
+.ink-wash {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 100;
+  pointer-events: none;
+}

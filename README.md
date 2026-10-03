@@ -139,6 +139,13 @@ Whatever is bright and saturated — a torch, a lantern, peach blossom — keeps
 colour in every tradition, the way a painter keeps the one red seal. Phones and
 small machines get a lighter filter; `?ink=0` on any scene turns the pass off.
 
+**墨滴 — how a painting arrives.** Choosing a poem on the shelf spreads a wash of
+clean paper out from where you touched (`ui/InkLink.tsx`); the scene loads on that
+paper, and its painting comes in as a drop of ink spreading through a wet sheet — a
+ragged, feathered front with a tide line of pigment at its edge, the picture
+developing behind it as the ink clears (the bloom at the end of the ink pass).
+`?drop=0.3` holds the drop at that stage, for looking at it.
+
 ## 题跋 — the line, written onto the painting
 
 Arriving at a line's place writes it into the empty part of the picture with the
