@@ -209,7 +209,9 @@ beneath, and the poet's seal on the whole poem at the end, where the river goes 
 to paper and only the boat is left. The score — 古琴 in the 羽 mode, harmonics, wind
 and water — is synthesised offline. Load mp4-muxer as a classic script on a page of
 the site and run `await __makeReel({ upload: '<endpoint>' })`; `preview: [seconds…]`
-renders stills instead.
+renders stills instead. By default it is one unbroken take (一镜到底): the eye travels
+from the peaks down to the footprints, along them to the water, across it round the
+boat to the old man and up into the sky; `take: 'cut'` makes the version in shots.
 
 ## Running it
 

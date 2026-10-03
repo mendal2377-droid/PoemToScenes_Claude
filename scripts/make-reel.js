@@ -23,8 +23,13 @@
  *                       the world going back into the paper until only the boat
  *                       is left.
  *   40–48  the poem whole, the seal, paper.
+ *
+ * `take: 'single'` (the default) films all of it as one unbroken shot — 一镜到底 —
+ * the eye travelling from the peaks down to the footprints, along them to the
+ * water, across it to the boat and up into the sky; `take: 'cut'` is the
+ * version in shots, with ink dissolves between them.
  */
-window.__makeReel = async ({ upload = null, preview = null } = {}) => {
+window.__makeReel = async ({ upload = null, preview = null, take = 'single' } = {}) => {
   const W = 1080, H = 1920, FPS = 30, SR = 48000;
   const TOTAL = 48.5;
   const PAPER = '#e9e7de', INK = '#1d1e23', SEAL = '#b5302a';
@@ -126,6 +131,68 @@ window.__makeReel = async ({ upload = null, preview = null } = {}) => {
     [18.0, 18.8],
     [23.6, 24.4],
   ];
+
+  // 一镜到底 — one unbroken take. A camera path through keyframes, each with
+  // where the lens is, what it looks at and its field of view, joined by a
+  // Hermite spline whose tangents respect the time between keys, so the eye
+  // never stops dead and never lurches.
+  if (take === 'single') {
+    const K = [
+      // the ink drop on the peaks; the ranges settling in
+      [0.0, [-22, 30, 78], [-12, 78, -150], 46],
+      [8.6, [-24, 26.5, 73], [-16, 21, -150], 43],
+      // down and back: the footprints, under us
+      [12.4, [-46, 15.5, 92], [-27, G(-26, 50), 47], 40],
+      // along them, to the water's edge
+      [17.6, [-36, 10.5, 74], [-20, G(-20, 38), 36], 40],
+      // at the bank the eye lifts, and there is the boat
+      [20.6, [-18, 6.5, 50], [28, WATER + 0.5, 13], 34],
+      // low over the river, round by the bow, never through it
+      [24.4, [16, 2.2, 27], [28.5, WATER + 1.0, 13], 32],
+      [26.2, [33, WATER + 2.6, 22], [28.6, WATER + 1.5, 12.8], 31],
+      // beside the old man
+      [27.6, [34.2, WATER + 0.95, 10.2], [28.6, WATER + 1.75, 12.6], 31],
+      [32.6, [33.8, WATER + 0.98, 11.2], [28.6, WATER + 1.72, 12.6], 27],
+      // and the crane: up and away until the river is paper
+      [36.4, [44, 22, 40], [27, WATER + 0.4, 10], 32],
+      [41.4, [66, 86, 104], [21, WATER, -4], 40],
+      [TOTAL, [68, 87.5, 105.5], [21, WATER, -4], 40],
+    ];
+    const tan = (i, get) => {
+      if (i === 0 || i === K.length - 1) return get(K[i]).map(() => 0);
+      const a = get(K[i - 1]), b = get(K[i + 1]);
+      const dt = K[i + 1][0] - K[i - 1][0];
+      return a.map((v, j) => (b[j] - v) / dt);
+    };
+    const curve = (t, get) => {
+      let i = 0;
+      while (i < K.length - 2 && t > K[i + 1][0]) i++;
+      const t0 = K[i][0], t1 = K[i + 1][0], h = t1 - t0;
+      const u = clamp01((t - t0) / h);
+      const u2 = u * u, u3 = u2 * u;
+      const h00 = 2 * u3 - 3 * u2 + 1, h10 = u3 - 2 * u2 + u, h01 = -2 * u3 + 3 * u2, h11 = u3 - u2;
+      const p0 = get(K[i]), p1 = get(K[i + 1]), m0 = tan(i, get), m1 = tan(i + 1, get);
+      return p0.map((v, j) => h00 * v + h10 * h * m0[j] + h01 * p1[j] + h11 * h * m1[j]);
+    };
+    shots.length = 0;
+    shots.push({
+      id: 'one',
+      a: 0,
+      b: TOTAL + 1,
+      pose: (t) => {
+        const pos = curve(t, (k) => k[1]);
+        // Never below the snow or the water.
+        const floor = Math.max(G(pos[0], pos[2]), WATER) + 0.7;
+        if (pos[1] < floor) pos[1] = floor;
+        return { pos, look: curve(t, (k) => k[2]), fov: curve(t, (k) => [k[3]])[0] };
+      },
+      overlay: (ctx, t, pose) => {
+        if (t < 18.5) footprints(ctx, t, pose);
+      },
+      grade: (t) => ease(span(t, 34.5, 41.0)),
+    });
+    DISSOLVES.length = 0;
+  }
 
   // ----------------------------------------------------------- the projection
   // The same pinhole the scene's camera uses, so drawn things sit in the world.
@@ -405,6 +472,10 @@ window.__makeReel = async ({ upload = null, preview = null } = {}) => {
     ctx.save();
     ctx.globalAlpha = alpha * 0.93;
     ctx.filter = 'blur(0.5px)';
+    ctx.shadowColor = color === INK ? 'rgba(238,236,228,0.95)' : 'rgba(8,10,14,0.8)';
+    ctx.shadowBlur = Math.max(10, size * 0.16);
+    ctx.drawImage(tmp, 0, 0);
+    ctx.shadowBlur = 0;
     ctx.drawImage(tmp, 0, 0);
     ctx.restore();
   }
@@ -702,14 +773,12 @@ window.__makeReel = async ({ upload = null, preview = null } = {}) => {
 
     // Title and author, then the lines.
     const tA = ease(span(t, 2.6, 3.4)) * (1 - ease(span(t, 8.8, 10.0)));
-    halo(TITLE.x - 30, TITLE.y - 20, 170, 330, tA);
     drawColumn(TITLE.plan, TITLE.x, TITLE.y, TITLE.size, t, tA);
     drawColumn(AUTHOR.plan, AUTHOR.x, AUTHOR.y, AUTHOR.size, t, tA * 0.85);
     LINES.forEach((l) => {
       const a = ease(span(t, l.show[0] - 0.3, l.show[0] + 0.2)) * (1 - ease(span(t, l.show[1] - 0.8, l.show[1])));
       if (a <= 0) return;
       const dk = lum(COL.x, COL.y, COL.size, COL.size * 5.4) < 120;
-      if (!dk) halo(COL.x - 20, COL.y - 30, COL.size + 40, COL.size * 5.5, a);
       drawColumn(l.plan, COL.x, COL.y, COL.size, t, a, dk ? '#f1efe7' : INK);
       english(l.en, a * ease(span(t, l.w[0] + 1.2, l.w[0] + 2.2)));
     });
@@ -812,11 +881,12 @@ window.__makeReel = async ({ upload = null, preview = null } = {}) => {
     muxer.finalize();
     const blob = new Blob([muxer.target.buffer], { type: 'video/mp4' });
     window.__reel = blob;
-    if (upload) job.msg = await (await fetch(upload + 'reel-jiangxue.mp4', { method: 'POST', body: blob })).text();
-    // A cover for the platforms: the old man and the snow.
-    compose(26.5, true);
+    const base = take === 'single' ? 'reel-jiangxue-oneshot' : 'reel-jiangxue';
+    if (upload) job.msg = await (await fetch(upload + base + '.mp4', { method: 'POST', body: blob })).text();
+    // A cover for the platforms: the poem whole, the seal, and the boat alone.
+    compose(44.2, true);
     const cover = await new Promise((r) => out.toBlob(r, 'image/jpeg', 0.92));
-    if (upload) await fetch(upload + 'reel-jiangxue-cover.jpg', { method: 'POST', body: cover });
+    if (upload) await fetch(upload + base + '-cover.jpg', { method: 'POST', body: cover });
   } catch (e) {
     job.err = String((e && e.stack) || e);
   }
