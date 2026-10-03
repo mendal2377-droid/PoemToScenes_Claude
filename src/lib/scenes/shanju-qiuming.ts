@@ -37,6 +37,7 @@ export const SHAN_JU: PoemScene = {
     [4, 5],
   ],
   rhymeName: '下平十一尤',
+  paint: 'dancai',
   palette: {
     paper: '#efe4c8',
     ink: '#26262e',

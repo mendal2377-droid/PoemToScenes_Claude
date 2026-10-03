@@ -36,6 +36,7 @@ export const DENG_GAO: PoemScene = {
     [6, 7],
   ],
   rhymeName: '上平十灰',
+  paint: 'qianjiang',
   palette: {
     // Everything the colour of a bruise, or of old paper: brown water, grey
     // rock, a low sky with no sun in it.

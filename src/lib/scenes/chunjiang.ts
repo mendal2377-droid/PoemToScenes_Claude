@@ -42,6 +42,7 @@ export const CHUN_JIANG: PoemScene = {
     [6, 7],
   ],
   rhymeName: '下平八庚 · 霰（换韵）',
+  paint: 'qinglv',
   palette: {
     paper: '#e6e2d6',
     ink: '#1e2230',

@@ -31,6 +31,7 @@ export const CHI_LE: PoemScene = {
     [4, 5],
   ],
   rhymeName: '上声马 · 下平七阳（换韵）',
+  paint: 'mogu',
   palette: {
     paper: '#efe8d2',
     ink: '#2a2a2e',

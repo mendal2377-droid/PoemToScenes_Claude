@@ -55,6 +55,7 @@ export const BAO_CHAN_SHAN: PoemScene = {
   ],
   couplets: [],
   rhymeName: '',
+  paint: 'ink',
   palette: {
     paper: '#eee8d8',
     ink: '#2c2b28',

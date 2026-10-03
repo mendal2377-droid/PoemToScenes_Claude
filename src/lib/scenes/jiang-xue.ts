@@ -20,6 +20,7 @@ export const JIANG_XUE: PoemScene = {
   ],
   couplets: [[0, 1]],
   rhymeName: '入声九屑（仄韵）',
+  paint: 'ink-corner',
   palette: {
     paper: '#e9e7de',
     ink: '#1f2228',

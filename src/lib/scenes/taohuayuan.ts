@@ -73,6 +73,7 @@ export const TAO_HUA_YUAN: PoemScene = {
   ],
   couplets: [],
   rhymeName: '',
+  paint: 'qinglv',
   palette: {
     paper: '#f4e9d4',
     ink: '#2e2a26',

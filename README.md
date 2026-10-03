@@ -105,6 +105,40 @@ legitimate way to read a poem.
   so walking to the edge of the valley walked out from under the snow.
 - 风势, 云雾 and 落雪/落叶/落花 stay as sliders and sit on top of the presets.
 
+## 水墨 — the whole picture, painted
+
+Every scene is drawn off-screen and laid down a second time as a painting
+(`three/InkPass.tsx`):
+
+- **The line.** Brush outlines wherever depth bends — tested on inverse depth, so
+  ground seen at a grazing angle draws no false line — wobbling a little, swelling
+  and thinning with pressure, breaking into 飞白 along the stroke, firm in front and
+  only a whisper at the far ranges. Masses are outlined, not every leaf.
+- **The wash.** A Kuwahara filter flattens shading into patches of colour; pigment
+  pools darker at folds, bleeds soft in places and settles into the grain.
+- **远则淡.** Land and water give way to the paper with distance; the sky keeps its
+  own colour, so a moonlit blue survives.
+- **The paper.** Fibre and mottling under everything, and the picture dissolves into
+  the sheet at its edges.
+- **What falls is added last.** Snow, rain and petals are drawn over the finished
+  painting, so no flake is outlined; grass is wash, not line.
+
+Each poem is laid down in its own tradition (`paint` on the scene):
+
+| | |
+|---|---|
+| 淡彩 light colour over ink | 山居秋暝, 西江月 |
+| 一角 Ma Yuan's corner — ink, most of the sheet left empty | 江雪 |
+| 夜墨 ink at night, the moon left as bare paper | 鸟鸣涧 |
+| 青绿 blue-green, mineral azurite and malachite | 春江花月夜, 桃花源记 |
+| 浅绛 pale crimson-ochre, with an indigo distance | 登高, 饮酒 |
+| 没骨 boneless colour, no outline at all | 敕勒歌 |
+| 水墨 ink alone | 游褒禅山记 |
+
+Whatever is bright and saturated — a torch, a lantern, peach blossom — keeps its
+colour in every tradition, the way a painter keeps the one red seal. Phones and
+small machines get a lighter filter; `?ink=0` on any scene turns the pass off.
+
 ## The film behind the shelf
 
 The home page plays a slow wander through nine of the poems under the paper. It is not
@@ -300,6 +334,10 @@ under the surface; the messages say how far to move the entry.
 - **People are built from primitives.** They have a body, arms and hands, but a face is two ink
   dots, and nobody walks: they stand, sit, wash, lean on a staff. Animals are a little
   livelier, but nothing moves across the ground.
+- **The ink pass costs a full-screen filter every frame.** It is the heaviest thing
+  in the app; small screens get a lighter version, but an old laptop will feel it.
+- **The film and the clips predate the ink pass.** They still show the unpainted look
+  until they are recorded again (see below).
 - **The intro film is a fixed edit.** Its captions and English translations are written into
   `scripts/make-intro.js`; a new poem means a new shot and new subtitles.
 - **The clips behind the shelf are 960x540 and a fixed set.** Adding a scene to it means recording a

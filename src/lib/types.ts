@@ -200,6 +200,9 @@ export type Massif = {
   ring: 'near' | 'mid' | 'far';
 };
 
+/** The painting tradition a scene is laid down in (see three/InkPass.tsx). */
+export type PaintStyle = 'dancai' | 'ink' | 'ink-corner' | 'qinglv' | 'qianjiang' | 'mogu' | 'night';
+
 export type PoemScene = {
   id: string;
   /** 'prose' scenes are walked in order and carry no tonal apparatus. */
@@ -218,6 +221,8 @@ export type PoemScene = {
   romanTitle: string;
   available: boolean;
   palette: Palette;
+  /** The painting tradition it is laid down in; 淡彩 if not given. */
+  paint?: PaintStyle;
   terrain: TerrainSpec;
   atmosphere: Atmosphere;
   flora: FloraSpec;

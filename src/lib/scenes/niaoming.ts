@@ -33,6 +33,7 @@ export const NIAO_MING: PoemScene = {
   ],
   couplets: [[0, 1]],
   rhymeName: '上平一东',
+  paint: 'night',
   palette: {
     paper: '#e2e3da',
     ink: '#141822',

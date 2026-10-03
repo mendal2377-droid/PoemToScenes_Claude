@@ -33,6 +33,7 @@ export const YIN_JIU: PoemScene = {
   ],
   couplets: [],
   rhymeName: '上平十三元',
+  paint: 'qianjiang',
   palette: {
     // Light and airy: this is the one poem here where nothing is wrong.
     paper: '#f3ecd6',

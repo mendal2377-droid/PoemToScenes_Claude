@@ -3,7 +3,7 @@
 import { useEffect, useMemo } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
-import type { PoemScene } from '@/lib/types';
+import type { PaintStyle, PoemScene } from '@/lib/types';
 import { film } from './Film';
 
 /**
@@ -46,6 +46,37 @@ if (typeof window !== 'undefined') {
   ink.light = window.matchMedia('(max-width: 820px)').matches || cores <= 4;
 }
 
+/**
+ * The painting traditions a scene can be laid down in.
+ *
+ * - **淡彩** light colour over ink: the default, for most of the poems.
+ * - **水墨** ink alone, in its five tones.
+ * - **一角** Ma Yuan's corner: ink, and most of the sheet left empty.
+ * - **青绿** blue-green: mineral azurite and malachite, the colours of a paradise.
+ * - **浅绛** pale crimson: ochre washes and a light ink, the colours of autumn.
+ * - **没骨** boneless: colour with no outline at all, soft and wet.
+ * - **夜墨** ink at night: almost all dark, the moon left as bare paper.
+ */
+const STYLES: Record<PaintStyle, {
+  sat: number;
+  ramp: [string, string, string];
+  rampAmt: number;
+  line: number;
+  lineColor?: string;
+  aerial: number;
+  bleed: number;
+  corner?: [number, number, number];
+  farTint?: [string, number];
+}> = {
+  dancai: { sat: 0.86, ramp: ['#000000', '#808080', '#ffffff'], rampAmt: 0, line: 1, aerial: 0.45, bleed: 1 },
+  ink: { sat: 0.08, ramp: ['#202126', '#7d7c78', '#ebe6d8'], rampAmt: 0.5, line: 1.05, lineColor: '#16161b', aerial: 0.55, bleed: 1.2 },
+  'ink-corner': { sat: 0.06, ramp: ['#1e1f24', '#7a7975', '#ede8da'], rampAmt: 0.5, line: 1.1, lineColor: '#141419', aerial: 0.6, bleed: 1.2, corner: [0.62, 0.78, 0.75] },
+  qinglv: { sat: 0.85, ramp: ['#1b3940', '#3b7a7a', '#d4ddc6'], rampAmt: 0.55, line: 0.8, lineColor: '#2c2318', aerial: 0.36, bleed: 0.9, farTint: ['#5d8ea8', 0.42] },
+  qianjiang: { sat: 0.7, ramp: ['#3a2e24', '#a07c56', '#ecdcbd'], rampAmt: 0.45, line: 1, lineColor: '#2a2019', aerial: 0.48, bleed: 1.1, farTint: ['#7d93a0', 0.45] },
+  mogu: { sat: 1.0, ramp: ['#000000', '#808080', '#ffffff'], rampAmt: 0, line: 0.14, aerial: 0.5, bleed: 1.8 },
+  night: { sat: 0.32, ramp: ['#12141b', '#4b5263', '#ddd9cb'], rampAmt: 0.45, line: 0.85, lineColor: '#0c0d12', aerial: 0.22, bleed: 1.1 },
+};
+
 const VERT = /* glsl */ `
   varying vec2 vUv;
   void main() {
@@ -66,6 +97,13 @@ const FRAG = /* glsl */ `
   uniform float uLine;       // line strength, 0–1
   uniform float uScale;      // device pixel ratio, so strokes keep their width
   uniform float uAerial;     // how far distance fades to paper (遠 → 淡)
+  // The painting tradition (see STYLES): saturation, a pigment ramp by value,
+  // the colour of the line, how much the wash bleeds, and an empty corner.
+  uniform float uSat, uRampAmt, uBleed;
+  uniform vec3 uRamp0, uRamp1, uRamp2, uLineColor;
+  uniform vec3 uCorner;      // xy: the direction of the emptiness; z: how empty
+  uniform vec3 uFarTint;     // the colour distance turns: 花青 for 浅绛, 石青 for 青绿
+  uniform float uFarTintAmt;
 
   float hash(vec2 p) {
     p = fract(p * vec2(123.34, 456.21));
@@ -172,10 +210,25 @@ const FRAG = /* glsl */ `
     vec2 bb = px * 4.0 * uScale;
     vec3 soft = 0.25 * (texture2D(tColor, vUv + bb).rgb + texture2D(tColor, vUv - bb).rgb
       + texture2D(tColor, vUv + vec2(bb.x, -bb.y)).rgb + texture2D(tColor, vUv + vec2(-bb.x, bb.y)).rgb);
-    col = mix(col, soft, 0.5 * bleed);
+    col = mix(col, soft, min(1.0, 0.5 * bleed * uBleed));
 
     // Pigment, not paint: a little less saturated, and the paper lifting through.
-    col = mix(vec3(luma(col)), col, 0.86);
+    float isSky = smoothstep(uFar * 0.6, uFar * 0.9, d0);
+    // What is bright and saturated — a torch, a lantern, peach blossom — keeps its
+    // colour whatever the tradition, the way a painter keeps the one red seal.
+    vec3 orig = texture2D(tColor, vUv).rgb;
+    float chroma = max(max(orig.r, orig.g), orig.b) - min(min(orig.r, orig.g), orig.b);
+    float keep = smoothstep(0.12, 0.36, chroma) * smoothstep(0.25, 0.6, luma(orig));
+    vec3 accent = col;
+    col = mix(vec3(luma(col)), col, uSat);
+    // The tradition's own pigments, laid by value: 石青石绿 for blue-green, 赭石
+    // for pale crimson-ochre, nothing but ink for 水墨.
+    float lum = luma(col);
+    vec3 ramp = lum < 0.5 ? mix(uRamp0, uRamp1, lum * 2.0) : mix(uRamp1, uRamp2, (lum - 0.5) * 2.0);
+    col = mix(col, ramp, uRampAmt * (1.0 - 0.5 * isSky));
+    // Distance turns cool before it turns to paper.
+    col = mix(col, uFarTint, smoothstep(40.0, 520.0, d0) * uFarTintAmt * (1.0 - isSky));
+    col = mix(col, accent, keep * 0.85);
     col = mix(uPaper, col, 0.84);
     col *= 1.0 - 0.14 * fold;
     col *= 0.97 + 0.05 * noise(vUv * uRes / (3.5 * uScale));   // grain
@@ -183,8 +236,12 @@ const FRAG = /* glsl */ `
     // 远则淡: the farther, the more it gives way to the paper, as in a scroll where
     // the far ranges are only a breath of colour.
     // The sky keeps its own colour (a moonlit blue is the whole of some poems).
-    float isSky = step(uFar * 0.9, d0);
     col = mix(col, uPaper, smoothstep(22.0, 420.0, d0) * uAerial * (1.0 - 0.85 * isSky));
+
+    // 一角: Ma Yuan's corner — the picture gathered to one side, the rest left as
+    // paper. Near things hold; the far and the sky give way.
+    float cm = smoothstep(-0.1, 0.55, dot(vUv - 0.5, uCorner.xy)) * uCorner.z * (1.0 - near * 0.7);
+    col = mix(col, uPaper, cm);
 
     // --- ink on top ----------------------------------------------------------------
     // 飞白: the brush running dry, in streaks.
@@ -194,7 +251,7 @@ const FRAG = /* glsl */ `
     float dry = mix(0.45, 1.0, smoothstep(0.25, 0.7, streak));
     float line = sil * dry * mix(0.35, 1.0, near) * (1.0 - far);
     line = max(line, fold * 0.4 * near);
-    col = mix(col, uInk, clamp(line * uLine, 0.0, 1.0) * 0.76);
+    col = mix(col, uLineColor, clamp(line * uLine, 0.0, 1.0) * 0.76);
 
     // --- the paper -------------------------------------------------------------------
     float fibre = noise(vUv * aspect * vec2(520.0, 140.0)) * 0.6 + noise(vUv * aspect * vec2(140.0, 520.0)) * 0.4;
@@ -228,6 +285,7 @@ export function InkPass({ scene }: { scene: PoemScene }) {
   }, []);
 
   const post = useMemo(() => {
+    const style = STYLES[scene.paint ?? 'dancai'];
     const mat = new THREE.ShaderMaterial({
       defines: { KUWAHARA_R: ink.light ? 2 : 3 },
       vertexShader: VERT,
@@ -244,9 +302,19 @@ export function InkPass({ scene }: { scene: PoemScene }) {
         uInk: { value: new THREE.Color(scene.palette.ink) },
         uVeilColor: { value: new THREE.Color(scene.palette.paper) },
         uVeil: { value: 0 },
-        uLine: { value: 1 },
         uScale: { value: 1 },
-        uAerial: { value: 0.45 },
+        uAerial: { value: style.aerial },
+        uLine: { value: style.line },
+        uSat: { value: style.sat },
+        uRampAmt: { value: style.rampAmt },
+        uBleed: { value: style.bleed },
+        uRamp0: { value: new THREE.Color(style.ramp[0]) },
+        uRamp1: { value: new THREE.Color(style.ramp[1]) },
+        uRamp2: { value: new THREE.Color(style.ramp[2]) },
+        uLineColor: { value: new THREE.Color(style.lineColor ?? scene.palette.ink) },
+        uCorner: { value: new THREE.Vector3(...(style.corner ?? [0, 0, 0])) },
+        uFarTint: { value: new THREE.Color(style.farTint?.[0] ?? '#000000') },
+        uFarTintAmt: { value: style.farTint?.[1] ?? 0 },
       },
     });
     const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), mat);

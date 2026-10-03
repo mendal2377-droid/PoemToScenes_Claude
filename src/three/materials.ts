@@ -785,7 +785,9 @@ export function makeSkyMaterial(p: Palette, luminary: { x: number; y: number; z:
 
         // Painted cloud bands. Cover follows uCloud: a clear sky keeps a few
         // streaks, and a full overcast closes the whole dome.
-        vec2 cp = vec2(atan(d.z, d.x) * 1.6, d.y * 3.4 - uTime * 0.008);
+        // Mapped onto a plane above the viewer rather than by compass angle: an
+        // angle wraps from +π to −π, and the clouds broke along a seam there.
+        vec2 cp = d.xz / max(d.y + 0.28, 0.06) * 0.55 + vec2(0.0, -uTime * 0.008);
         float cloud = fbm2(cp * vec2(1.0, 2.2) + vec2(uTime * 0.012, 0.0));
         float lo = mix(0.54, 0.16, uCloud);
         float band = smoothstep(lo, lo + 0.26, cloud) * smoothstep(0.0, 0.2, d.y + uCloud * 0.12);

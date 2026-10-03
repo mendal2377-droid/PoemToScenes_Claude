@@ -42,6 +42,7 @@ export const XI_JIANG: PoemScene = {
     [4, 5],
   ],
   rhymeName: '先 · 霰（平仄通叶）',
+  paint: 'dancai',
   palette: {
     paper: '#efe4c4',
     ink: '#2a2620',
