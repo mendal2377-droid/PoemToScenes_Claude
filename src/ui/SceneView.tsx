@@ -10,6 +10,7 @@ import { Palette } from './Palette';
 import { Inscription } from './Inscription';
 import { ambience } from '@/lib/ambience';
 import { Thumbstick } from './Thumbstick';
+import { Tiba, loadGlyphs } from './Tiba';
 
 const SceneCanvas = dynamic(() => import('@/three/SceneCanvas').then((m) => m.SceneCanvas), {
   ssr: false,
@@ -89,13 +90,40 @@ export function SceneView({ scene }: { scene: PoemScene }) {
 
   useEffect(() => () => ambience.stop(), []);
 
-  // A line you have just reached holds the middle of the screen for a beat,
-  // then hands over to the inscription, where it stays inked.
+  // 题跋 — arriving at a line's place writes it onto the painting. In free view
+  // that is every time a line is chosen, the first one included as the scroll
+  // opens; walking, it is the first time each place is reached.
+  const [writing, setWriting] = useState<{ line: number; key: number } | null>(null);
+  const write = useCallback(
+    (line: number) => setWriting((w) => (w?.line === line ? w : { line, key: Date.now() })),
+    []
+  );
+  const doneWriting = useCallback(() => setWriting(null), []);
+
+  useEffect(() => {
+    void loadGlyphs(scene.id);
+    setWriting(null);
+  }, [scene]);
+
+  useEffect(() => {
+    if (phase !== 'done' || mode !== 'view') return;
+    if (!focus) {
+      setWriting(null);
+      return;
+    }
+    const lm = scene.landmarks.find((l) => l.id === focus);
+    if (!lm) return;
+    // Let the eye arrive before the brush comes down.
+    const t = setTimeout(() => write(lm.line), 750);
+    return () => clearTimeout(t);
+  }, [focus, mode, phase, scene, write]);
+
   useEffect(() => {
     if (!revealing) return;
-    const t = setTimeout(clearRevealing, 2200);
-    return () => clearTimeout(t);
-  }, [revealing, clearRevealing]);
+    const lm = scene.landmarks.find((l) => l.id === revealing);
+    if (lm && mode !== 'view') write(lm.line);
+    clearRevealing();
+  }, [revealing, mode, scene, write, clearRevealing]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -120,8 +148,6 @@ export function SceneView({ scene }: { scene: PoemScene }) {
     const t = setTimeout(() => setSealed(true), 1400);
     return () => clearTimeout(t);
   }, [complete]);
-
-  const revealed = scene.landmarks.find((l) => l.id === revealing);
 
   return (
     <main className="scene-page">
@@ -179,11 +205,7 @@ export function SceneView({ scene }: { scene: PoemScene }) {
       {panelOpen && <Panel scene={scene} />}
       {mode === 'compose' && <Palette scene={scene} />}
 
-      {revealed && (
-        <div className="reveal" key={revealed.id}>
-          <p className="reveal__line">{scene.lines[revealed.line].text}</p>
-        </div>
-      )}
+      {writing && <Tiba key={writing.key} scene={scene} line={writing.line} onDone={doneWriting} />}
 
       {sealed && (
         <div className="sealed" key="sealed" onAnimationEnd={() => setSealed(false)}>

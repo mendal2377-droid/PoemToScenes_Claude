@@ -139,6 +139,27 @@ Whatever is bright and saturated — a torch, a lantern, peach blossom — keeps
 colour in every tradition, the way a painter keeps the one red seal. Phones and
 small machines get a lighter filter; `?ink=0` on any scene turns the pass off.
 
+## 题跋 — the line, written onto the painting
+
+Arriving at a line's place writes it into the empty part of the picture with the
+brush (`ui/Tiba.tsx`), as a painter inscribed a poem: the clauses become columns read
+right to left, every stroke goes down in its proper order and direction, and when
+the last one is done the poet's seal — 王维之印, 陶渊明印 — is pressed beneath in
+cinnabar. Then the ink settles back into the paper and the line stays inked in the
+inscription. A line of dense characters is written a little faster, so none takes
+much longer than seven seconds.
+
+Each stroke is a thick brush line drawn along the stroke's median and clipped to its
+outline. The stroke data is the 楷书 of [Make Me a Hanzi](https://github.com/skishore/makemeahanzi),
+via [hanzi-writer-data](https://github.com/chanind/hanzi-writer-data), derived from
+fonts by Arphic Technology under the Arphic Public License (`public/strokes/ARPHICPL.TXT`).
+Only the characters each scene uses are kept, one small file per scene:
+
+```bash
+npm i --no-save hanzi-writer-data
+node scripts/build-strokes.js
+```
+
 ## The film behind the shelf
 
 The home page plays a slow wander through nine of the poems under the paper. It is not

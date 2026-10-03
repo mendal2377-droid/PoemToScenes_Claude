@@ -688,6 +688,83 @@ input[type='range']::-moz-range-thumb {
   }
 }
 
+/* 题跋 — a line written onto the painting, stroke by stroke (Tiba.tsx) */
+
+.tiba {
+  position: absolute;
+  left: clamp(18px, 7vw, 110px);
+  top: 15vh;
+  height: min(64vh, calc(var(--tiba-rows) * 9.5vh + 9vh));
+  z-index: 40;
+  pointer-events: none;
+  animation: tiba-out var(--tiba-fade) ease var(--tiba-hold) forwards;
+}
+
+/* A breath of paper behind the ink, so it reads on any sky — even at night. */
+.tiba::before {
+  content: '';
+  position: absolute;
+  inset: -14% -150%;
+  z-index: -1;
+  background: radial-gradient(ellipse 50% 50% at 50% 46%, color-mix(in srgb, var(--tiba-paper, #efe4c8) var(--tiba-halo, 46%), transparent), transparent 100%);
+  filter: blur(18px);
+  opacity: 0;
+  animation: tiba-in 0.9s ease forwards;
+}
+
+.tiba__sheet {
+  display: block;
+  height: 100%;
+  width: auto;
+  overflow: visible;
+}
+
+@keyframes tiba-brush {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.tiba__seal {
+  opacity: 0;
+  animation: tiba-stamp 0.5s cubic-bezier(0.2, 1.3, 0.4, 1) forwards;
+}
+
+@keyframes tiba-stamp {
+  0% {
+    opacity: 0;
+    transform: scale(1.4) rotate(-4deg);
+  }
+  55% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.94;
+    transform: scale(1) rotate(-1.5deg);
+  }
+}
+
+@keyframes tiba-in {
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes tiba-out {
+  to {
+    opacity: 0;
+    filter: blur(2px);
+  }
+}
+
+@media (max-width: 640px) {
+  .tiba {
+    top: 16vh;
+    left: 16px;
+    height: min(46vh, calc(var(--tiba-rows) * 7vh + 7vh));
+  }
+}
+
 /* loading */
 
 .loading {
@@ -1278,6 +1355,7 @@ input[type='range']::-moz-range-thumb {
 html[data-film] .topbar,
 html[data-film] .inscription,
 html[data-film] .reveal,
+html[data-film] .tiba,
 html[data-film] .sealed,
 html[data-film] .hud__keys,
 html[data-film] .loading {
