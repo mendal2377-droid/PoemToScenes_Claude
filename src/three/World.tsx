@@ -8,6 +8,7 @@ import type { PoemScene } from '@/lib/types';
 import type { World } from './useWorld';
 import { Figure } from './Figure';
 import { People } from './People';
+import { OVERLAY_LAYER } from './InkPass';
 import { Animals } from './Animals';
 
 export { Figure };
@@ -219,6 +220,11 @@ function Boat({ b, scene, world }: { b: NonNullable<PoemScene['boat']>; scene: P
  * the camera, and only its horizontal position — it still falls from the same
  * height whatever the ground is doing.
  */
+/** Falling things go on the overlay layer, drawn after the ink pass. */
+const onOverlay = (o: THREE.Object3D | null) => {
+  o?.layers.set(OVERLAY_LAYER);
+};
+
 function FollowCamera({ children }: { children: ReactNode }) {
   const ref = useRef<THREE.Group>(null);
   useFrame(({ camera }) => {
@@ -270,7 +276,9 @@ export function WorldView({
       ))}
 
       {geo.rocks && <mesh geometry={geo.rocks} material={mat.rock} />}
-      {geo.grass && <mesh geometry={geo.grass} material={mat.grass} />}
+      {/* Grass is wash, not line: drawn last of the solids and left out of the depth
+          the ink pass outlines from, so a field is not a thicket of contours. */}
+      {geo.grass && <mesh geometry={geo.grass} material={mat.grass} renderOrder={2} />}
 
       {geo.pines.trunk && <mesh geometry={geo.pines.trunk} material={mat.bark} />}
       {geo.pines.leaf && <mesh geometry={geo.pines.leaf} material={mat.needle} />}
@@ -299,9 +307,9 @@ export function WorldView({
       <mesh geometry={geo.mist} material={mat.mist} renderOrder={5} />
       {geo.herd && mat.herd && <mesh geometry={geo.herd} material={mat.herd} />}
       <FollowCamera>
-        <points geometry={geo.fall} material={mat.fall} renderOrder={6} frustumCulled={false} />
-        <points geometry={geo.wsnow} material={mat.wsnow} renderOrder={6} frustumCulled={false} />
-        <points geometry={geo.rain} material={mat.rain} renderOrder={7} frustumCulled={false} />
+        <points geometry={geo.fall} material={mat.fall} renderOrder={6} frustumCulled={false} ref={onOverlay} />
+        <points geometry={geo.wsnow} material={mat.wsnow} renderOrder={6} frustumCulled={false} ref={onOverlay} />
+        <points geometry={geo.rain} material={mat.rain} renderOrder={7} frustumCulled={false} ref={onOverlay} />
       </FollowCamera>
     </group>
   );

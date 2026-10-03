@@ -34,6 +34,8 @@ export const film = {
   /** Set by the canvas: renders one frame at the given time, in seconds. */
   advance: undefined as undefined | ((t: number) => void),
   t: 0,
+  /** The ink pass draws the veil itself, on top of the painting. */
+  inkVeil: false,
 };
 
 if (typeof window !== 'undefined') {
@@ -98,7 +100,7 @@ export function FilmVeil({ paper }: { paper: string }) {
     // Ease the ends, so a fade does not start or stop like a switch.
     const f = film.fade * film.fade * (3 - 2 * film.fade);
     mat.current.opacity = f;
-    mesh.current.visible = f > 0.002;
+    mesh.current.visible = f > 0.002 && !film.inkVeil;
 
     const cam = camera as THREE.PerspectiveCamera;
     const d = 0.6;

@@ -471,6 +471,7 @@ export function makeFoliageMaterial(p: Palette, kind: FoliageKind, stiffness = 1
 export function makeGrassMaterial(p: Palette) {
   return new THREE.ShaderMaterial({
     side: THREE.DoubleSide,
+    depthWrite: false,
     uniforms: {
       ...COMMON_UNIFORMS(p),
       uDark: { value: c(p.groundLow) },

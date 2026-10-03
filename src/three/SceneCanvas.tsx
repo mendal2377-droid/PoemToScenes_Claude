@@ -15,6 +15,7 @@ import { RoamRig, ViewRig } from './Roam';
 import { Landmarks } from './Landmarks';
 import { Composer } from './Composer';
 import { FilmVeil, film, installFilm } from './Film';
+import { InkPass, OVERLAY_LAYER, ink } from './InkPass';
 
 /**
  * Runs the sky.
@@ -162,6 +163,7 @@ function Contents({ scene, onReady }: { scene: PoemScene; onReady?: () => void }
       <ViewRig scene={scene} />
       <RoamRig scene={scene} world={world} />
       <FilmVeil paper={scene.palette.paper} />
+      {ink.enabled && <InkPass scene={scene} />}
     </>
   );
 }
@@ -170,14 +172,16 @@ export function SceneCanvas({ scene, onReady }: { scene: PoemScene; onReady?: ()
   return (
     <Canvas
       className="scene-canvas"
-      dpr={[1, 1.75]}
+      dpr={[1, ink.enabled ? 1.5 : 1.75]}
       // Film mode renders frame by frame, on request, so a recording does not
       // depend on the window being on screen.
       frameloop={film.active ? 'never' : 'always'}
       gl={{ antialias: true, powerPreference: 'high-performance', preserveDrawingBuffer: film.active }}
       camera={{ fov: 52, near: 0.4, far: 1600, position: [0, 30, 120] }}
-      onCreated={({ gl, advance }) => {
+      onCreated={({ gl, advance, camera }) => {
         film.advance = advance;
+        // Falling things live on their own layer (see InkPass); the camera sees it.
+        camera.layers.enable(OVERLAY_LAYER);
         gl.setClearColor(new THREE.Color(scene.palette.paper), 1);
       }}
     >
