@@ -3,7 +3,8 @@
 import * as THREE from 'three';
 import { useRef, type ReactNode } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { terrainHeight } from '@/lib/terrain';
+import { bedAt, terrainHeight } from '@/lib/terrain';
+import { distToPath } from '@/lib/noise';
 import type { PoemScene } from '@/lib/types';
 import type { World } from './useWorld';
 import { Figure } from './Figure';
@@ -186,14 +187,19 @@ function Boats({ scene, world }: { scene: PoemScene; world: World }) {
 
 function Boat({ b, scene, world }: { b: NonNullable<PoemScene['boat']>; scene: PoemScene; world: World }) {
   if (!world.geo.boatHull) return null;
-  // On a pond it floats at the pond's level, on a river at the river's, and a
-  // boat that has been left on the bank — 便舍船 — sits on the ground.
-  const y =
-    b.on === 'river'
-      ? world.heights.riverLevel
-      : b.on === 'ground' || b.on === 'stream'
-        ? terrainHeight(b.x, b.z, scene.terrain) + 0.5
-        : world.heights.waterLevel;
+  // Afloat, a boat rides at the level of its water — the pond's, the river's,
+  // or the brook's surface where it lies. A boat that has been left on the bank
+  // — 便舍船 — rests on the ground with nobody in it.
+  const ashore = b.on === 'ground';
+  let y = world.heights.waterLevel;
+  if (b.on === 'river') y = world.heights.riverLevel;
+  else if (ashore) y = terrainHeight(b.x, b.z, scene.terrain) + 0.5;
+  else if (b.on === 'stream') {
+    const near = scene.terrain.channels
+      .map((c) => ({ c, ...distToPath(b.x, b.z, c.path) }))
+      .sort((p, q) => p.dist - q.dist)[0];
+    y = bedAt(near.c, scene.terrain, near.t) + 0.42;
+  }
 
   return (
     <group position={[b.x, y - 0.18, b.z]} rotation={[0, b.rot, 0]}>
@@ -201,14 +207,18 @@ function Boat({ b, scene, world }: { b: NonNullable<PoemScene['boat']>; scene: P
       {world.geo.boatCanopy && (
         <mesh geometry={world.geo.boatCanopy} material={world.mat.thatch} position={[0, 0.36, 0.5]} />
       )}
-      {/* The fisherman, seated at the stern under his hat. */}
-      <group position={[0, 0.34, -1.5]} scale={0.78}>
-        <Figure world={world} scale={0.82} />
-      </group>
-      {/* His line, a single stroke into the water. */}
-      <mesh material={world.mat.ink} position={[0.55, 0.5, -2.2]} rotation={[0, 0, -0.5]}>
-        <cylinderGeometry args={[0.018, 0.018, 2.4, 4]} />
-      </mesh>
+      {!ashore && (
+        <>
+          {/* The fisherman, seated at the stern under his hat. */}
+          <group position={[0, 0.34, -1.5]} scale={0.78}>
+            <Figure world={world} scale={0.82} />
+          </group>
+          {/* His line, a single stroke into the water. */}
+          <mesh material={world.mat.ink} position={[0.55, 0.5, -2.2]} rotation={[0, 0, -0.5]}>
+            <cylinderGeometry args={[0.018, 0.018, 2.4, 4]} />
+          </mesh>
+        </>
+      )}
     </group>
   );
 }
@@ -270,7 +280,9 @@ export function WorldView({
       {geo.ponds.map((g, i) => (
         <mesh key={i} geometry={g} material={mat.water} />
       ))}
-      {geo.stream && <mesh geometry={geo.stream} material={mat.water} />}
+      {geo.streams.map((g, i) => (
+        <mesh key={i} geometry={g} material={mat.water} />
+      ))}
       {geo.rivers.map((g, i) => (
         <mesh key={i} geometry={g} material={mat.water} />
       ))}

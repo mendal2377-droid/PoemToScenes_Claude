@@ -314,6 +314,14 @@ water, that the boat is actually afloat, and that scenery stays inside the terra
 landmarks once reached production sitting in a pond, so walking to them put the camera
 under the surface; the messages say how far to move the entry.
 
+**And the physics has to hold.** A brook runs from the first point of its path to the
+last, and its bed is graded so it only ever falls (`channelBed` in `terrain.ts`): where the
+ground swells in the way, the water cuts through it rather than climbing. Huts, steles,
+stone tables, beached boats and steep viewpoints get a level pad of ground (`settle` in
+`scenes/index.ts`). The validator also rejects people and animals on slopes steeper than
+about 29°, egrets in water deeper than their shins, and ponds whose banks are lower than
+their surface.
+
 ## Known limitations
 
 - **Building a world costs roughly 0.2–0.7 s** of main-thread time. The loading card is painted

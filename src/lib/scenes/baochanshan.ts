@@ -26,6 +26,20 @@ const TRENCH = [
   { x: 10, z: -85, r: 10, h: -14 },
 ];
 
+// Its floor: a level step at each hollow, each lower than the last, so the
+// passage is something you can walk — and walking in is walking down.
+const PASSAGE = [
+  { x: 24, z: -53, r: 9, h: 30 },
+  { x: 28.5, z: -58.5, r: 9, h: 28.5 },
+  { x: 33, z: -64, r: 9, h: 27 },
+  { x: 31, z: -69, r: 9, h: 25.75 },
+  { x: 29, z: -74, r: 9, h: 24.5 },
+  { x: 24, z: -77, r: 9, h: 23.25 },
+  { x: 19, z: -80, r: 9, h: 22 },
+  { x: 14.5, z: -82.5, r: 9, h: 20.75 },
+  { x: 10, z: -85, r: 10, h: 19.5 },
+];
+
 export const BAO_CHAN_SHAN: PoemScene = {
   id: 'baochanshan',
   kind: 'prose',
@@ -100,7 +114,7 @@ export const BAO_CHAN_SHAN: PoemScene = {
       },
     ],
     // The floor of the front hall, cut level into the slope.
-    flats: [{ x: -26, z: -26, r: 11, h: 22 }],
+    flats: [{ x: -26, z: -26, r: 11, h: 22 }, ...PASSAGE],
     bumps: [
       // The mountain, with its summit at about (-8, -74).
       { x: -8, z: -74, r: 44, h: 58 },
@@ -151,15 +165,15 @@ export const BAO_CHAN_SHAN: PoemScene = {
     // 洞之内平旷，有泉侧出 — the front hall: level, bright, and full of names.
     { id: 'qiandong', line: 3, label: '前洞', x: -24, z: -20, radius: 10, look: [-26, -30, 1.4], zoom: 1.2 },
     // 有穴窈然，入之甚寒 — the mouth of the other one, and the dark in it.
-    { id: 'houdong', line: 4, label: '后洞', x: 34, z: -50, radius: 7, look: [29, -62, -1], zoom: 1.2 },
+    { id: 'houdong', line: 4, label: '后洞', x: 22, z: -45, radius: 7, look: [28, -59, 0.6], zoom: 1.2 },
     // 余与四人拥火以入 — the five of them, with their torches, at the mouth.
-    { id: 'yonghuo', line: 5, label: '拥火', x: 31, z: -56, radius: 6, look: [30, -65, 0.5] },
+    { id: 'yonghuo', line: 5, label: '拥火', x: 23, z: -50, radius: 6, look: [28, -58, 1.2] },
     // 入之愈深，其进愈难 — the way narrowing, and going down.
-    { id: 'yujin', line: 6, label: '愈难', x: 39, z: -59, radius: 6, look: [29, -74, -4] },
+    { id: 'yujin', line: 6, label: '愈难', x: 32, z: -63, radius: 6, look: [27, -75, 0.4] },
     // 而其见愈奇 — and the strange things the torches find.
-    { id: 'yuqi', line: 7, label: '愈奇', x: 31, z: -66, radius: 6, look: [20, -80, 1.6], zoom: 1.2 },
+    { id: 'yuqi', line: 7, label: '愈奇', x: 31, z: -69, radius: 6, look: [20, -80, 1.6], zoom: 1.2 },
     // 有怠而欲出者，曰：不出，火且尽 — the one who wants to go back, and his torch.
-    { id: 'huojin', line: 8, label: '火尽', x: 14, z: -83, radius: 6, look: [12, -79, 1.3], zoom: 1.7 },
+    { id: 'huojin', line: 8, label: '火尽', x: 13, z: -83.4, radius: 6, look: [17, -81.1, 1.3], zoom: 1.7 },
     // 遂与之俱出 — and out, into daylight.
     { id: 'jinchu', line: 9, label: '俱出', x: 46, z: -52, radius: 8, look: [100, -40, 10] },
     // 世之奇伟瑰怪非常之观 — the summit, and what can be seen from it.
@@ -181,8 +195,8 @@ export const BAO_CHAN_SHAN: PoemScene = {
     { x: 0, z: 60, rot: 0.4, fallen: true },
     { x: -14, z: 50, rot: 0.3 },
     // 记游者甚众 — the names of everyone who has been, in the front hall.
-    { x: -33, z: -21, rot: 0.6 },
-    { x: -21, z: -33, rot: -0.4 },
+    { x: -21.5, z: -26, rot: 1.4 },
+    { x: -22, z: -29.5, rot: -0.4 },
     { x: -24, z: -19, rot: 0.1 },
   ],
   // The dark. It starts at the mouth of the back cave and is total inside.
@@ -202,12 +216,12 @@ export const BAO_CHAN_SHAN: PoemScene = {
     { x: -20, z: -23, rot: 0.8, role: 'scholar' },
     { x: -22, z: -30, rot: -0.6, role: 'scholar' },
     // 余与四人拥火以入 — and the four with him, each with a torch.
-    { x: 29.1, z: -59.6, rot: 2.7, role: 'companion', torch: true },
-    { x: 25.8, z: -61.6, rot: 2.6, role: 'companion', torch: true },
-    { x: 31.2, z: -62.4, rot: 2.6, role: 'companion', torch: true },
-    { x: 27, z: -64.6, rot: 2.5, role: 'companion', torch: true },
+    { x: 25.9, z: -55.3, rot: 2.46, role: 'companion', torch: true },
+    { x: 27.2, z: -56.9, rot: 2.46, role: 'companion', torch: true },
+    { x: 28.4, z: -58.4, rot: 2.46, role: 'companion', torch: true },
+    { x: 29.7, z: -60, rot: 2.46, role: 'companion', torch: true },
     // 有怠而欲出者 — the one who says the fire is running out.
-    { x: 12, z: -79, rot: 2.4, role: 'companion', torch: true },
+    { x: 17, z: -81.1, rot: 1.06, role: 'companion', torch: true },
   ],
 };
 

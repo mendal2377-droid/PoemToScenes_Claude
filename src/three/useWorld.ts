@@ -166,7 +166,8 @@ function buildWorld(scene: PoemScene) {
     sky: new THREE.SphereGeometry(760, 40, 26),
     // Every basin holds water, each at its own level.
     ponds: spec.basins.map((b) => buildPond(b, basinWaterLevel(b, spec))),
-    stream: spec.channels[0] ? buildStream(spec.channels[0].path, spec.channels[0].width, spec) : null,
+    // Every brook carries water, not only the first.
+    streams: spec.channels.map((c) => buildStream(c, spec)),
     rivers: (spec.rivers ?? []).map((rv) => buildRiver(rv)),
     glows: buildGlowPoints([
       ...(scene.glows ?? []).map((g) => ({

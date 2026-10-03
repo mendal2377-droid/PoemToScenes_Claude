@@ -1,14 +1,20 @@
 import type { PoemScene } from '../types';
 
-/** 缘溪行 — the stream the fisherman follows, from the boat to its source. */
+/**
+ * 缘溪行 — the stream the fisherman follows up to its source. It rises at the
+ * foot of the mountain (林尽水源) and runs down, the way water does, to the
+ * pool where his boat is: he came up it against the current.
+ */
 const STREAM = [
-  [22, 120],
-  [14, 92],
-  [-8, 66],
-  [-10, 40],
-  [6, 16],
   [10, -14],
+  [6, 16],
+  [-10, 40],
+  [-8, 66],
+  [-4, 78],
 ] as const;
+
+/** The pool at the foot of the stream, where the fisherman's boat rides. */
+const POOL = { x: -3, z: 85, r: 10 };
 
 /**
  * The wall of the mountain, as a row of hills either side of a gap.
@@ -20,14 +26,20 @@ const STREAM = [
 const WALL_WEST = [-14, -30, -46, -62, -78, -94, -110].map((x, i) => ({ x, z: -38, r: 16, h: [58, 52, 60, 56, 50, 54, 58][i] }));
 const WALL_EAST = [34, 50, 66, 82, 98, 114].map((x, i) => ({ x, z: -38, r: 16, h: [60, 54, 58, 52, 56, 60][i] }));
 
-/** 美池 — the pond of the text is a brook through the valley's fields. */
+/**
+ * 美池 — a brook from a spring at the foot of the western hills, across the
+ * fields, into the pond. The valley is closed, so the water ends there.
+ */
 const VALLEY_BROOK = [
-  [-70, -58],
-  [-40, -70],
-  [-6, -84],
-  [30, -80],
-  [66, -94],
+  [-42, -68],
+  [-33, -71],
+  [-25, -77],
+  [-14, -81],
+  [-4, -84],
+  [6, -84],
+  [15, -86],
 ] as const;
+const MEI_CHI = { x: 17, z: -86, r: 4.6 };
 
 /** 阡陌 — the footpaths between the fields, running both ways. */
 const ACROSS = [-56, -68, -80, -92].map((z) => [[-44, z], [-22, z + 1], [0, z - 1], [22, z + 1], [44, z]] as [number, number][]);
@@ -100,19 +112,25 @@ export const TAO_HUA_YUAN: PoemScene = {
     hills: { amp: 2.4, freq: 0.019 },
     swell: { amp: 4.0, freq: 0.006 },
     rim: { start: 80, amp: 34 },
-    basins: [],
+    // The pool the stream runs into, and the valley's pond.
+    basins: [
+      { ...POOL, depth: 2 },
+      { ...MEI_CHI, depth: 1.4 },
+    ],
     // 缘溪 — the stream the fisherman follows, up to its source under the
     // mountain; and, in the valley, another, small enough to step across.
     channels: [
-      { path: STREAM, width: 8, depth: 2 },
-      { path: VALLEY_BROOK, width: 6, depth: 1.5 },
+      { path: STREAM, width: 8, depth: 1.2 },
+      { path: VALLEY_BROOK, width: 4, depth: 0.7 },
     ],
-    // The slot through the wall, and then the level floor of the valley.
+    // The slot through the wall, and then the level floor of the valley; and a
+    // hollow at the foot of the outer slope for the pool to lie in.
     flats: [
       { x: 10, z: -28, r: 12, h: 1.0 },
       { x: 10, z: -38, r: 12, h: 1.2 },
       { x: 10, z: -48, r: 12, h: 1.2 },
       { x: 0, z: -76, r: 46, h: 1.2 },
+      { x: POOL.x, z: POOL.z, r: 19, h: 0 },
     ],
     bumps: [
       ...WALL_WEST,
@@ -162,7 +180,7 @@ export const TAO_HUA_YUAN: PoemScene = {
   },
   landmarks: [
     // 晋太元中，武陵人捕鱼为业 — the fisherman, and his boat on the stream.
-    { id: 'wuling', line: 0, label: '武陵', x: 22, z: 76, radius: 12, look: [14, 92, 1.6], zoom: 1.3 },
+    { id: 'wuling', line: 0, label: '武陵', x: 14, z: 76, radius: 12, look: [-1, 87, 1.0], zoom: 1.3 },
     // 缘溪行，忘路之远近 — the stream, going on ahead, and no thought of how far.
     { id: 'yuanxi', line: 1, label: '缘溪', x: 10, z: 74, radius: 12, look: [-8, 66, 0.5], zoom: 1.2 },
     // 忽逢桃花林，夹岸数百步 — and there is the wood, on both banks.
@@ -172,21 +190,21 @@ export const TAO_HUA_YUAN: PoemScene = {
     // 林尽水源，便得一山 — the wood ends where the water does, at the foot of a mountain.
     { id: 'shuiyuan', line: 4, label: '水源', x: 18, z: 4, radius: 11, look: [10, -28, 9] },
     // 山有小口，仿佛若有光 — and in it a small opening, and something like light.
-    { id: 'xiaokou', line: 5, label: '小口', x: 10, z: -4, radius: 9, look: [10, -52, 5], zoom: 1.4 },
+    { id: 'xiaokou', line: 5, label: '小口', x: 4, z: -6, radius: 9, look: [10, -52, 5], zoom: 1.4 },
     // 便舍船，从口入 — the boat, left on the bank.
-    { id: 'sheshuan', line: 6, label: '舍船', x: 6, z: -34, radius: 8, look: [16, -20, 0.7], zoom: 1.5 },
+    { id: 'sheshuan', line: 6, label: '舍船', x: 6, z: -34, radius: 8, look: [17, -9, 0.6], zoom: 1.5 },
     // 初极狭，才通人 — the slot, barely wide enough.
     { id: 'jixia', line: 7, label: '极狭', x: 10, z: -38, radius: 8, look: [10, -60, 2], zoom: 1.2 },
     // 复行数十步，豁然开朗 — and then it opens.
     { id: 'huoran', line: 8, label: '开朗', x: 10, z: -56, radius: 9, look: [0, -86, 3] },
     // 土地平旷，屋舍俨然 — the flat land, and the houses standing in rows.
-    { id: 'pingkuang', line: 9, label: '平旷', x: -10, z: -70, radius: 12, look: [-24, -58, 2.4], zoom: 1.2 },
+    { id: 'pingkuang', line: 9, label: '平旷', x: 8, z: -97, radius: 12, look: [-2, -61, 1.6] },
     // 阡陌交通，鸡犬相闻 — the little paths crossing, and the sound of hens and dogs.
     { id: 'qianmo', line: 10, label: '阡陌', x: 18, z: -70, radius: 12, look: [4, -78, 1], zoom: 1.2 },
     // 黄发垂髫，并怡然自乐 — the old and the young, at their ease.
-    { id: 'huangfa', line: 11, label: '怡然', x: -24, z: -82, radius: 12, look: [-18, -93, 1.0], zoom: 1.4 },
+    { id: 'huangfa', line: 11, label: '怡然', x: -10, z: -90, radius: 12, look: [-18, -93, 1.0], zoom: 1.4 },
     // 乃不知有汉，无论魏晋 — the fisherman and the elder, talking.
-    { id: 'wuhan', line: 12, label: '不知', x: 12, z: -90, radius: 12, look: [22, -100, 1.0], zoom: 1.4 },
+    { id: 'wuhan', line: 12, label: '不知', x: 4, z: -88, radius: 12, look: [15, -95, 1.0], zoom: 1.4 },
     // 遂迷，不复得路 — and back, through the gap, to where the way in was.
     { id: 'suimi', line: 13, label: '遂迷', x: -4, z: -104, radius: 11, look: [10, -44, 3] },
   ],
@@ -202,15 +220,15 @@ export const TAO_HUA_YUAN: PoemScene = {
   // Dim, not dark: no torch here, so the slot is just shadow with light ahead.
   cave: { x: 10, z: -38, r: 12, fade: 12, depth: 0.5 },
   // 舍船 — the fisherman's boat at the start, and where he leaves it.
-  boat: { x: 14, z: 92, rot: 0.5, on: 'stream' },
-  boats: [{ x: 16, z: -20, rot: 1.2, on: 'ground' }],
+  boat: { x: -1, z: 87, rot: 0.6, on: 'basin' },
+  boats: [{ x: 17, z: -9, rot: 1.3, on: 'ground' }],
   huts: [
-    { x: -24, z: -58, rot: 0.4 },
-    { x: 6, z: -62, rot: -0.3 },
-    { x: 30, z: -58, rot: 0.9 },
-    { x: -36, z: -82, rot: 0.1 },
-    { x: -6, z: -90, rot: 0.5 },
-    { x: 38, z: -76, rot: 0.7 },
+    { x: -20, z: -62, rot: 0.4 },
+    { x: 1, z: -61, rot: -0.3 },
+    { x: 21, z: -61, rot: 0.9 },
+    { x: -21, z: -86, rot: 0.1 },
+    { x: -6, z: -89.5, rot: 0.5 },
+    { x: 33, z: -73, rot: 0.7 },
   ],
   extraPaths: [...ACROSS, ...ALONG],
   // 鸡犬相闻: small animals about the houses.
@@ -218,11 +236,11 @@ export const TAO_HUA_YUAN: PoemScene = {
   // 黄发垂髫 — an old man, a child, two at work; and the visitor being told.
   people: [
     { x: -16, z: -92, rot: 0.5, role: 'elder' },
-    { x: -20.5, z: -95, rot: 1.0, role: 'child' },
+    { x: -19.5, z: -94.5, rot: 1.0, role: 'child' },
     { x: -2, z: -70, rot: 2.0, role: 'farmer' },
     { x: 24, z: -68, rot: -0.5, role: 'farmer' },
-    { x: 24, z: -99, rot: 3.6, role: 'elder' },
-    { x: 20, z: -101, rot: 0.9, role: 'fisher' },
+    { x: 17, z: -94, rot: 3.6, role: 'elder' },
+    { x: 13, z: -96, rot: 0.9, role: 'fisher' },
   ],
   // 鸡犬相闻 — heard more than seen.
   sounds: [{ kind: 'poultry', x: 0, z: -72, r: 40 }],

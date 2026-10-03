@@ -1,7 +1,7 @@
 import * as THREE from 'three';
-import { Rng, ridge } from '@/lib/noise';
-import { riverWidth, terrainHeight } from '@/lib/terrain';
-import type { River } from '@/lib/terrain';
+import { Rng, distToPath, ridge, smoothstep } from '@/lib/noise';
+import { bedAt, riverWidth, terrainHeight } from '@/lib/terrain';
+import type { Channel, River } from '@/lib/terrain';
 import type { TerrainSpec } from '@/lib/terrain';
 import type { PoemScene } from '@/lib/types';
 
@@ -148,13 +148,11 @@ export function buildPond(b: { x: number; z: number; r: number }, level: number)
 
 /**
  * A stream: a ribbon that follows the channel path and rides just above the
- * carved bed, so it reads as water running over stone rather than a flat decal.
+ * graded bed, so it reads as water running over stone rather than a flat decal
+ * — and, like the bed, it only ever runs downhill.
  */
-export function buildStream(
-  path: readonly (readonly [number, number])[],
-  width: number,
-  spec: TerrainSpec
-): THREE.BufferGeometry {
+export function buildStream(channel: Channel, spec: TerrainSpec): THREE.BufferGeometry {
+  const { path, width } = channel;
   const curve = new THREE.CatmullRomCurve3(
     path.map((p) => new THREE.Vector3(p[0], 0, p[1])),
     false,
@@ -173,9 +171,9 @@ export function buildStream(
     const nx = -tan.z;
     const nz = tan.x;
     const len = Math.hypot(nx, nz) || 1;
-    // Wider and slower as it nears the pond.
-    const w = (width * 0.5) * (0.7 + t * 0.9);
-    const y = terrainHeight(p.x, p.z, spec) + 0.42;
+    // A spring is a thread where it rises; wider and slower as it nears the pond.
+    const w = width * 0.5 * (0.7 + t * 0.9) * (0.12 + 0.88 * smoothstep(0, 0.05, t));
+    const y = bedAt(channel, spec, distToPath(p.x, p.z, path).t) + 0.42;
     positions.push(p.x - (nx / len) * w, y, p.z - (nz / len) * w);
     positions.push(p.x + (nx / len) * w, y, p.z + (nz / len) * w);
     uvs.push(0, t * 12, 1, t * 12);

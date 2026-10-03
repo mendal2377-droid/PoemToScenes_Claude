@@ -127,7 +127,7 @@ export const DENG_GAO: PoemScene = {
     // 万里悲秋常作客 — the horizon, and how far it is from home.
     { id: 'beiqiu', line: 4, label: '悲秋', x: -50, z: 70, radius: 13, look: [40, -220, 44] },
     // 百年多病独登台 — the terrace, and the river a long way below it.
-    { id: 'dengtai', line: 5, label: '登台', x: -92, z: -32, radius: 11, look: [20, 10, 0.3] },
+    { id: 'dengtai', line: 5, label: '登台', x: -88, z: -31, radius: 11, look: [20, 10, 0.3] },
     // 艰难苦恨繁霜鬓 — the ground, close: frost on dead grass.
     { id: 'shuangbin', line: 6, label: '霜鬓', x: -62, z: 48, radius: 12, look: [-76, 52, 0.6], zoom: 1.6 },
     // 潦倒新停浊酒杯 — the jar, and the cup put down beside it.

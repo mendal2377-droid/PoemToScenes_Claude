@@ -1,5 +1,5 @@
 import { distToPath, smoothstep } from './noise';
-import { inWater, riverWidth, terrainHeight } from './terrain';
+import { basinWaterLevel, inWater, riverWidth, terrainHeight, waterSurface } from './terrain';
 import type { PoemScene } from './types';
 
 /**
@@ -78,7 +78,7 @@ export function validateScene(s: PoemScene): string[] {
       }
     }
     for (const c of s.terrain.channels) {
-      if (distToPath(x, z, c.path).dist < c.width * 0.42 + margin && label.startsWith('start')) {
+      if (distToPath(x, z, c.path).dist < c.width * 0.42 + margin) {
         e.push(at(`${label} at (${x}, ${z}) is in the brook`));
       }
     }
@@ -134,12 +134,57 @@ export function validateScene(s: PoemScene): string[] {
     if (inWater(q.x, q.z, s.terrain)) e.push(at(`person ${i} (${q.role}) at (${q.x}, ${q.z}) is standing in the water`));
   });
   s.animals?.forEach((q, i) => {
-    // Egrets and frogs stand at the edge, so the water itself is the only thing ruled out.
-    if (inWater(q.x, q.z, s.terrain)) e.push(at(`animal ${i} (${q.kind}) at (${q.x}, ${q.z}) is in the water`));
+    // An egret wades, but only in the shallows: water to its shins, not its neck.
+    const surface = waterSurface(q.x, q.z, s.terrain);
+    if (surface !== null) {
+      const deep = surface - terrainHeight(q.x, q.z, s.terrain);
+      if (q.kind !== 'egret') e.push(at(`animal ${i} (${q.kind}) at (${q.x}, ${q.z}) is in the water`));
+      else if (deep > 0.4) e.push(at(`egret ${i} at (${q.x}, ${q.z}) is in ${deep.toFixed(2)}m of water — wade it nearer the bank`));
+    }
   });
   s.props?.forEach((q, i) => {
     if (inWater(q.x, q.z, s.terrain)) e.push(at(`prop ${i} at (${q.x}, ${q.z}) is in the water`));
   });
+
+  // --- and they stand the way things stand --------------------------------
+  // Nobody stands at ease on a forty-degree bank, and a hen does not perch on
+  // one. Monkeys are the exception: the cliff is where they are.
+  const steep = (x: number, z: number) => {
+    const d = 0.8;
+    const h = (a: number, b: number) => terrainHeight(a, b, s.terrain);
+    return Math.hypot(h(x + d, z) - h(x - d, z), h(x, z + d) - h(x, z - d)) / (2 * d);
+  };
+  s.people?.forEach((q, i) => {
+    if (q.role !== 'monkey' && steep(q.x, q.z) > 0.55) {
+      e.push(at(`person ${i} (${q.role}) at (${q.x}, ${q.z}) stands on a ${steep(q.x, q.z).toFixed(2)}:1 slope`));
+    }
+  });
+  s.animals?.forEach((q, i) => {
+    // A wading bird's footing is under the water and nobody sees it.
+    const wading = q.kind === 'egret' && waterSurface(q.x, q.z, s.terrain) !== null;
+    if (!wading && steep(q.x, q.z) > 0.55) e.push(at(`animal ${i} (${q.kind}) at (${q.x}, ${q.z}) stands on a ${steep(q.x, q.z).toFixed(2)}:1 slope`));
+  });
+  for (const lm of s.landmarks) {
+    if (steep(lm.x, lm.z) > 1) e.push(at(`landmark ${lm.id} at (${lm.x}, ${lm.z}) is on a ${steep(lm.x, lm.z).toFixed(2)}:1 slope — nowhere to stand`));
+  }
+
+  // --- water lies level, and stays where it is put ---------------------------
+  // A pond's surface is flat, so its bank must be higher than its water all the
+  // way round — except where a brook runs in.
+  for (const b of s.terrain.basins) {
+    const level = basinWaterLevel(b, s.terrain);
+    for (let k = 0; k < 64; k++) {
+      const a = (k / 64) * Math.PI * 2;
+      const x = b.x + Math.cos(a) * b.r * 1.03;
+      const z = b.z + Math.sin(a) * b.r * 1.03;
+      if (s.terrain.channels.some((c) => distToPath(x, z, c.path).dist < c.width)) continue;
+      const h = terrainHeight(x, z, s.terrain);
+      if (h < level) {
+        e.push(at(`the pond at (${b.x}, ${b.z}) spills over its bank at (${x.toFixed(0)}, ${z.toFixed(0)}): ground ${h.toFixed(2)}, water ${level.toFixed(2)}`));
+        break;
+      }
+    }
+  }
   s.sounds?.forEach((q, i) => {
     if (q.r <= 0) e.push(at(`sound ${i} (${q.kind}) has no radius`));
   });

@@ -65,8 +65,16 @@ export const SHAN_JU: PoemScene = {
     swell: { amp: 6.8, freq: 0.0062 },
     rim: { start: 74, amp: 30 },
     basins: [],
-    channels: [{ path: STREAM_PATH, width: 5.2, depth: 1.5 }],
+    channels: [{ path: STREAM_PATH, width: 6, depth: 1 }],
     flats: [{ x: -46, z: 28, r: 13, h: 3.2 }],
+    // The brook comes down onto ground a little above the river and runs into
+    // it; without these the land it crosses would lie lower than the river it
+    // feeds, and water does not climb.
+    bumps: [
+      { x: -47, z: -53, r: 15, h: 3.4 },
+      { x: -29, z: -32, r: 16, h: 3.6 },
+      { x: -4, z: -2, r: 8, h: -2 },
+    ],
     // 莲动下渔舟 — the brook does not end in a pond. It widens as it comes down
     // out of the hills and becomes a river, slow enough for lotus, wide enough
     // for a boat, and it leaves the valley to the west.
@@ -120,7 +128,7 @@ export const SHAN_JU: PoemScene = {
     { id: 'kongshan', line: 0, label: '空山', x: -4, z: -40, radius: 13, look: [-4, -140, -14] },
     { id: 'wanqiu', line: 1, label: '晚秋', x: 58, z: 30, radius: 13, look: 'sun' },
     { id: 'songjian', line: 2, label: '松间', x: -30, z: -28, radius: 14, look: 'moon' },
-    { id: 'qingquan', line: 3, label: '清泉', x: -6, z: -8, radius: 11, look: [2, 10, 0.3], zoom: 1.5 },
+    { id: 'qingquan', line: 3, label: '清泉', x: -14, z: -7, radius: 11, look: [-6, -7, 0.3], zoom: 1.5 },
     { id: 'zhuxuan', line: 4, label: '竹林', x: 22, z: -6, radius: 13, look: [36, -9, 1.3], zoom: 1.3 },
     { id: 'liandong', line: 5, label: '莲塘', x: 30, z: 56, radius: 12, look: [-6, 62, 0.4], zoom: 1.4 },
     { id: 'chunfang', line: 6, label: '春芳', x: -44, z: -2, radius: 12, look: [-58, -6, 3], zoom: 1.2 },
@@ -139,10 +147,10 @@ export const SHAN_JU: PoemScene = {
     { x: 31, z: -15, rot: Math.PI / 2 - 0.2, role: 'washer' },
     { x: -41.6, z: 26, rot: 2.6, role: 'scholar', sit: true },
   ],
-  // Egrets at the shallows of the lotus reach, and one on the far bank.
+  // Egrets wading in the shallows of the lotus reach, and one off the far bank.
   animals: [
-    { kind: 'egret', x: 25, z: 44, rot: -1.57 },
-    { kind: 'egret', x: 26, z: 52, rot: -1.2, scale: 0.9 },
-    { kind: 'egret', x: -8, z: 38, rot: 1.6, scale: 0.95 },
+    { kind: 'egret', x: 23, z: 45.25, rot: -1.57 },
+    { kind: 'egret', x: 23.25, z: 52.5, rot: -1.2, scale: 0.9 },
+    { kind: 'egret', x: -6.75, z: 39.5, rot: 1.6, scale: 0.95 },
   ],
 };

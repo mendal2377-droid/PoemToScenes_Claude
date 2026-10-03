@@ -1,6 +1,11 @@
 import { clamp, distToPath, fbm, smoothstep } from './noise';
 
 export type Basin = { x: number; z: number; r: number; depth: number };
+/**
+ * A brook. Water runs from the first point of the path to the last, and the bed
+ * is graded so that it only ever falls that way (see `channelBed`) — a brook
+ * that follows the ground up a slope is the one thing water never does.
+ */
 export type Channel = { path: readonly (readonly [number, number])[]; width: number; depth: number };
 export type Flat = { x: number; z: number; r: number; h: number };
 /** A hill, or a piece of a wall. Gaussian, so neighbours merge into one range. */
@@ -87,11 +92,11 @@ export function terrainHeight(x: number, z: number, spec: TerrainSpec): number {
     h -= w * b.depth;
   }
 
-  // Stream beds.
+  // Stream beds, cut down to the graded bed and never built up above the ground.
   for (const c of spec.channels) {
-    const { dist } = distToPath(x, z, c.path);
+    const { dist, t } = distToPath(x, z, c.path);
     const w = 1 - smoothstep(c.width * 0.4, c.width, dist);
-    h -= w * c.depth;
+    if (w > 0) h = Math.min(h, h * (1 - w) + bedAt(c, spec, t) * w);
   }
 
   // Rivers.
@@ -115,6 +120,54 @@ export function terrainHeight(x: number, z: number, spec: TerrainSpec): number {
   return h;
 }
 
+const BED_SAMPLES = 128;
+/** The least a brook falls per metre, so even a slow one is visibly going somewhere. */
+const BED_FALL = 0.004;
+const beds = new WeakMap<Channel, Float32Array>();
+
+/**
+ * The bed of a brook, from source to mouth.
+ *
+ * It is the ground along the path `depth` below the surface, except that it
+ * never rises: where the ground swells in the way, the brook cuts through it
+ * rather than climbing over, the way real water does — so a hollow upstream
+ * sets the level for everything below it. Worked out once per brook.
+ */
+export function channelBed(c: Channel, spec: TerrainSpec): Float32Array {
+  let bed = beds.get(c);
+  if (bed) return bed;
+  const bare: TerrainSpec = { ...spec, channels: [] };
+  const P = c.path;
+  const lens: number[] = [];
+  let total = 0;
+  for (let i = 0; i < P.length - 1; i++) {
+    lens.push(Math.hypot(P[i + 1][0] - P[i][0], P[i + 1][1] - P[i][1]));
+    total += lens[i];
+  }
+  bed = new Float32Array(BED_SAMPLES + 1);
+  const step = total / BED_SAMPLES;
+  for (let k = 0; k <= BED_SAMPLES; k++) {
+    let d = k * step;
+    let i = 0;
+    while (i < lens.length - 1 && d > lens[i]) d -= lens[i++];
+    const u = Math.min(1, d / (lens[i] || 1));
+    const x = P[i][0] + (P[i + 1][0] - P[i][0]) * u;
+    const z = P[i][1] + (P[i + 1][1] - P[i][1]) * u;
+    const ground = terrainHeight(x, z, bare) - c.depth;
+    bed[k] = k === 0 ? ground : Math.min(ground, bed[k - 1] - BED_FALL * step);
+  }
+  beds.set(c, bed);
+  return bed;
+}
+
+/** Height of a brook's bed `t` (0–1) of the way from its source. */
+export function bedAt(c: Channel, spec: TerrainSpec, t: number): number {
+  const bed = channelBed(c, spec);
+  const f = clamp(t, 0, 1) * BED_SAMPLES;
+  const i = Math.min(Math.floor(f), BED_SAMPLES - 1);
+  return bed[i] + (bed[i + 1] - bed[i]) * (f - i);
+}
+
 /** True where the ground is under open water — pond, brook or river. */
 export function inWater(x: number, z: number, spec: TerrainSpec): boolean {
   for (const b of spec.basins) {
@@ -132,6 +185,24 @@ export function inWater(x: number, z: number, spec: TerrainSpec): boolean {
     }
   }
   return false;
+}
+
+/** Height of the water surface at (x, z), or null where the ground is dry. */
+export function waterSurface(x: number, z: number, spec: TerrainSpec): number | null {
+  for (const b of spec.basins) {
+    if (Math.hypot(x - b.x, z - b.z) < b.r * 0.98) return basinWaterLevel(b, spec);
+  }
+  for (const c of spec.channels) {
+    const { dist, t } = distToPath(x, z, c.path);
+    if (dist < c.width * 0.42) return bedAt(c, spec, t) + 0.42;
+  }
+  for (const rv of spec.rivers ?? []) {
+    const { dist, t } = distToPath(x, z, rv.path);
+    const end = smoothstep(0.02, 0.16, t) * (1 - smoothstep(0.84, 0.98, t));
+    const width = riverWidth(rv, t);
+    if (end > 0.5 && dist < width * 0.5 + width * 0.36 * 0.45) return rv.level;
+  }
+  return null;
 }
 
 /** Surface normal by central difference — used for tilting scattered props. */

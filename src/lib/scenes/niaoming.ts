@@ -1,12 +1,10 @@
 import type { PoemScene } from '../types';
 
 const RAVINE = [
-  [-10, -96],
-  [8, -58],
+  [6, -50],
   [-6, -22],
   [6, 14],
   [-2, 52],
-  [6, 100],
 ] as const;
 
 /**
@@ -61,9 +59,10 @@ export const NIAO_MING: PoemScene = {
     swell: { amp: 9, freq: 0.0075 },
     // A bowl: the walls stand up all round at about forty metres out.
     rim: { start: 44, amp: 62 },
-    basins: [],
-    channels: [{ path: RAVINE, width: 7.4, depth: 3.2 }],
-    flats: [],
+    basins: [{ x: 0, z: 57, r: 6, depth: 1.6 }],
+    channels: [{ path: RAVINE, width: 7.4, depth: 2.4 }],
+    // 涧 — the brook ends in a deep pool at the foot of the far slope.
+    flats: [{ x: 0, z: 57, r: 11, h: -3.3 }],
     // Two shoulders of the mountain pressing in from either side, so the
     // ravine is a slot and not a valley.
     bumps: [
@@ -101,7 +100,7 @@ export const NIAO_MING: PoemScene = {
     // 月出惊山鸟 — the moon coming up, and the birds it has startled.
     { id: 'yuechu', line: 2, label: '月出', x: 0, z: 88, radius: 13, look: 'moon' },
     // 时鸣春涧中 — the brook, and somewhere along it a bird.
-    { id: 'jianzhong', line: 3, label: '春涧', x: 6, z: 14, radius: 12, look: [-6, -20, 0.5], zoom: 1.2 },
+    { id: 'jianzhong', line: 3, label: '春涧', x: 13, z: 14, radius: 12, look: [-6, -20, 0.5], zoom: 1.2 },
   ],
   start: { x: -14, z: 94, heading: 0 },
   // Petals so small and slow they are barely weather at all.

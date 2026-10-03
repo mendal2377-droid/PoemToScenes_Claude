@@ -138,13 +138,13 @@ export const XI_JIANG: PoemScene = {
   ],
   // 听取蛙声一片 — frogs on the brook's banks; and the inn's own hens and dog.
   animals: [
-    { kind: 'frog', x: -38, z: 31.6, rot: -2.65, scale: 2.4 },
-    { kind: 'frog', x: -31.7, z: 28.5, rot: -2.65, scale: 2.2 },
-    { kind: 'frog', x: -39.7, z: 32.8, rot: -2.4, scale: 2.0 },
+    { kind: 'frog', x: -39, z: 30.6, rot: -2.65, scale: 2.4 },
+    { kind: 'frog', x: -33.2, z: 27.5, rot: -2.65, scale: 2.2 },
+    { kind: 'frog', x: -41.2, z: 31.8, rot: -2.4, scale: 2.0 },
     { kind: 'frog', x: -26.1, z: 14.9, rot: 0.49, scale: 2.2 },
     { kind: 'frog', x: 4.8, z: 7.9, rot: -2.49, scale: 2.2 },
     { kind: 'frog', x: 18.1, z: -13.5, rot: 0.66, scale: 2.2 },
-    { kind: 'frog', x: 23.5, z: -6.5, rot: -2.49, scale: 2.2 },
+    { kind: 'frog', x: 22.5, z: -7, rot: -2.49, scale: 2.2 },
     { kind: 'dog', x: 38, z: 34, rot: 3.9 },
     { kind: 'hen', x: 31, z: 36, rot: 2.0 },
     { kind: 'hen', x: 35, z: 36, rot: 5.0 },
