@@ -213,6 +213,18 @@ renders stills instead. By default it is one unbroken take (一镜到底): the e
 from the peaks down to the footprints, along them to the water, across it round the
 boat to the old man and up into the sky; `take: 'cut'` makes the version in shots.
 
+## The film engine
+
+Later films are made by `scripts/reel/engine.js` from a screenplay — one file
+per poem in `scripts/reel/` — that names the scene, gives the camera as keyframes
+for one unbroken take, says what happens in the world as it moves (the clock, the
+weather), what is drawn over the picture, when each line is written, and what is
+heard. `鸟鸣涧` (`scripts/reel/niaoming.js`) is the first: 72 slow seconds under the
+osmanthus, across the empty valley, the moon rising over the ridge and waking the
+birds, down into the ravine, and the poem written into the night sky in silver.
+Load mp4-muxer, the engine and a screenplay on a page of the site, then
+`await __reel(__screenplays.niaoming, { upload: '<endpoint>' })`.
+
 ## Running it
 
 ```bash
