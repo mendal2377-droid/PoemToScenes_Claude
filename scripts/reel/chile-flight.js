@@ -46,7 +46,7 @@ window.__screenplays.chileFlight = {
   end: { paper: 42.6, card: 43.6 },
 
   gust(t) {
-    const k = Math.max(0, Math.min(1, (t - 26.2) / 3.2));
+    const k = Math.max(0, Math.min(1, (t - 26.2) / 3.6));
     const front = -70 + 170 * k;
     const amt = t < 26.2 ? 0 : t < 33 ? 1 : 1 - 0.6 * Math.min(1, (t - 33) / 4);
     return { front, amt, k };
@@ -80,12 +80,12 @@ window.__screenplays.chileFlight = {
       [19.4, [-52, -0.2, -88.5], [-10, -0.6, -84], 64, -0.06],
       // skimming the shining water, east
       [22.6, [-22, -0.25, -86], [20, -0.7, -91], 64, 0.06],
-      // up out of the river into the tall grass, slowing right down
-      [24.6, [-16, 1.7, -72], [-4, 1.0, -40], 54, 0.1],
-      [26.4, [-20, 1.45, -60], [-4, 1.0, -36], 50],
-      [28.2, [-19, 1.45, -55], [-5, 1.0, -38], 50],
-      // between a sheep and two oxen, to the herdsman and his dog
-      [30.4, [-11, 1.6, -45], [4, 1.2, -32], 50, -0.04],
+      // up the bank into the tall grass, and settling in it, almost still
+      [24.4, [-18, 1.6, -71], [-6, 1.0, -40], 54, 0.08],
+      [25.8, [-19.2, 1.45, -63.5], [-5, 1.0, -37], 50],
+      [28.4, [-18.6, 1.45, -61.6], [-5, 1.0, -37], 50],
+      // then on, between a sheep and two oxen, to the herdsman and his dog
+      [30.6, [-11, 1.6, -46], [4, 1.2, -32], 50, -0.04],
       [32.4, [-1, 1.75, -39], [14, 1.6, -21], 50],
       // and out: back and up to the painting, the herd standing in it now
       [35.0, [-20, 7, -14], [10, 18, -100], 54],
@@ -154,52 +154,70 @@ window.__screenplays.chileFlight = {
     ctx.restore();
   },
 
-  // The tall grass right at the lens, only for the slow moment before the gust:
-  // deep grass across the horizon, blades in front, laid down by the wind.
-  drawNear(A, t) {
+  // The tall grass right at the lens, for the slow moment before the gust and
+  // the glide after it. It belongs to the world, not to the glass: it rises
+  // into the frame as we settle into the field, slides with every turn of the
+  // head, streams past as we move forward — the nearer the blade, the faster —
+  // and the wind lays it down as it goes over.
+  drawNear(A, t, pose) {
     const { ctx, W, H, rng, mix, ease, span } = A;
-    const curtain = ease(span(t, 23.8, 25.6)) * (1 - ease(span(t, 32.0, 33.6)));
-    if (curtain <= 0.01) return;
+    const present = ease(span(t, 23.6, 25.0)) * (1 - ease(span(t, 32.4, 34.0)));
     if (!this._blades) {
       const r = rng(812);
-      this._blades = Array.from({ length: 170 }, () => {
-        const z = r();
-        return { x: r() * (W + 240) - 120, base: H * mix(0.66, 1.06, r()), h: H * mix(0.26, 0.62, Math.pow(r(), 0.8)) * mix(0.75, 1.15, z), w: mix(7, 26, z), lean: (r() - 0.35) * 0.32, curl: (r() - 0.5) * 0.5, z, ph: r() * 6.28, hue: r() };
-      }).sort((a, b) => a.z - b.z);
+      // Near blades, and behind them a dense stand of thinner, farther ones whose
+      // tips make a soft ragged horizon of grass — that is what hides the herd.
+      const near = Array.from({ length: 150 }, () => {
+        const z = 0.35 + r() * 0.65; // 0 far … 1 nearest
+        return { x: r() * (W + 600) - 300, base: H * mix(0.66, 1.04, r()), h: H * mix(0.24, 0.6, Math.pow(r(), 0.8)) * mix(0.7, 1.2, z), w: mix(6, 28, z), lean: (r() - 0.35) * 0.3, curl: (r() - 0.5) * 0.5, z, ph: r() * 6.28, hue: r() };
+      });
+      const far = Array.from({ length: 520 }, () => {
+        const z = r() * 0.3;
+        return { x: r() * (W + 600) - 300, base: H * mix(0.54, 0.8, r()), h: H * mix(0.16, 0.4, r()), w: mix(3, 9, r()), lean: (r() - 0.4) * 0.35, curl: (r() - 0.5) * 0.6, z, ph: r() * 6.28, hue: r() * 0.7 + 0.15 };
+      });
+      this._blades = [...far, ...near].sort((a, b) => a.z - b.z);
     }
+    // Follow the camera: how far it has come forward and how far it has turned
+    // since it entered the grass (frames are rendered in order; a jump back resets).
+    const yawOf = (p) => Math.atan2(p.look[0] - p.pos[0], p.look[2] - p.pos[2]);
+    const tiltOf = (p) => Math.atan2(p.look[1] - p.pos[1], Math.hypot(p.look[0] - p.pos[0], p.look[2] - p.pos[2]));
+    if (!this._track || t < this._track.t || t < 24.0) this._track = { t, pos: pose.pos, yaw: yawOf(pose), tilt: tiltOf(pose), go: 0, turn: 0, rise: 0 };
+    const tr = this._track;
+    let dy = yawOf(pose) - tr.yaw; dy = Math.atan2(Math.sin(dy), Math.cos(dy));
+    tr.go += Math.hypot(pose.pos[0] - tr.pos[0], pose.pos[2] - tr.pos[2]);
+    tr.turn += dy;
+    tr.rise += tiltOf(pose) - tr.tilt;
+    tr.t = t; tr.pos = pose.pos; tr.yaw = yawOf(pose); tr.tilt = tiltOf(pose);
+    if (present <= 0.01) return;
+    const focal = H / 2 / Math.tan(((pose.fov ?? 50) * Math.PI) / 360);
+    // Before the front reaches us the grass stands; behind it, it lies down.
     const g = this.gust(t);
-    const screenFront = mix(-300, W + 300, ease(span(t, 26.4, 28.8)));
+    const sweep = ease(span(t, 26.2, 29.8));
+    const screenFront = mix(-500, W + 500, sweep);
+    // Settling into the field: everything comes up from below the frame.
+    const settle = ease(span(t, 23.6, 25.0));
     ctx.save();
-    const y0 = H * 0.38, y1 = H * 0.7;
-    const band = ctx.createLinearGradient(0, y0, 0, y1);
-    band.addColorStop(0, 'rgba(150,160,84,0)');
-    band.addColorStop(0.28, `rgba(124,138,70,${0.95 * curtain})`);
-    band.addColorStop(0.75, `rgba(96,112,56,${0.97 * curtain})`);
-    band.addColorStop(1, `rgba(84,98,48,${0.6 * curtain})`);
-    ctx.fillStyle = band;
-    for (let x = 0; x < W; x += 24) {
-      const k = ease(span(x, screenFront - 40, screenFront + 340));
-      if (k <= 0.01) continue;
-      ctx.globalAlpha = k;
-      ctx.fillRect(x, y0, 24, y1 - y0);
-    }
-    ctx.globalAlpha = 1;
     for (const b of this._blades) {
-      const bow = g.amt * ease(span(screenFront - b.x, 0, 320)) * 0.94;
+      // Parallax: nearer blades rise further, slide further, stream faster.
+      const depth = 0.35 + b.z * 1.3;
+      const flow = tr.go * 34 * depth;
+      const cx = b.x - tr.turn * focal * 0.95 + (b.x - W / 2) * Math.min(1.5, tr.go * 0.02 * depth);
+      const base = b.base + flow + (1 - settle) * H * 0.85 * depth - tr.rise * focal * 0.6;
+      if (base - b.h > H + 40 || cx < -200 || cx > W + 200) continue;
+      const bow = g.amt * ease(span(screenFront - cx, -60, 380)) * 0.94;
       const sway = Math.sin(t * (0.8 + b.z * 0.6) + b.ph) * b.h * 0.06 + Math.sin(t * 2.3 + b.ph * 2) * b.h * 0.012;
-      const h = b.h * (1 - 0.74 * bow);
-      const tipX = b.x + b.lean * b.h + sway + bow * b.h * 0.8;
-      const tipY = b.base - h;
-      const midX = b.x + (tipX - b.x) * 0.3 + b.curl * b.h * 0.18, midY = b.base - h * 0.55;
-      const grad = ctx.createLinearGradient(0, b.base, 0, tipY);
-      grad.addColorStop(0, `rgba(${Math.round(mix(52, 84, b.hue))},${Math.round(mix(66, 90, b.hue))},${Math.round(mix(28, 42, b.hue))},${0.95 * curtain})`);
-      grad.addColorStop(1, `rgba(${Math.round(mix(176, 210, b.hue))},${Math.round(mix(172, 198, b.hue))},${Math.round(mix(86, 114, b.hue))},${0.9 * curtain})`);
+      const h = b.h * (1 - 0.74 * bow) * (1 + b.z * Math.min(0.6, tr.go * 0.015));
+      const tipX = cx + b.lean * b.h + sway + bow * b.h * 0.8;
+      const tipY = base - h;
+      const midX = cx + (tipX - cx) * 0.3 + b.curl * b.h * 0.18, midY = base - h * 0.55;
+      const grad = ctx.createLinearGradient(0, base, 0, tipY);
+      grad.addColorStop(0, `rgba(${Math.round(mix(52, 84, b.hue))},${Math.round(mix(66, 90, b.hue))},${Math.round(mix(28, 42, b.hue))},${0.95 * present})`);
+      grad.addColorStop(1, `rgba(${Math.round(mix(176, 210, b.hue))},${Math.round(mix(172, 198, b.hue))},${Math.round(mix(86, 114, b.hue))},${0.9 * present})`);
       ctx.fillStyle = grad;
-      ctx.filter = b.z > 0.86 ? 'blur(3px)' : 'none';
+      ctx.filter = b.z > 0.86 ? 'blur(3px)' : b.z < 0.3 ? 'blur(0.8px)' : 'none';
       ctx.beginPath();
-      ctx.moveTo(b.x - b.w / 2, b.base);
+      ctx.moveTo(cx - b.w / 2, base);
       ctx.quadraticCurveTo(midX - b.w * 0.25, midY, tipX, tipY);
-      ctx.quadraticCurveTo(midX + b.w * 0.25, midY, b.x + b.w / 2, b.base);
+      ctx.quadraticCurveTo(midX + b.w * 0.25, midY, cx + b.w / 2, base);
       ctx.closePath();
       ctx.fill();
     }
