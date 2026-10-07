@@ -227,6 +227,12 @@ grass where the herd cannot be seen, up into the dome of the sky, and back into 
 grass for the gust — a wave of wind (`__film.bow`, which lays the 3D grass down
 behind a travelling front) that flattens the plain and shows the cattle and sheep.
 Its lines arrive as couplets in the sky and the wind tears them away.
+`scripts/reel/chile-flight.js` films the same song as a flight, the way the "inside
+the painting" films move: open on the picture, dive into it, skim the grass and the
+river, spiral into the sky, slow right down for the gust, and pull back out to the
+picture — with real motion blur (the engine averages several renders across the
+shutter when the camera moves fast), banking roll on its keys, and a light, bright
+score. It loads after `chile.js`.
 Load mp4-muxer, the engine and a screenplay on a page of the site, then
 `await __reel(__screenplays.niaoming, { upload: '<endpoint>' })`.
 

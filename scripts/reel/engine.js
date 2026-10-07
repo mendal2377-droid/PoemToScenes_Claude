@@ -90,7 +90,8 @@ window.__reel = async (sp, { upload = null, preview = null } = {}) => {
     const pos = curve(t, (k) => k[1]);
     const floor = Math.max(G(pos[0], pos[2]), WATER) + 0.7;
     if (pos[1] < floor) pos[1] = floor;
-    return { pos, look: curve(t, (k) => k[2]), fov: curve(t, (k) => [k[3]])[0] };
+    // An optional fifth value on a key is the roll — the bank of a flying camera.
+    return { pos, look: curve(t, (k) => k[2]), fov: curve(t, (k) => [k[3]])[0], roll: curve(t, (k) => [k[4] ?? 0])[0] };
   };
 
   // The same pinhole the scene's camera uses, so drawn things sit in the world.
@@ -283,17 +284,49 @@ window.__reel = async (sp, { upload = null, preview = null } = {}) => {
   };
 
   // ----------------------------------------------------------------- a frame
+  // Motion blur: when the camera moves fast, the frame is the average of several
+  // renders spread across the shutter, the way a real camera's frame is.
+  const acc = mk(), accx = acc.getContext('2d');
+  function blurSlices(t) {
+    const mb = sp.motionBlur;
+    if (!mb) return 1;
+    const a = poseAt(t), b = poseAt(t + 1 / FPS);
+    const v = Math.hypot(b.pos[0] - a.pos[0], b.pos[1] - a.pos[1], b.pos[2] - a.pos[2]) * FPS;
+    const dir = (p) => { const d = [p.look[0] - p.pos[0], p.look[1] - p.pos[1], p.look[2] - p.pos[2]]; const l = Math.hypot(...d); return d.map((x) => x / l); };
+    const da = dir(a), db = dir(b);
+    const turn = Math.acos(Math.min(1, da[0] * db[0] + da[1] * db[1] + da[2] * db[2])) * FPS;
+    return Math.max(1, Math.min(mb.max ?? 6, Math.round(1 + v * (mb.perMetre ?? 0.3) + turn * (mb.perRadian ?? 5))));
+  }
+
   function compose(t, fresh) {
     const pose = poseAt(t);
     F.bloom(t < 0.35 ? 0 : ease(span(t, 0.35, 3.3)));
-    if (sp.world) sp.world(F, t);
-    F.pose(pose);
-    if (fresh) F.step(); else F.again();
+    const n = fresh ? blurSlices(t) : 1;
+    if (n === 1) {
+      if (sp.world) sp.world(F, t);
+      F.pose(pose);
+      if (fresh) F.step(); else F.again();
+      accx.clearRect(0, 0, W, H);
+      accx.drawImage(gl, 0, 0, W, H);
+    } else {
+      const shutter = (sp.motionBlur.shutter ?? 0.55) / FPS;
+      accx.clearRect(0, 0, W, H);
+      for (let i = 0; i < n; i++) {
+        const ts = t + (i / (n - 1) - 0.5) * shutter;
+        if (sp.world) sp.world(F, ts);
+        F.pose(poseAt(ts));
+        F.tick(1 / FPS / n);
+        accx.globalAlpha = 1 / (i + 1);
+        accx.drawImage(gl, 0, 0, W, H);
+      }
+      accx.globalAlpha = 1;
+      F.pose(pose);
+    }
 
     paperFill(ctx);
     ctx.save();
     ctx.filter = sp.grade ? sp.grade(t) : 'contrast(1.12) brightness(1.03)';
-    ctx.drawImage(gl, 0, 0, W, H);
+    ctx.drawImage(acc, 0, 0);
     ctx.restore();
     if (sp.drawWorld) sp.drawWorld(api, t, pose);
 

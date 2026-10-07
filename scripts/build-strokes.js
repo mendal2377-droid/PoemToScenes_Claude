@@ -36,8 +36,9 @@ for (const file of fs.readdirSync(dir)) {
   const id = /id: '([^']+)'/.exec(src)[1];
   const texts = [...src.matchAll(/\{ text: '([^']+)'/g)].map((m) => m[1]);
   const author = /author: '([^']+)'/.exec(src)[1];
-  // The seal reads 〈name〉之印 or 〈name〉印, so those two are always wanted too.
-  const chars = new Set([...texts.join(''), ...author, '之', '印']);
+  const title = /title: '([^']+)'/.exec(src)[1];
+  // The title is written too, and the seal reads 〈name〉之印 or 〈name〉印, so those two are always wanted too.
+  const chars = new Set([...texts.join(''), ...title, ...author, '之', '印']);
   const glyphs = {};
   const missing = [];
   for (const ch of chars) {

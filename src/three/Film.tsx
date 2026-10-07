@@ -63,6 +63,8 @@ declare global {
       step: () => void;
       /** Render the same instant again — for a second camera in a dissolve. */
       again: () => void;
+      /** Render one frame `dt` seconds after the last — for the slices of a motion-blurred frame. */
+      tick: (dt: number) => void;
       /** The hour on the 24-hour dial, and the weather. */
       clock: (hour: number) => void;
       weather: (id: WeatherId) => void;
@@ -102,6 +104,10 @@ export function installFilm(scene: PoemScene) {
       film.advance?.(film.t);
     },
     again: () => film.advance?.(film.t),
+    tick: (dt) => {
+      film.t += dt;
+      film.advance?.(film.t);
+    },
     clock: (hour) => useScene.getState().setClock(hour),
     weather: (id) => useScene.getState().setWeather(id),
     air: (patch) => useScene.getState().setAtmosphere(patch),
