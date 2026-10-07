@@ -154,7 +154,7 @@ window.__reel = async (sp, { upload = null, preview = null } = {}) => {
       for (let k = 1; k < m.length; k++) L += Math.hypot(m[k][0] - m[k - 1][0], m[k][1] - m[k - 1][1]);
       const path = new Path2D();
       m.forEach((p, k) => (k ? path.lineTo(p[0], p[1]) : path.moveTo(p[0], p[1])));
-      return { outline: new Path2D(d), median: path, len: L + 80 };
+      return { outline: new Path2D(d), median: path, len: L + 80, pts: m };
     }));
   }
   function planColumn(text, start, dur) {
@@ -171,37 +171,45 @@ window.__reel = async (sp, { upload = null, preview = null } = {}) => {
       return r;
     });
   }
-  function drawColumn(plan, x, y, size, t, alpha = 1, color = INK) {
-    if (alpha <= 0) return;
+  /** Brush a column's strokes, as far as they have got at time t, into a canvas. */
+  function strokesInto(cx, plan, x, y, size, t, color) {
     const k = size / 1024;
-    tmpx.clearRect(0, 0, W, H);
     plan.forEach((strokes, ci) => {
       strokes.forEach(({ s, t0, t1 }) => {
         const p = clamp01((t - t0) / (t1 - t0));
         if (p <= 0) return;
-        tmpx.save();
-        tmpx.setTransform(k, 0, 0, -k, x, y + ci * size * 1.08 + 900 * k);
-        tmpx.clip(s.outline);
-        tmpx.strokeStyle = color;
-        tmpx.lineWidth = 190;
-        tmpx.lineCap = 'round';
-        tmpx.lineJoin = 'round';
-        tmpx.setLineDash([s.len, s.len]);
-        tmpx.lineDashOffset = s.len * (1 - p);
-        tmpx.stroke(s.median);
-        tmpx.restore();
+        cx.save();
+        cx.setTransform(k, 0, 0, -k, x, y + ci * size * 1.08 + 900 * k);
+        cx.clip(s.outline);
+        cx.strokeStyle = color;
+        cx.lineWidth = 190;
+        cx.lineCap = 'round';
+        cx.lineJoin = 'round';
+        cx.setLineDash([s.len, s.len]);
+        cx.lineDashOffset = s.len * (1 - p);
+        cx.stroke(s.median);
+        cx.restore();
       });
     });
+  }
+  /** Lay a layer of writing onto the picture, with its breath of paper (or shadow). */
+  function blit(layer, alpha, color, size = 110) {
+    if (alpha <= 0) return;
     ctx.save();
     ctx.globalAlpha = alpha * 0.94;
     ctx.filter = 'blur(0.5px)';
-    // The writing carries its own breath of paper — or of shadow — hugging the strokes.
     ctx.shadowColor = color === INK ? 'rgba(238,236,228,0.95)' : 'rgba(6,8,14,0.85)';
     ctx.shadowBlur = Math.max(10, size * 0.16);
-    ctx.drawImage(tmp, 0, 0);
+    ctx.drawImage(layer, 0, 0);
     ctx.shadowBlur = 0;
-    ctx.drawImage(tmp, 0, 0);
+    ctx.drawImage(layer, 0, 0);
     ctx.restore();
+  }
+  function drawColumn(plan, x, y, size, t, alpha = 1, color = INK) {
+    if (alpha <= 0) return;
+    tmpx.clearRect(0, 0, W, H);
+    strokesInto(tmpx, plan, x, y, size, t, color);
+    blit(tmp, alpha, color, size);
   }
   function english(str, a, y = 1452) {
     if (a <= 0) return;
@@ -265,9 +273,14 @@ window.__reel = async (sp, { upload = null, preview = null } = {}) => {
   const AUTHOR = sp.title && { plan: planColumn(sp.author, sp.title.at + 1.5, 1.3) };
   const FIN = sp.final;
   LINES.forEach((l, i) => (l.final = planColumn(l.zh, FIN.at + i * 0.9, 0.01)));
-  const sealChars = sp.author.length === 2 ? `${sp.author}之印` : `${sp.author}印`.slice(0, 4);
+  const sealChars = sp.sealChars ?? (sp.author.length === 2 ? `${sp.author}之印` : `${sp.author}印`.slice(0, 4));
+  const longest = Math.max(...LINES.map((l) => [...l.zh].length));
 
-  const api = { ctx, W, H, project, skyPoint, ease, ease5, span, mix, mix3, clamp01, rng, lum, INK, SILVER, PAPER, F, G, WATER };
+  const layerA = mk(), layerB = mk();
+  const api = {
+    ctx, W, H, project, skyPoint, ease, ease5, span, mix, mix3, clamp01, rng, lum, INK, SILVER, PAPER, F, G, WATER,
+    layers: [layerA, layerB], strokesInto, blit, english, drawColumn,
+  };
 
   // ----------------------------------------------------------------- a frame
   function compose(t, fresh) {
@@ -294,7 +307,8 @@ window.__reel = async (sp, { upload = null, preview = null } = {}) => {
       drawColumn(TITLE.plan, TITLE.x, TITLE.y, TITLE.size, t, a, textInk);
       drawColumn(AUTHOR.plan, TITLE.x + TITLE.size * 0.28, TITLE.y + TITLE.size * ([...TITLE.text].length * 1.08 + 0.3), TITLE.size * 0.44, t, a * 0.85, textInk);
     }
-    LINES.forEach((l) => {
+    if (sp.drawLines) sp.drawLines(api, t, LINES);
+    else LINES.forEach((l) => {
       const a = ease(span(t, l.show[0] - 0.3, l.show[0] + 0.2)) * (1 - ease(span(t, l.show[1] - 1.4, l.show[1])));
       if (a <= 0) return;
       let color = textInk;
@@ -310,7 +324,7 @@ window.__reel = async (sp, { upload = null, preview = null } = {}) => {
         const ap = ease(span(t, FIN.at + i * 0.6, FIN.at + i * 0.6 + 1.3));
         drawColumn(l.final, FIN.x0 - i * FIN.dx, FIN.y, FIN.size, t + 100, fA * ap, FIN.ink ?? textInk);
       });
-      seal(sealChars, FIN.x0 - (LINES.length - 1) * FIN.dx + 6, FIN.y + FIN.size * 5.6, 88, t, FIN.sealAt);
+      seal(sealChars, FIN.x0 - (LINES.length - 1) * FIN.dx + 6, FIN.y + FIN.size * (longest * 1.08 + 0.5), 88, t, FIN.sealAt);
       english(FIN.credit, fA * ease(span(t, FIN.sealAt - 0.8, FIN.sealAt + 0.4)), 1452);
     }
 

@@ -28,6 +28,12 @@ export const shared = {
   uCave: { value: 0 },
   /** 1 when the traveller carries a torch, 0 otherwise. */
   uTorch: { value: 0 },
+  /**
+   * 风吹草低 — a gust that lays the grass down. How hard (0–1), and where its
+   * front has got to along +x: grass behind the front is bowed, ahead of it stands.
+   */
+  uBow: { value: 0 },
+  uBowFront: { value: -1e4 },
 };
 
 /**
@@ -476,6 +482,8 @@ export function makeGrassMaterial(p: Palette) {
       ...COMMON_UNIFORMS(p),
       uDark: { value: c(p.groundLow) },
       uLight: { value: c(p.grassTip) },
+      uBow: shared.uBow,
+      uBowFront: shared.uBowFront,
       uInk: { value: c(p.ink) },
       uAccent: { value: c(p.accent) },
     },
@@ -486,13 +494,21 @@ export function makeGrassMaterial(p: Palette) {
       attribute vec3 aBase;
       attribute float aUp;
       attribute float aSeed;
+      uniform float uBow, uBowFront;
       varying float vUp;
       varying float vSeed;
       varying vec3 vW;
       void main(){
         vec4 wp = modelMatrix * vec4(position, 1.0);
         vec3 anchor = (modelMatrix * vec4(aBase, 1.0)).xyz;
-        wp.xyz += windSway(anchor, 1.35, aSeed * 6.283) * aUp * aUp;
+        // A gust laying the grass down: it leans along +x and sinks to a third of
+        // its height, behind a ragged front that travels across the plain.
+        float front = uBowFront + (fbm2(anchor.xz * 0.06) - 0.5) * 22.0;
+        float bow = uBow * smoothstep(front, front - 14.0, anchor.x) * (0.8 + 0.2 * aSeed);
+        float h = wp.y - anchor.y;
+        wp.y = anchor.y + h * (1.0 - 0.68 * bow);
+        wp.x += h * 1.05 * bow;
+        wp.xyz += windSway(anchor, 1.35 * (1.0 - 0.6 * bow), aSeed * 6.283) * aUp * aUp;
         vUp = aUp;
         vSeed = aSeed;
         vW = wp.xyz;
@@ -1041,6 +1057,49 @@ export function makeInkMaterial(p: Palette, tint?: string) {
       varying vec3 vN;
       void main(){
         vec3 col = uInk * (0.72 + clamp(vN.y, 0.0, 1.0) * 0.5);
+        float grain = fbm2(vW.xz * 7.0 + vW.y * 3.0);
+        col *= 0.86 + grain * 0.3;
+        col = applyHour(col);
+        col = applyMist(col, length(vW - cameraPosition), 1.0);
+        gl_FragColor = vec4(col, 1.0);
+      }
+    `,
+  });
+}
+
+/** The herd: cattle in the herd's colour, sheep in pale wool (`aWool`). */
+export function makeHerdMaterial(p: Palette, tint: string) {
+  return new THREE.ShaderMaterial({
+    side: THREE.DoubleSide,
+    uniforms: {
+      ...COMMON_UNIFORMS(p),
+      uInk: { value: c(tint) },
+      uWool: { value: c('#e6dcc4') },
+    },
+    vertexShader: /* glsl */ `
+      attribute float aWool;
+      varying vec3 vW;
+      varying vec3 vN;
+      varying float vWool;
+      void main(){
+        vec4 wp = modelMatrix * vec4(position, 1.0);
+        vW = wp.xyz;
+        vN = normalize(mat3(modelMatrix) * normal);
+        vWool = aWool;
+        gl_Position = projectionMatrix * viewMatrix * wp;
+      }
+    `,
+    fragmentShader:
+      PRELUDE +
+      ATMOS_FN +
+      /* glsl */ `
+      uniform vec3 uInk, uWool;
+      varying vec3 vW;
+      varying vec3 vN;
+      varying float vWool;
+      void main(){
+        vec3 base = mix(uInk, uWool, vWool);
+        vec3 col = base * (0.72 + clamp(vN.y, 0.0, 1.0) * 0.5);
         float grain = fbm2(vW.xz * 7.0 + vW.y * 3.0);
         col *= 0.86 + grain * 0.3;
         col = applyHour(col);

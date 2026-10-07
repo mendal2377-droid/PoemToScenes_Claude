@@ -118,7 +118,8 @@ export const CHI_LE: PoemScene = {
   start: { x: 0, z: 78, heading: 0 },
   fall: { kind: 'snow', color: '#ffffff', size: 1, accumulate: 1 },
   luminary: { x: 0.2, y: 0.62, z: -0.75, size: 0.07, kind: 'sun' },
-  herd: { count: 22, x: 6, z: -30, r: 34, color: '#6b5a47', scale: 2.4 },
+  // Life size, so the grass really does hide them until the wind lays it down.
+  herd: { count: 26, x: 6, z: -30, r: 34, color: '#5e4a38', scale: 1.35 },
   // The man who keeps them, standing in the grass at the edge of the herd.
   people: [{ x: 15, z: -20, rot: -1.0, role: 'herdsman' }],
   // The herdsman's dog, at his heel.

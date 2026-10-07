@@ -36,6 +36,7 @@ import {
   makeGrassMaterial,
   makeContactShadowMaterial,
   makeInkMaterial,
+  makeHerdMaterial,
   makeMistMaterial,
   makeMountainMaterial,
   makeRockMaterial,
@@ -224,16 +225,17 @@ function buildWorld(scene: PoemScene) {
     fall: buildSnow(2600, 90, spec.seed + 9),
     rain: buildSnow(5600, 48, spec.seed + 10),
     wsnow: buildSnow(3800, 64, spec.seed + 11),
+    // One generator for the whole herd: seeding one per animal with consecutive
+    // numbers gave them all nearly the same first draw, and the herd stood in a pile.
     herd: scene.herd
       ? buildHerd(
-          Array.from({ length: scene.herd.count }, (_, i) => {
-            const rng = new Rng(spec.seed + 400 + i);
+          Array.from({ length: scene.herd.count }, ((rng) => () => {
             const a = rng.range(0, Math.PI * 2);
             const r = Math.sqrt(rng.next()) * scene.herd!.r;
             const hx = scene.herd!.x + Math.cos(a) * r;
             const hz = scene.herd!.z + Math.sin(a) * r;
             return { x: hx, y: terrainHeight(hx, hz, spec), z: hz, s: scene.herd!.scale * rng.range(0.8, 1.25), seed: rng.next() };
-          })
+          })(new Rng(spec.seed + 400)))
         )
       : null,
     pavilionRoof: scene.pavilion ? buildPavilionRoof(3.1, 2.9, 4.9) : null,
@@ -293,7 +295,7 @@ function buildWorld(scene: PoemScene) {
   shared.uAccum.value = scene.fall.accumulate;
   shared.uTorch.value = scene.torch ? 1 : 0;
   if (scene.herd) {
-    mat.herd = makeInkMaterial(p, scene.herd.color);
+    mat.herd = makeHerdMaterial(p, scene.herd.color);
   }
 
   const mask = buildGroundMask(spec, trail, scene.extraPaths ?? [], scene.sand ?? []);

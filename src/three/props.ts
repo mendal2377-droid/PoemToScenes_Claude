@@ -211,6 +211,9 @@ export function buildHerd(
   const cyl = new THREE.CylinderGeometry(1, 0.78, 1, 5).toNonIndexed();
   const cone = new THREE.ConeGeometry(1, 1, 5).toNonIndexed();
   const out: number[] = [];
+  /** 1 for a sheep's wool, 0 for cattle — the material lightens the one. */
+  const wool: number[] = [];
+  let woolly = 0;
   const world = new THREE.Matrix4();
   const m = new THREE.Matrix4();
   const q = new THREE.Quaternion();
@@ -233,6 +236,7 @@ export function buildHerd(
     for (let i = 0; i < arr.length; i += 3) {
       v.set(arr[i], arr[i + 1], arr[i + 2]).applyMatrix4(m);
       out.push(v.x, v.y, v.z);
+      wool.push(woolly);
     }
   };
 
@@ -255,6 +259,7 @@ export function buildHerd(
     const ox = rng.next() < 0.58;
     world.compose(new THREE.Vector3(p.x, p.y, p.z), q.setFromEuler(e.set(0, face, 0)), one.clone().setScalar(p.s));
 
+    woolly = ox ? 0 : 1;
     if (ox) {
       // 牛 — a broad back with a shoulder hump, a thick neck, horns and a tail.
       part(sphere, 0.36, 0.34, 0.62, 0, 0.72, 0);
@@ -276,6 +281,7 @@ export function buildHerd(
       part(sphere, 0.3, 0.29, 0.34, 0, 0.55, 0.06);
       part(sphere, 0.27, 0.26, 0.3, 0, 0.52, -0.22);
       part(sphere, 0.24, 0.24, 0.26, 0.05, 0.66, 0.14);
+      woolly = 0.15;
       const hy = grazing ? 0.26 : 0.68;
       part(sphere, 0.09, 0.1, 0.16, 0, hy, 0.66, grazing ? 0.7 : 0.1);
       part(cone, 0.06, 0.17, 0.06, 0, hy - (grazing ? 0.1 : 0.03), 0.78, Math.PI / 2 - (grazing ? 0.6 : 0.1));
@@ -291,6 +297,7 @@ export function buildHerd(
 
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.Float32BufferAttribute(out, 3));
+  g.setAttribute('aWool', new THREE.Float32BufferAttribute(wool, 1));
   g.computeVertexNormals();
   return g;
 }

@@ -222,6 +222,11 @@ weather), what is drawn over the picture, when each line is written, and what is
 heard. `鸟鸣涧` (`scripts/reel/niaoming.js`) is the first: 72 slow seconds under the
 osmanthus, across the empty valley, the moon rising over the ridge and waking the
 birds, down into the ravine, and the poem written into the night sky in silver.
+`敕勒歌` (`scripts/reel/chile.js`) is the second, in daylight and colour: down in the
+grass where the herd cannot be seen, up into the dome of the sky, and back into the
+grass for the gust — a wave of wind (`__film.bow`, which lays the 3D grass down
+behind a travelling front) that flattens the plain and shows the cattle and sheep.
+Its lines arrive as couplets in the sky and the wind tears them away.
 Load mp4-muxer, the engine and a screenplay on a page of the site, then
 `await __reel(__screenplays.niaoming, { upload: '<endpoint>' })`.
 

@@ -7,7 +7,7 @@ import { useScene } from '@/lib/store';
 import type { PoemScene } from '@/lib/types';
 import type { WeatherId } from '@/lib/weather';
 import { terrainHeight } from '@/lib/terrain';
-import { bodies } from './materials';
+import { bodies, shared } from './materials';
 
 /**
  * Film mode — `/scene/<id>?film`.
@@ -73,6 +73,8 @@ declare global {
       /** Height of the ground, and of the river, for placing a camera. */
       ground: (x: number, z: number) => number;
       water: number;
+      /** 风吹草低 — lay the grass down: how hard, and where the gust's front is along x. */
+      bow: (amount: number, front: number) => void;
       /** Directions of the sun and moon as they stand now (unit vectors). */
       sky: () => { sun: [number, number, number]; moon: [number, number, number] };
     };
@@ -111,6 +113,10 @@ export function installFilm(scene: PoemScene) {
     },
     ground: (x, z) => terrainHeight(x, z, scene.terrain),
     water: scene.terrain.rivers?.[0]?.level ?? 0,
+    bow: (amount, front) => {
+      shared.uBow.value = amount;
+      shared.uBowFront.value = front;
+    },
     sky: () => ({ sun: bodies.sun.toArray() as [number, number, number], moon: bodies.moon.toArray() as [number, number, number] }),
   };
   return () => {
