@@ -233,6 +233,14 @@ river, spiral into the sky, slow right down for the gust, and pull back out to t
 picture — with real motion blur (the engine averages several renders across the
 shutter when the camera moves fast), banking roll on its keys, and a light, bright
 score. It loads after `chile.js`.
+`西江月` (`scripts/reel/xijiang.js`) is walked as the traveller, 63 seconds of a
+summer night: the moon through the branches and magpies across it, out over the
+rice among fireflies, down to the brook's edge close on the frogs, up to the few
+stars as the cloud comes in, rain ringing the brook, over the bridge along its own
+line, and at the turn the inn with its lamp lit. Each line hangs beside the thing
+it is about and drifts a third as far as that thing does as we pass
+(`drawLines` sees the camera through `pose` and `poseAt`). The score is a playful
+folk tune — pipa, dizi, woodblock — with cicadas, a frog chorus and the plinks of rain.
 Load mp4-muxer, the engine and a screenplay on a page of the site, then
 `await __reel(__screenplays.niaoming, { upload: '<endpoint>' })`.
 

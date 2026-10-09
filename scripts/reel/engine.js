@@ -340,6 +340,8 @@ window.__reel = async (sp, { upload = null, preview = null } = {}) => {
       drawColumn(TITLE.plan, TITLE.x, TITLE.y, TITLE.size, t, a, textInk);
       drawColumn(AUTHOR.plan, TITLE.x + TITLE.size * 0.28, TITLE.y + TITLE.size * ([...TITLE.text].length * 1.08 + 0.3), TITLE.size * 0.44, t, a * 0.85, textInk);
     }
+    api.pose = pose;
+    api.poseAt = poseAt;
     if (sp.drawLines) sp.drawLines(api, t, LINES);
     else LINES.forEach((l) => {
       const a = ease(span(t, l.show[0] - 0.3, l.show[0] + 0.2)) * (1 - ease(span(t, l.show[1] - 1.4, l.show[1])));
