@@ -138,7 +138,10 @@ export function validateScene(s: PoemScene): string[] {
     const surface = waterSurface(q.x, q.z, s.terrain);
     if (surface !== null) {
       const deep = surface - terrainHeight(q.x, q.z, s.terrain);
-      if (q.kind !== 'egret') e.push(at(`animal ${i} (${q.kind}) at (${q.x}, ${q.z}) is in the water`));
+      // A frog in the shallows sits on a stone (Animals puts one under it).
+      if (q.kind === 'frog') {
+        if (deep > 0.6) e.push(at(`frog ${i} at (${q.x}, ${q.z}) is in ${deep.toFixed(2)}m of water — too deep for its stone`));
+      } else if (q.kind !== 'egret') e.push(at(`animal ${i} (${q.kind}) at (${q.x}, ${q.z}) is in the water`));
       else if (deep > 0.4) e.push(at(`egret ${i} at (${q.x}, ${q.z}) is in ${deep.toFixed(2)}m of water — wade it nearer the bank`));
     }
   });
@@ -161,7 +164,7 @@ export function validateScene(s: PoemScene): string[] {
   });
   s.animals?.forEach((q, i) => {
     // A wading bird's footing is under the water and nobody sees it.
-    const wading = q.kind === 'egret' && waterSurface(q.x, q.z, s.terrain) !== null;
+    const wading = (q.kind === 'egret' || q.kind === 'frog') && waterSurface(q.x, q.z, s.terrain) !== null;
     if (!wading && steep(q.x, q.z) > 0.55) e.push(at(`animal ${i} (${q.kind}) at (${q.x}, ${q.z}) stands on a ${steep(q.x, q.z).toFixed(2)}:1 slope`));
   });
   for (const lm of s.landmarks) {

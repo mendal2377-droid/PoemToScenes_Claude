@@ -188,13 +188,22 @@ export function inWater(x: number, z: number, spec: TerrainSpec): boolean {
 }
 
 /** Height of the water surface at (x, z), or null where the ground is dry. */
+/** Half the width of a stream's water at t along it: a thread at the spring, wider and slower downstream. */
+export function streamHalfWidth(c: { width: number }, t: number): number {
+  return c.width * 0.5 * (0.7 + t * 0.9) * (0.12 + 0.88 * smoothstep(0, 0.05, t));
+}
+
 export function waterSurface(x: number, z: number, spec: TerrainSpec): number | null {
   for (const b of spec.basins) {
     if (Math.hypot(x - b.x, z - b.z) < b.r * 0.98) return basinWaterLevel(b, spec);
   }
   for (const c of spec.channels) {
     const { dist, t } = distToPath(x, z, c.path);
-    if (dist < c.width * 0.42) return bedAt(c, spec, t) + 0.42;
+    const level = bedAt(c, spec, t) + 0.42;
+    if (dist < c.width * 0.42) return level;
+    // The water is a level ribbon that widens downstream (see buildStream), so
+    // out past the cut channel it still covers any bank lower than itself.
+    if (dist < streamHalfWidth(c, t) && terrainHeight(x, z, spec) < level) return level;
   }
   for (const rv of spec.rivers ?? []) {
     const { dist, t } = distToPath(x, z, rv.path);

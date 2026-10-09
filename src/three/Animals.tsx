@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { terrainHeight } from '@/lib/terrain';
+import { terrainHeight, waterSurface } from '@/lib/terrain';
 import type { Animal, PoemScene } from '@/lib/types';
 import { makeInkMaterial } from './materials';
 
@@ -127,30 +127,42 @@ function Frog({ mats, seed }: { mats: Mats; seed: number }) {
   useFrame(({ clock }) => {
     const t = clock.elapsedTime * 2.2 + seed * 1.7;
     const call = Math.max(0, Math.sin(t)) * Math.max(0, Math.sin(t * 3.1));
-    if (throat.current) throat.current.scale.setScalar(0.4 + call * 1.1);
+    if (throat.current) throat.current.scale.setScalar(0.5 + call * 1.3);
   });
   const g = mats('#6a8f4a');
   return (
     <group>
-      <mesh material={g} position={[0, 0.06, 0]} scale={[0.11, 0.07, 0.15]}>
-        <sphereGeometry args={[1, 8, 6]} />
+      {/* sitting up: the body tilted, the head raised */}
+      <mesh material={g} position={[0, 0.075, 0]} rotation={[-0.35, 0, 0]} scale={[0.11, 0.075, 0.15]}>
+        <sphereGeometry args={[1, 10, 8]} />
       </mesh>
-      <mesh material={mats('#d8e0b0')} position={[0, 0.045, 0.1]}>
-        <sphereGeometry args={[0.04, 6, 5]} />
+      <mesh material={mats('#d8e0b0')} position={[0, 0.06, 0.1]}>
+        <sphereGeometry args={[0.045, 6, 5]} />
       </mesh>
-      <mesh ref={throat} material={mats('#e6ecc0')} position={[0, 0.05, 0.14]}>
-        <sphereGeometry args={[0.04, 6, 5]} />
+      <mesh ref={throat} material={mats('#eef2cc')} position={[0, 0.065, 0.145]}>
+        <sphereGeometry args={[0.04, 8, 6]} />
       </mesh>
       {[-1, 1].map((s) => (
         <group key={s}>
-          <mesh material={g} position={[s * 0.05, 0.13, 0.08]}>
-            <sphereGeometry args={[0.028, 6, 5]} />
+          {/* the eyes stand up off the head — what makes a frog a frog */}
+          <mesh material={g} position={[s * 0.05, 0.15, 0.085]}>
+            <sphereGeometry args={[0.036, 8, 6]} />
           </mesh>
-          <mesh material={mats('#20281a')} position={[s * 0.05, 0.14, 0.1]}>
-            <sphereGeometry args={[0.012, 4, 4]} />
+          <mesh material={mats('#d9c24a')} position={[s * 0.058, 0.158, 0.108]}>
+            <sphereGeometry args={[0.02, 6, 5]} />
           </mesh>
-          <mesh material={g} position={[s * 0.1, 0.035, -0.07]} rotation={[0, 0, s * 0.5]} scale={[1, 0.5, 1.6]}>
-            <sphereGeometry args={[0.04, 6, 5]} />
+          <mesh material={mats('#141810')} position={[s * 0.062, 0.16, 0.122]} scale={[1, 0.6, 1]}>
+            <sphereGeometry args={[0.011, 5, 4]} />
+          </mesh>
+          {/* haunches folded, and the front legs propping it up */}
+          <mesh material={g} position={[s * 0.1, 0.04, -0.07]} rotation={[0, 0, s * 0.5]} scale={[1, 0.6, 1.7]}>
+            <sphereGeometry args={[0.045, 6, 5]} />
+          </mesh>
+          <mesh material={g} position={[s * 0.075, 0.035, 0.11]} rotation={[0.3, 0, s * 0.3]}>
+            <cylinderGeometry args={[0.012, 0.016, 0.08, 5]} />
+          </mesh>
+          <mesh material={g} position={[s * 0.085, 0.004, 0.13]} scale={[1.3, 0.3, 1.2]}>
+            <sphereGeometry args={[0.02, 5, 4]} />
           </mesh>
         </group>
       ))}
@@ -295,16 +307,26 @@ export function Animals({ scene }: { scene: PoemScene }) {
 
   return (
     <>
-      {scene.animals.map((a, i) => (
-        <group
-          key={i}
-          position={[a.x, terrainHeight(a.x, a.z, scene.terrain), a.z]}
-          rotation={[0, a.rot, 0]}
-          scale={a.scale ?? 1}
-        >
-          {body(a, i + 1)}
-        </group>
-      ))}
+      {scene.animals.map((a, i) => {
+        const ground = terrainHeight(a.x, a.z, scene.terrain);
+        // A frog whose place is in the shallows sits on a stone there, its top
+        // just clear of the water, rather than under the surface.
+        const surface = a.kind === 'frog' ? waterSurface(a.x, a.z, scene.terrain) : null;
+        const lift = surface !== null && surface > ground - 0.04 ? surface + 0.03 - ground : 0;
+        const s = a.scale ?? 1;
+        return (
+          <group key={i} position={[a.x, ground, a.z]} rotation={[0, a.rot, 0]}>
+            {lift > 0 && (
+              <mesh material={mats('#77756a')} position={[0, (lift - 0.25) / 2, 0]} rotation={[0, i * 1.3, 0]} scale={[0.26 * s, (lift + 0.25) / 2, 0.24 * s]}>
+                <dodecahedronGeometry args={[1, 0]} />
+              </mesh>
+            )}
+            <group position={[0, lift, 0]} scale={s}>
+              {body(a, i + 1)}
+            </group>
+          </group>
+        );
+      })}
     </>
   );
 }

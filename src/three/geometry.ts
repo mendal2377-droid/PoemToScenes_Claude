@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { Rng, distToPath, ridge, smoothstep } from '@/lib/noise';
-import { bedAt, riverWidth, terrainHeight } from '@/lib/terrain';
+import { bedAt, riverWidth, streamHalfWidth, terrainHeight } from '@/lib/terrain';
 import type { Channel, River } from '@/lib/terrain';
 import type { TerrainSpec } from '@/lib/terrain';
 import type { PoemScene } from '@/lib/types';
@@ -152,7 +152,7 @@ export function buildPond(b: { x: number; z: number; r: number }, level: number)
  * — and, like the bed, it only ever runs downhill.
  */
 export function buildStream(channel: Channel, spec: TerrainSpec): THREE.BufferGeometry {
-  const { path, width } = channel;
+  const { path } = channel;
   const curve = new THREE.CatmullRomCurve3(
     path.map((p) => new THREE.Vector3(p[0], 0, p[1])),
     false,
@@ -172,7 +172,7 @@ export function buildStream(channel: Channel, spec: TerrainSpec): THREE.BufferGe
     const nz = tan.x;
     const len = Math.hypot(nx, nz) || 1;
     // A spring is a thread where it rises; wider and slower as it nears the pond.
-    const w = width * 0.5 * (0.7 + t * 0.9) * (0.12 + 0.88 * smoothstep(0, 0.05, t));
+    const w = streamHalfWidth(channel, t);
     const y = bedAt(channel, spec, distToPath(p.x, p.z, path).t) + 0.42;
     positions.push(p.x - (nx / len) * w, y, p.z - (nz / len) * w);
     positions.push(p.x + (nx / len) * w, y, p.z + (nz / len) * w);
