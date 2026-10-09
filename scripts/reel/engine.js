@@ -70,9 +70,20 @@ window.__reel = async (sp, { upload = null, preview = null } = {}) => {
   // keys — so the eye glides, settles, and never lurches. A key may repeat its
   // neighbour to hold.
   const K = sp.camera({ G, WATER });
+  // With sp.aim, a key's look is a direction, not a place: each is put the same
+  // distance out along its ray, so blending a face two metres off into the sky
+  // turns the eye smoothly instead of swinging it through the gap between them.
+  if (sp.aim) K.forEach((k) => {
+    const d = [0, 1, 2].map((j) => k[2][j] - k[1][j]), l = Math.hypot(...d);
+    k[2] = k[1].map((v, j) => v + (d[j] / l) * sp.aim);
+  });
   const tan = (i, get) => {
     if (i === 0 || i === K.length - 1) return get(K[i]).map(() => 0);
-    const a = get(K[i - 1]), b = get(K[i + 1]);
+    const a = get(K[i - 1]), b = get(K[i + 1]), c = get(K[i]);
+    // Either end of a hold (a key repeating its neighbour) is at rest, so the
+    // camera eases out of it rather than leaving at speed.
+    const same = (p) => p.every((v, j) => Math.abs(v - c[j]) < 1e-6);
+    if (same(a) || same(b)) return c.map(() => 0);
     const dt = K[i + 1][0] - K[i - 1][0];
     return a.map((v, j) => (b[j] - v) / dt);
   };
@@ -93,6 +104,8 @@ window.__reel = async (sp, { upload = null, preview = null } = {}) => {
     // An optional fifth value on a key is the roll — the bank of a flying camera.
     return { pos, look: curve(t, (k) => k[2]), fov: curve(t, (k) => [k[3]])[0], roll: curve(t, (k) => [k[4] ?? 0])[0] };
   };
+  // For checking a take before it is filmed: the path, and the ground under it.
+  job.poseAt = poseAt; job.ground = G;
 
   // The same pinhole the scene's camera uses, so drawn things sit in the world.
   function project(X, pose) {

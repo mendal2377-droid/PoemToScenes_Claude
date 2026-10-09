@@ -22,11 +22,18 @@
  */
 window.__screenplays = window.__screenplays || {};
 
+// The frog's close-up, chosen by scouting.
+const SHOT = { d: 2.2, s: 0.3, h: 0.8, fov: 38 };
+// The drops of rain, on the score's beat (92 to the minute from 6.6 s).
+const RAIN = [45, 46, 46.5, 47.5].map((k) => 6.6 + k * 60 / 92);
+
 window.__screenplays.xijiang = {
   name: 'reel-xijiang',
   scene: 'xijiang',
   total: 63,
   seed: 1181,
+  // Looks are directions: the eye turns smoothly between a frog and the sky.
+  aim: 40,
   paper: '#efe4c4',
   cover: 49.6,
   author: '辛弃疾',
@@ -35,15 +42,15 @@ window.__screenplays.xijiang = {
   lines: [
     { zh: '明月别枝惊鹊', en: 'The bright moon startles a magpie off its branch;', w: [3.2, 3.0], show: [3.2, 9.6], at: 'moon' },
     { zh: '清风半夜鸣蝉', en: 'a clear breeze at midnight, and the cicadas sing.', w: [9.2, 3.0], show: [9.2, 14.6], at: [-24, 9, 42], home: [800, 230] },
-    { zh: '稻花香里说丰年', en: 'In the scent of rice flowers, talk of a good year —', w: [14.0, 3.4], show: [14.0, 20.4], at: [-46, 7, 26], home: [130, 200] },
-    { zh: '听取蛙声一片', en: 'listen: it is the frogs, all of them at once.', w: [20.4, 3.0], show: [20.4, 26.6], at: [-35, 3.2, 29], home: [130, 230] },
-    { zh: '七八个星天外', en: 'Seven or eight stars beyond the sky,', w: [26.6, 3.0], show: [26.6, 32.6], at: [4, 62, -60], home: [700, 260] },
-    { zh: '两三点雨山前', en: 'two or three drops of rain before the hills.', w: [32.6, 3.0], show: [32.6, 38.6], at: [-2, 16, -50], home: [150, 240] },
-    { zh: '旧时茅店社林边', en: 'The old thatched inn by the shrine wood —', w: [38.8, 3.4], show: [38.8, 45.4], at: [16, 8, 2], home: [110, 220] },
-    { zh: '路转溪桥忽见', en: 'the road turns at the brook bridge, and there it is.', w: [46.4, 3.0], show: [46.4, 52.4], at: [36, 9, 30], home: [790, 220] },
+    { zh: '稻花香里说丰年', en: 'In the scent of rice flowers, talk of a good year —', w: [14.0, 3.4], show: [14.0, 21.2], at: [-46, 7, 26], home: [130, 200] },
+    { zh: '听取蛙声一片', en: 'listen: it is the frogs, all of them at once.', w: [21.4, 3.0], show: [21.4, 27.2], at: [-26.1, 1.2, 14.9], home: [130, 230] },
+    { zh: '七八个星天外', en: 'Seven or eight stars beyond the sky,', w: [27.4, 3.0], show: [27.4, 33.0], at: [4, 62, -60], home: [700, 260] },
+    { zh: '两三点雨山前', en: 'two or three drops of rain before the hills.', w: [33.0, 3.0], show: [33.0, 39.0], at: [-2, 16, -50], home: [150, 240] },
+    { zh: '旧时茅店社林边', en: 'The old thatched inn by the shrine wood —', w: [39.2, 3.4], show: [39.2, 46.0], at: [16, 8, 2], home: [110, 220] },
+    { zh: '路转溪桥忽见', en: 'the road turns at the brook bridge, and there it is.', w: [47.0, 3.0], show: [47.0, 52.6], at: [36, 9, 30], home: [790, 220] },
   ],
-  final: { at: 52.2, sealAt: 57.4, out: 60.4, x0: 800, dx: 96, y: 230, size: 78, ink: '#efeee6', credit: 'Moon over the West River  ·  Xin Qiji, 1140–1207' },
-  end: { paper: 60.0, card: 60.8 },
+  final: { at: 52.6, sealAt: 57.6, out: 60.6, x0: 800, dx: 96, y: 230, size: 78, ink: '#efeee6', credit: 'Moon over the West River  ·  Xin Qiji, 1140–1207' },
+  end: { paper: 60.2, card: 61.0 },
 
   setup(F) {
     F.weather('clear');
@@ -56,38 +63,45 @@ window.__screenplays.xijiang = {
   },
   grade: () => 'brightness(1.1) saturate(1.12) contrast(1.06)',
 
-  camera: ({ G }) => {
+  camera: ({ G, WATER }) => {
     const B = Math.max(G(3, 10.6), G(-3, 1.4), G(0, 6)) + 0.6;
+    // The frog on the south bank at (-26.1, 14.9) faces north across the water —
+    // towards us as we come down through the rice, so the eye never turns back.
+    // The lens hangs over the water in front of it, a little above, looking at its face.
+    const fr = [-26.1, 14.9], fw = [Math.sin(0.49), Math.cos(0.49)], sd = [fw[1], -fw[0]];
+    const at = (d, side, h) => { const x = fr[0] + fw[0] * d + sd[0] * side, z = fr[1] + fw[1] * d + sd[1] * side; return [x, Math.max(G(x, z), WATER) + h, z]; };
+    const face = [fr[0], G(fr[0], fr[1]) + 0.3, fr[1]];
+    // A true hold (the same place twice), so the camera settles into it and eases
+    // out; only the lens narrows a little while we listen.
+    const FROG = [[21.8, at(SHOT.d, SHOT.s, SHOT.h), face, SHOT.fov], [25.8, at(SHOT.d, SHOT.s, SHOT.h), face, SHOT.fov - 4]];
     return [
       // under the trees, the moon through the branches
       [0.0, [9, G(9, 72) + 2.2, 72], [-10, 34, -14], 54],
       [3.2, [9.4, G(9, 71) + 2.2, 71], [-11, 35, -15], 54],
       // the eye follows the magpies up, then out over the rice
       [6.6, [6, G(6, 68) + 4.2, 68], [-14, 30, -8], 54, -0.03],
-      [10.2, [-6, G(-6, 56) + 2.6, 56], [-40, 2, 30], 52, -0.06],
-      [14.0, [-20, G(-20, 48) + 2.1, 48], [-50, 1, 26], 54, 0.04],
-      [17.4, [-31, G(-31, 40) + 1.5, 40], [-40, 0.8, 30], 50],
-      // close on the frogs at the brook's edge
-      [20.2, [-33.2, G(-33.2, 33.4) + 1.5, 33.4], [-39.2, G(-39.2, 30.3) + 0.2, 30.3], 40],
-      [22.6, [-33.8, G(-33.8, 33.1) + 1.4, 33.1], [-39.25, G(-39.25, 30.3) + 0.2, 30.3], 38],
-      [24.6, [-34.4, G(-34.4, 32.8) + 1.3, 32.8], [-39.3, G(-39.3, 30.3) + 0.2, 30.3], 36],
-      // held, so the swing up to the stars does not reach back into the frogs
-      [25.3, [-34.5, G(-34.5, 32.75) + 1.32, 32.75], [-39.3, G(-39.3, 30.3) + 0.4, 30.3], 36],
-      // up, at the few stars, crossing the brook as we look
-      [28.6, [-31, G(-31, 26) + 3.0, 26], [-10, 60, -60], 56],
-      [31.8, [-24, G(-24, 16) + 2.2, 16], [8, 56, -70], 56],
-      // to the hills; the rain
-      [34.6, [-17, G(-17, 9) + 1.7, 9], [0, 6, -48], 50],
-      [37.6, [-11, G(-11, 6) + 1.7, 6], [8, -0.4, 3], 48],
-      // along the bank, and onto the bridge along its own line
-      [41.0, [-5.6, G(-5.6, -2.4) + 1.7, -2.4], [2, B + 1.2, 9.6], 48],
-      [43.2, [-3.4, B + 1.65, 1.0], [6.2, B + 1.5, 16], 50],
-      [45.4, [0.9, B + 1.65, 7.6], [8.6, B + 1.5, 19.6], 50],
+      [10.2, [-4.5, G(-4.5, 57.5) + 2.6, 57.5], [-40, 2, 30], 52, -0.06],
+      [14.0, [-13, G(-13, 44) + 2.2, 44], [-38, 1, 22], 54, 0.04],
+      // and down through it towards the brook, the frog ahead
+      [17.8, [-20, G(-20, 31) + 1.7, 31], [-26.4, G(-26.4, 15.4) - 0.6, 15.4], 50],
+      FROG[0], FROG[1],
+      // the eye lifts from the frog to the few stars — the same way, a slow crane
+      // that rises clear of the rice (1.7 m) before it moves on over it
+      [28.8, at(SHOT.d + 0.4, SHOT.s, 2.4), [-14, 24, -40], 54],
+      [31.2, [-22.5, G(-22.5, 13.8) + 2.5, 13.8], [-10, 60, -60], 56],
+      [33.2, [-17.5, G(-17.5, 10.5) + 2.0, 10.5], [6, 34, -70], 54],
+      // down to the brook as the rain comes: the drops land just ahead
+      [36.4, [-13, G(-13, 7.5) + 1.7, 7.5], [-2, 0.3, 6.5], 48],
+      [38.8, [-9.2, G(-9.2, 3.8) + 1.7, 3.8], [-1, 0.3, 6.8], 48],
+      // along the bank, the eye already on the bridge's line, and over it
+      [41.4, [-5.4, G(-5.4, 0) + 1.7, 0], [8.4, B + 1.5, 19], 48],
+      [43.6, [-2.6, B + 1.65, 2.3], [8.4, B + 1.5, 19.6], 50],
+      [46.0, [1.2, B + 1.65, 8.2], [9.6, B + 1.5, 21.4], 50],
       // the turn — and there it is
-      [47.6, [3.6, G(3.6, 11.6) + 1.7, 11.6], [36, 2.4, 30], 44],
-      [50.6, [6.4, G(6.4, 13.2) + 1.7, 13.2], [36, 2.2, 30], 40],
+      [48.2, [3.6, G(3.6, 11.6) + 1.7, 11.6], [36, 2.4, 30], 44],
+      [51.0, [6.4, G(6.4, 13.2) + 1.7, 13.2], [36, 2.2, 30], 40],
       // a little up, for the poem whole above it
-      [55.0, [8.4, G(8.4, 14.2) + 3.4, 14.2], [36, 7.5, 31], 44],
+      [55.2, [8.4, G(8.4, 14.2) + 3.4, 14.2], [36, 7.5, 31], 44],
       [63.0, [9.0, G(9.0, 14.5) + 3.7, 14.5], [36, 7.9, 31], 44],
     ];
   },
@@ -120,7 +134,7 @@ window.__screenplays.xijiang = {
     }
     // The lamp of the inn — the warmth the whole walk is going towards.
     const lamp = project([34.6, G(34.6, 30.2) + 1.9, 30.2], pose);
-    const warm = ease(span(t, 46.6, 49.6));
+    const warm = ease(span(t, 47.0, 50.0));
     if (lamp.z > 0 && warm > 0) {
       ctx.save();
       ctx.globalCompositeOperation = 'screen';
@@ -134,7 +148,7 @@ window.__screenplays.xijiang = {
       ctx.restore();
     }
     // 两三点雨 — two or three drops, each ringing the brook.
-    const drops = [[35.6, -4, 7.5], [36.5, -6.5, 8.6], [37.2, -2, 6.6], [38.0, -5, 7.2]];
+    const drops = RAIN.map((t, i) => [t, [-4, -6.5, -2, -5][i], [7.5, 8.6, 6.6, 7.2][i]]);
     ctx.save();
     for (const [t0, x, z] of drops) {
       const k = span(t, t0, t0 + 1.6);
@@ -299,42 +313,53 @@ window.__screenplays.xijiang = {
     pipa(0.5, n.D5, 0.5, 1.2);
     chord(0.5, 6.5, [n.G3, n.D4, n.B4], 0.05);
 
-    // The harmony, two beats a chord: G – Em – C – D, all the way to the rain.
+    // One pulse from the first bar to the inn, two beats a chord: G – Em – C – D.
+    // The sections thin it and swell it — it never stops.
     const prog = [[n.G3, n.B3, n.D4], [n.E4 - 12, n.G3, n.B3], [n.C4, n.E4, n.G4], [n.D4, n.Fs4, n.A4]];
     const bar = 4 * B;
     const start = 6.6;
-    for (let t = start, k = 0; t < 26; t += B / 2, k++) {
-      const c = prog[Math.floor((t - start) / bar) % 4];
-      pipa(t, c[[0, 2, 1, 2][k % 4]] + (k % 8 >= 4 ? 12 : 0), 0.4 * (k % 2 ? 0.7 : 1));
-      if (k % 2 === 0) block(t + B / 4, 0.25, 1100);
+    const beat = (k) => start + k * B; // the grid everything below is placed on
+    const INN = beat(62); // 47.04: the inn comes round the turn on the beat
+    for (let t = start, k = 0; t < INN - 0.01; t += B / 2, k++) {
+      const c = prog[Math.floor((t - start) / bar + 1e-6) % 4];
+      const stars = t > beat(32) - 0.01 && t < beat(44) - 0.01, rain = t > beat(44) - 0.01 && t < beat(48) - 0.01;
+      if (rain) { if (k % 2 === 0) pipa(t, c[0] + 12, 0.2); continue; }
+      if (stars) {
+        if (k % 2 === 0) pipa(t, c[[0, 2, 1, 2][(k / 2) % 4]] + 12, 0.26);
+        if (k % 4 === 2) block(t, 0.12, 1300);
+        continue;
+      }
+      const bridge = t > beat(48) - 0.01;
+      pipa(t, c[[0, 2, 1, 2][k % 4]] + (k % 8 >= 4 ? 12 : 0), (bridge ? 0.32 : 0.4) * (k % 2 ? 0.7 : 1));
+      if (k % 2 === 0) block(t + B / 4, bridge ? 0.18 : 0.25, 1100);
     }
-    for (let t = start; t < 26; t += bar) chord(t, t + bar, prog[Math.floor((t - start) / bar) % 4].map((m) => m - 12), 0.035);
+    for (let t = start; t < INN - 0.01; t += bar) {
+      const quiet = t > beat(44) - 0.01 && t < beat(48) - 0.01;
+      chord(t, t + bar + 0.3, prog[Math.floor((t - start) / bar + 1e-6) % 4].map((m) => m - 12), quiet ? 0.045 : 0.035);
+    }
 
     // The tune: [beat, note, beats].
     const tune = (t0, notes, v = 0.55) => notes.forEach(([b, m, d]) => dizi(t0 + b * B, m, d * B * 0.95, v));
     tune(start, [[0, n.D5, 1], [1, n.E5, 0.5], [1.5, n.D5, 0.5], [2, n.B4, 2], [4, n.A4, 1], [5, n.B4, 1], [6, n.D5, 2], [8, n.E5, 1], [9, n.G5, 1], [10, n.E5, 1], [11, n.D5, 1], [12, n.B4, 3]]);
     tune(start + 16 * B, [[0, n.D5, 1], [1, n.E5, 0.5], [1.5, n.G5, 0.5], [2, n.A5, 2], [4, n.G5, 1], [5, n.E5, 1], [6, n.D5, 1], [7, n.E5, 1], [8, n.D5, 4]]);
     // 听取蛙声一片 — the frogs take the rhythm: croaks on the off-beats, a chorus.
-    for (let t = 20.4; t < 26.4; t += B / 2) {
+    for (let t = beat(23) + B / 4; t < beat(31); t += B / 2) {
       if (rnd() < 0.85) croak(t + (rnd() - 0.5) * 0.04, 140 + rnd() * 70, 0.5, (rnd() - 0.5) * 1.2);
       if (rnd() < 0.4) croak(t + B / 4, 200 + rnd() * 60, 0.3, (rnd() - 0.5) * 1.2);
     }
-    // 七八个星 — the stars: a few high plinks, and the cloud coming in (the band thins).
-    [[26.8, n.B5], [27.6, n.D6], [28.3, n.A5], [29.1, n.G5], [30.0, n.D6], [30.7, n.B5], [31.5, n.A5]].forEach(([t, m]) => plink(t, hz(m), 0.35));
-    chord(26.6, 33, [n.E4 - 12, n.B3, n.G4], 0.04);
-    dizi(28.4, n.E5, 2.6, 0.4); dizi(31.2, n.D5, 1.8, 0.38);
-    // 两三点雨 — a hush, and two or three drops: the plinks of rain.
-    chord(32.8, 39, [n.C4 - 12, n.G3, n.E4], 0.035);
-    [35.6, 36.5, 37.2, 38.0].forEach((t, i) => plink(t, hz([n.G5, n.E5, n.D5, n.B4][i]), 0.5));
-    noise(33, 38.4, 'highpass', 4500, 0.5, 0.006, 1, 1.2);
-    // Along the bank to the bridge: the pipa walking again, quietly.
-    for (let t = 38.8, k = 0; t < 46.4; t += B / 2, k++) pipa(t, [n.G3, n.D4, n.B3, n.D4][k % 4] + 12, 0.28);
-    dizi(39.4, n.B4, 1.4, 0.4); dizi(40.9, n.D5, 1.4, 0.4); dizi(42.4, n.E5, 2.4, 0.42); dizi(45.0, n.D5, 1.2, 0.4);
+    // 七八个星 — the stars, plucked high on the beat, and the dizi long over them.
+    [n.B5, n.D6, n.A5, n.G5, n.D6, n.B5, n.A5, n.G5].forEach((m, j) => plink(beat(32 + j * 1.5), hz(m), 0.35));
+    tune(beat(33), [[0, n.E5, 3], [3, n.D5, 1], [4, n.B4, 2], [6, n.D5, 2]], 0.42);
+    // 两三点雨 — a hush, and two or three drops: each one a note, each on the beat.
+    RAIN.forEach((t, i) => plink(t, hz([n.G5, n.E5, n.D5, n.B4][i]), 0.5));
+    noise(beat(43), beat(49), 'highpass', 4500, 0.5, 0.006, 1, 1.2);
+    // Along the bank and over the bridge: the walk again, quietly.
+    tune(beat(48), [[1, n.B4, 2], [3, n.D5, 1], [4, n.E5, 3], [8, n.D5, 1], [9, n.B4, 1], [10, n.A4, 2], [12, n.B4, 1], [13, n.D5, 1]], 0.42);
     // 忽见 — the inn: everything at once, warm.
-    pipa(46.4, n.G4, 0.55, 0.9);
-    chord(46.4, 60.6, [n.G2, n.D3, n.B3, n.D4, n.G4], 0.09);
-    tune(46.6, [[0, n.G5, 2], [2, n.E5, 1], [3, n.D5, 1], [4, n.B4, 1], [5, n.D5, 1], [6, n.E5, 2], [8, n.D5, 1], [9, n.B4, 1], [10, n.A4, 1], [11, n.B4, 1], [12, n.G4, 4]], 0.6);
-    for (let t = 46.4, k = 0; t < 57; t += B / 2, k++) {
+    pipa(INN, n.G4, 0.55, 0.9);
+    chord(INN, 60.6, [n.G2, n.D3, n.B3, n.D4, n.G4], 0.09);
+    tune(INN + B, [[0, n.G5, 2], [2, n.E5, 1], [3, n.D5, 1], [4, n.B4, 1], [5, n.D5, 1], [6, n.E5, 2], [8, n.D5, 1], [9, n.B4, 1], [10, n.A4, 1], [11, n.B4, 1], [12, n.G4, 4]], 0.6);
+    for (let t = INN, k = 0; t < 57; t += B / 2, k++) {
       pipa(t, [n.G3, n.B3, n.D4, n.B3][k % 4] + 12, 0.35);
       if (k % 2 === 0) block(t + B / 4, 0.22, 1000);
     }
