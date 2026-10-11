@@ -67,8 +67,9 @@ export const DENG_GAO: PoemScene = {
     rim: { start: 62, amp: 38 },
     basins: [],
     channels: [],
-    // The 台 itself — a level platform cut into the top of a high shoulder.
-    flats: [{ x: -84, z: -30, r: 10, h: 24 }],
+    // The 台 itself — a level platform on the river side of a high shoulder:
+    // the hill behind it, and in front nothing but the drop and the river.
+    flats: [{ x: -77, z: -30, r: 10, h: 29 }],
     bumps: [
       { x: -84, z: -30, r: 24, h: 26 },
       { x: -94, z: 40, r: 22, h: 24 },
@@ -127,7 +128,7 @@ export const DENG_GAO: PoemScene = {
     // 万里悲秋常作客 — the horizon, and how far it is from home.
     { id: 'beiqiu', line: 4, label: '悲秋', x: -50, z: 70, radius: 13, look: [40, -220, 44] },
     // 百年多病独登台 — the terrace, and the river a long way below it.
-    { id: 'dengtai', line: 5, label: '登台', x: -88, z: -31, radius: 11, look: [20, 10, 0.3] },
+    { id: 'dengtai', line: 5, label: '登台', x: -80, z: -31, radius: 11, look: [20, 10, 0.3] },
     // 艰难苦恨繁霜鬓 — the ground, close: frost on dead grass.
     { id: 'shuangbin', line: 6, label: '霜鬓', x: -62, z: 48, radius: 12, look: [-76, 52, 0.6], zoom: 1.6 },
     // 潦倒新停浊酒杯 — the jar, and the cup put down beside it.
@@ -137,17 +138,24 @@ export const DENG_GAO: PoemScene = {
   // The gale strips the trees, and it does not stop.
   fall: { kind: 'leaf', color: '#b07a45', size: 1.7, accumulate: 0 },
   luminary: { x: 0.3, y: 0.5, z: 0.8, size: 0.08, kind: 'sun' },
-  pavilion: { x: -84, z: -30, rot: 0.6 },
+  pavilion: { x: -80, z: -31, rot: 0.6 },
   // 猿啸哀 — apes on the rock, and birds over the bar.
+  // 百年多病独登台 — and the one man on the terrace, at its edge, white-haired,
+  // on a stick, looking up the river the way it comes.
   people: [
+    { x: -72.8, z: -27, rot: 1.9, role: 'elder' },
     { x: -69, z: -99, rot: -0.2, role: 'monkey', scale: 2.7 },
     { x: -73, z: -96, rot: 0.15, role: 'monkey', scale: 2.3 },
     { x: -66, z: -101, rot: -0.45, role: 'monkey', scale: 2.0 },
   ],
-  flocks: [{ x: -20, z: -68, y: 14, count: 6, radius: 8, speed: 0.4, size: 0.8 }],
+  // 鸟飞回 — a few birds wheeling low over the white bar, seen from the terrace.
+  flocks: [{ x: -42, z: -60, y: 9, count: 7, radius: 4, speed: 0.4, size: 0.62 }],
   sand: [{ x: -48, z: -56, r: 10 }],
-  // 浊酒杯 — set down.
-  props: [{ kind: 'winejar', x: -54, z: 88, rot: 0.5 }],
+  // 浊酒杯 — set down: one by the water, and his own beside him on the terrace.
+  props: [
+    { kind: 'winejar', x: -54, z: 88, rot: 0.5 },
+    { kind: 'winejar', x: -73.9, z: -25.6, rot: 1.2 },
+  ],
   sounds: [{ kind: 'gibbon', x: -68, z: -98, r: 38 }],
 };
 
