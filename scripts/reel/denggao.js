@@ -49,7 +49,7 @@ window.__screenplays.denggao = {
     { ids: [4, 5], x: 812 },
     { ids: [6, 7], x: 262 },
   ],
-  final: { at: 67.2, sealAt: 72.2, out: 76.0, x0: 800, dx: 96, y: 230, size: 78, credit: 'Climbing High  ·  Du Fu, 712–770' },
+  final: { at: 67.2, sealAt: 72.2, out: 76.0, x0: 800, dx: 96, y: 230, size: 78, ink: '#efeee6', credit: 'Climbing High  ·  Du Fu, 712–770' },
   end: { paper: 75.6, card: 76.4 },
 
   setup(F) {
@@ -60,9 +60,15 @@ window.__screenplays.denggao = {
   },
   grade: () => 'brightness(1.22) contrast(1.3) saturate(1.15)',
 
-  camera: ({ G }) => {
+  camera: ({ G, WATER }) => {
     const T = 29; // the terrace floor
+    const W = WATER;
     const eye = T + 1.75;
+    // Him: his head, the way he faces (up the river), and places behind him
+    // and past him along that line.
+    const H = [-72.8, T + 1.55, -27], f = [Math.cos(0.33), -Math.sin(0.33)];
+    const behind = (d, up) => [H[0] - f[0] * d, H[1] + up, H[2] - f[1] * d];
+    const past = (lift) => [H[0] + f[0] * 30, H[1] + lift, H[2] + f[1] * 30];
     return [
       // on the shore below the shoulder, the river coming down the gorge
       [0.0, [-28, G(-28, -2) + 1.4, -2], [10, -2, -110], 58],
@@ -79,31 +85,29 @@ window.__screenplays.denggao = {
       [22.8, [-73.6, eye, -35], [-69, 66, -99], 50],
       // 渚清沙白鸟飞回: down to the bar and the birds over the water
       [26.2, [-73, eye, -35], [-40, 4, -62], 44],
-      // 无边落木萧萧下: down at the red trees below, the leaves going
-      [30.6, [-72.6, eye + 0.1, -34], [-52, 2, -6], 52],
-      // 不尽长江滚滚来: and up the river, the way it comes
-      [35.4, [-72.4, eye + 0.1, -33.6], [10, -2, -110], 58],
-      [39.4, [-72.4, eye + 0.2, -33.2], [30, -2, -40], 58],
-      // 万里悲秋常作客: the far gorge, the way home is
-      [43.4, [-72.8, eye + 0.3, -33], [40, 30, -220], 46],
-      // 百年多病独登台: and back — and there he is, whose view it was: behind
-      // him, through him, the river beyond; one man, and drawing away from him
-      ...(() => {
-        const H = [-72.8, T + 1.55, -27], f = [Math.cos(0.33), -Math.sin(0.33)];
-        const behind = (d, up) => [H[0] - f[0] * d, H[1] + up, H[2] - f[1] * d];
-        const past = (lift) => [H[0] + f[0] * 30, H[1] + lift, H[2] + f[1] * 30];
-        return [
-          [47.4, behind(4.2, 0.5), past(4), 52],
-          [52.4, behind(9, 4.5), past(-2), 52],
-        ];
-      })(),
-      // 艰难苦恨繁霜鬓: round to his side, the white hair in the wind, the gorge behind
-      [56.0, [-74.6, T + 2.0, -22.6], [-72.8, T + 1.5, -27], 42],
-      // 潦倒新停浊酒杯: the jar at his feet, set down
-      [60.2, [-77.8, T + 2.4, -21.2], [-73.6, T + 0.7, -26.0], 46],
-      // and up, away, over him and the river, for the poem whole
-      [65.0, [-78, T + 5, -24], [40, 10, -80], 56],
-      [79.0, [-80, T + 8, -22], [40, 12, -80], 56],
+      // 无边落木萧萧下: off the edge and slowly down the slope among the red
+      // trees, the leaves going past
+      [30.0, [-70.4, T + 1.6, -34], [-50, 4, -14], 52],
+      [34.4, [-63.5, G(-63.5, -33) + 3.0, -33], [-45, 3, -15], 54],
+      // 不尽长江滚滚来: and the eye lifts from the trees to the river, coming down
+      // the gorge at us
+      [38.8, [-58.5, G(-58.5, -31) + 3.2, -31], [30, 0, -60], 58],
+      // 万里悲秋常作客: up into the air over the drop, the ranges going on and on
+      [43.4, [-58, T - 2, -40], [100, 30, 60], 50],
+      // 百年多病独登台: turn — and there on the edge of the terrace, one man
+      [49.6, [-61, T + 5.5, -35], [-72.8, T + 1.1, -27], 40],
+      [52.6, [-65.5, T + 3, -31], [-72.8, T + 1.3, -27], 40],
+      // 艰难苦恨繁霜鬓: closer — the white head in the wind
+      [56.6, [-69.2, T + 2.2, -29.3], [-72.8, T + 1.5, -27], 40],
+      // 潦倒新停浊酒杯: the jar set down beside him; up over him, looking down
+      // on the two of them —
+      [60.4, [-70, T + 4.5, -27], [-73.2, T + 0.4, -26.5], 46],
+      [64.0, [-73.4, T + 10, -26.4], [-72.6, T, -27.3], 50],
+      // — and down behind him, rising and drawing away: one man at the edge,
+      // the river going on past him, for the poem whole
+      // (low enough behind him that he stays in the lower third of the frame)
+      [68.4, behind(10, 6), past(-12.5), 50],
+      [79.0, behind(17, 11), past(-11.5), 50],
     ];
   },
 

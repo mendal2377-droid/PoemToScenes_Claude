@@ -249,8 +249,11 @@ speed and turn rate before anything is filmed.
 `登高` (`scripts/reel/denggao.js`) is the climb itself, 79 seconds in a gale: up from
 the river's edge past a red tree being stripped, up the face of the shoulder and over
 the lip of the terrace with the eye already on the crag. The first four lines are what
-is seen from there; at 独登台 the camera draws back and finds whose view it was — one
-old man at the edge, on his stick — and the last four lines are him. Each couplet is
+is seen from there, each from its own place: down the slope among the red trees, the
+river from below, the far ranges from the air; at 独登台 the eye turns and finds whose
+view it was — one old man at the edge, on his stick — and the last four lines are him:
+closer, then straight down on him and his jar, then behind him and away, the river
+going on past him. Each couplet is
 written and then the wind takes it: the ink breaks into leaves, top first, and they
 tumble away down the wind turning the colour of leaves. The film draws its own birds
 over the white bar (`__film.birds(false)` hides the scene's flock). The score is in
