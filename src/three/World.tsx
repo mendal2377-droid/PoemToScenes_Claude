@@ -11,6 +11,7 @@ import { Figure } from './Figure';
 import { People } from './People';
 import { OVERLAY_LAYER } from './InkPass';
 import { Animals } from './Animals';
+import { film } from './Film';
 
 export { Figure };
 
@@ -243,6 +244,15 @@ function FollowCamera({ children }: { children: ReactNode }) {
   return <group ref={ref}>{children}</group>;
 }
 
+/** The flocks — hidden when a film is drawing its own birds. */
+function Flocks({ geometry, material }: { geometry: THREE.BufferGeometry; material: THREE.Material }) {
+  const ref = useRef<THREE.Mesh>(null);
+  useFrame(() => {
+    if (ref.current) ref.current.visible = film.birds;
+  });
+  return <mesh ref={ref} geometry={geometry} material={material} frustumCulled={false} />;
+}
+
 /** Everything in the poem that does not move on its own. */
 export function WorldView({
   scene,
@@ -312,7 +322,7 @@ export function WorldView({
       <Props scene={scene} world={world} />
       <People scene={scene} world={world} />
       <Animals scene={scene} />
-      {geo.flocks && <mesh geometry={geo.flocks} material={mat.bird} frustumCulled={false} />}
+      {geo.flocks && <Flocks geometry={geo.flocks} material={mat.bird} />}
       {geo.glows && <points geometry={geo.glows} material={mat.glow} renderOrder={9} frustumCulled={false} />}
       <Boats scene={scene} world={world} />
 

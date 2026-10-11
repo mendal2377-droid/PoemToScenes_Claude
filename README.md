@@ -246,6 +246,17 @@ into and out of. The score is one unbroken pulse — pipa, dizi, woodblock — t
 for the stars and the rain rather than stopping, with cicadas, a frog chorus, and the
 drops of rain landing on its beat. `__job.poseAt` is the take's path, for checking
 speed and turn rate before anything is filmed.
+`登高` (`scripts/reel/denggao.js`) is the climb itself, 79 seconds in a gale: up from
+the river's edge past a red tree being stripped, up the face of the shoulder and over
+the lip of the terrace with the eye already on the crag. The first four lines are what
+is seen from there; at 独登台 the camera draws back and finds whose view it was — one
+old man at the edge, on his stick — and the last four lines are him. Each couplet is
+written and then the wind takes it: the ink breaks into leaves, top first, and they
+tumble away down the wind turning the colour of leaves. The film draws its own birds
+over the white bar (`__film.birds(false)` hides the scene's flock). The score is in
+the old 羽 mode on D: the gale under everything, the qin walking down, gibbons far up
+the gorge, a deep roll for 滚滚, and at 独 the wind and the drone fall away and leave
+one xiao note.
 Load mp4-muxer, the engine and a screenplay on a page of the site, then
 `await __reel(__screenplays.niaoming, { upload: '<endpoint>' })`.
 

@@ -38,6 +38,8 @@ export const film = {
   t: 0,
   /** The ink pass draws the veil itself, on top of the painting. */
   inkVeil: false,
+  /** A film that draws its own birds can hide the scene's flocks. */
+  birds: true,
   /**
    * A scripted camera: where the lens is, what it looks at, its field of view
    * and a little roll. While set it overrides the poet's eye entirely, so a
@@ -77,6 +79,8 @@ declare global {
       water: number;
       /** 风吹草低 — lay the grass down: how hard, and where the gust's front is along x. */
       bow: (amount: number, front: number) => void;
+      /** Show or hide the scene's own flocks, for a film that draws its birds itself. */
+      birds: (on: boolean) => void;
       /** Directions of the sun and moon as they stand now (unit vectors). */
       sky: () => { sun: [number, number, number]; moon: [number, number, number] };
     };
@@ -119,6 +123,9 @@ export function installFilm(scene: PoemScene) {
     },
     ground: (x, z) => terrainHeight(x, z, scene.terrain),
     water: scene.terrain.rivers?.[0]?.level ?? 0,
+    birds: (on) => {
+      film.birds = on;
+    },
     bow: (amount, front) => {
       shared.uBow.value = amount;
       shared.uBowFront.value = front;
