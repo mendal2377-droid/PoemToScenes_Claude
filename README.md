@@ -270,16 +270,20 @@ written as it is read, clause by clause in passages of two to four columns, each
 passage dissolving like ink in water before the next, with the English wrapped beneath.
 The boat drifts east under the cliffs (`__film.boat` sails it) and the clock carries
 the night: the moon comes up over 东山 at 少焉, climbs while they talk, and at
-不知东方之既白 the rest of the night goes by in six seconds. The camera follows the
-argument: low on the still water, up into the air for 羽化而登仙, close on the piper
-for 呜呜然, magpies across the moon for 乌鹊南飞, Cao Cao's fleet coming down the river
-in ghost-light and gone at 而今安在哉, so high the boat is 沧海之一粟, and back down to
-the water for 逝者如斯. The whole text then unrolls right to left as one page over the
+不知东方之既白 the rest of the night goes by in six seconds. The camera is five
+long movements, one for each part of the piece, each going one way without stopping:
+a rise from the water past the boat into the air for 羽化而登仙; one descending circle
+round the boat, past the piper face on at 呜呜然 and level with Su at 何为其然也; away
+upstream and up while Cao Cao's fleet comes down the river beneath in ghost-light and
+is gone at 而今安在哉, until the boat is 沧海之一粟; one long glide back down to the
+water for Su's answer; and up behind them into the dawn. (A first cut placed the eye
+passage by passage and stopped eleven times; checking a take for stops, reversals and
+sudden acceleration, not just speed and turn rate, is what caught it.) The whole text then unrolls right to left as one page over the
 river at dawn (a screenplay can set its own closing page with `drawFinal`). The score
 is a qin in 宫 on G for the voyage and for Su, the 洞箫 in 羽 on E for the guest, war
 drums for the fleet, the wind at 悲风, and birds at dawn. A key with a sixth value of
-`true` is a hold, passed through at rest, so a close shot two metres from someone does
-not swing off them.
+`true` is a hold, passed through at rest, for a close shot that must not swing off its
+subject — but every hold is a stop, so a take that should flow uses none.
 Load mp4-muxer, the engine and a screenplay on a page of the site, then
 `await __reel(__screenplays.niaoming, { upload: '<endpoint>' })`.
 

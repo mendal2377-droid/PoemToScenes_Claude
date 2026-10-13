@@ -11,15 +11,19 @@
  * is brushed stroke by stroke. At the end the whole of it unrolls as a page over
  * the river at dawn, and the seal.
  *
- * The shape of the night follows the shape of the piece:
- *   the voyage      清风徐来 … 羽化而登仙   the calm water, the moonrise, the flight up into the air
- *   the song        桂棹兮兰桨 …            back down among them, beating time on the gunwale
- *   the flute       呜呜然 … 嫠妇           close on the piper; the dark cleft; the one other boat
- *   the guest       月明星稀 … 托遗响于悲风  magpies across the moon; Cao Cao's fleet comes down the
- *                                           river in ghost-light and is gone; then so high the boat
- *                                           is a grain of millet
- *   Su's answer     逝者如斯 … 共适          the water going by, the moon in it, the wind and the moon
- *   the end         洗盏更酌 … 既白          the night passes in a few seconds; dawn in the east
+ * The camera is five movements, one for each part of the piece, and each goes
+ * one way without stopping — so the take travels rather than parking at a view
+ * for every passage and setting off again:
+ *   I    the voyage   清风徐来 … 羽化而登仙   one long rise: low on the water from upstream, past
+ *                                           the boat and over it, the moon coming up, on into the air
+ *   II   song, flute  桂棹兮兰桨 … 何为其然也 one descending circle round the boat: past the piper
+ *                                           face on, ending level with Su, the moon over his shoulder
+ *   III  the guest    月明星稀 … 托遗响于悲风  away upstream and up, backwards at first; the fleet
+ *                                           comes down the river under us; the boat a grain of millet
+ *   IV   Su's answer  逝者如斯 … 共适          one long glide down over the open water and in to the boat
+ *   V    dawn         洗盏更酌 … 既白          up and back behind them, towards the east
+ * Near the boat it looks down or along the river, never across at the wall
+ * from close to, and the moon is a subject three times, from three places.
  */
 window.__screenplays = window.__screenplays || {};
 
@@ -172,108 +176,87 @@ window.__screenplays = window.__screenplays || {};
       const sit = { su: (s) => on(s, 0, 1.15, 1.85), piper: (s) => on(s, -0.15, 1.1, -1.55), deck: (s) => on(s, 0, 0.5, 0) };
       const K = [];
       const key = (s, pos, look, fov, roll) => K.push([s, pos, look, fov, roll ?? 0]);
-      // A close shot: held, so the eye arrives and rests on whoever it is.
-      const hold = (s, pos, look, fov) => K.push([s, pos, look, fov, 0, true]);
+      const down = (s) => sit.deck(s);
+      // Around the boat: an angle (0 east, π/2 south, π west, 3π/2 north), a
+      // distance and a height — for the one slow circle of the second movement.
+      const orbit = (s, a, r, h) => near(s, Math.cos(a) * r, h, Math.sin(a) * r);
 
-      // Before the words: high over the river at dusk, the cliffs across it,
-      // coming down towards the boat under them.
-      key(0, [-118, 34, 64], [-30, 14, -78], 52);
-      key(T[0] - 0.4, [-92, 22, 34], [-36, 8, -66], 50);
-      // 壬戌之秋 … 泛舟游于赤壁之下 — down to the boat, small under the wall.
-      key(T[0] + 4.5, [-74, 9, 6], on(T[0] + 4.5, 0, 1, 0), 48);
-      key(E[0], near(E[0], -13, 3.4, 9), on(E[0], 0, 0.8, 0), 44);
-      // 清风徐来，水波不兴 — low over the water, the flat of it going away east.
-      key(T[1] + 2.4, near(T[1] + 2.4, -7, 1.3, 9), near(T[1] + 2.4, 60, -1.2, -4), 54);
-      key(E[1], near(E[1], -4, 1.1, 8), near(E[1], 60, -1.4, -10), 54);
-      // 举酒属客 — the three of them, from the side.
-      hold(T[2] + 3.5, near(T[2] + 3.5, 0.5, 3.6, 12), sit.deck(T[2] + 3.5), 40);
-      hold(E[2], near(E[2], 1.6, 3.0, 9.5), sit.deck(E[2]), 38);
-      // 少焉，月出于东山之上 — turn east: the moon coming up over the hills.
-      key(T[3] + 3.4, near(T[3] + 3.4, -5, 2.2, 3), moon(T[3] + 3.4, near(T[3] + 3.4, -5, 2.2, 3)), 42);
-      key(E[3], near(E[3], -7, 2.6, 2), moon(E[3], near(E[3], -7, 2.6, 2)), 44);
-      // 白露横江，水光接天 — up a little, the mist on the water and the water into the sky.
-      key(T[4] + 3, near(T[4] + 3, -18, 6, 18), [B(T[4]).x + 160, 3, -6], 56);
-      // 纵一苇之所如 … 羽化而登仙 — let go: up and away over the water, the boat
-      // left behind, and on up into the air towards the moon.
-      key(T[5] + 2.5, near(T[5] + 2.5, -10, 12, 30), sit.deck(T[5] + 2.5), 52);
-      key(T[6] + 3, near(T[6] + 3, 14, 30, 44), [B(T[6]).x + 90, 8, -46], 54, -0.05);
-      key(T[7] + 2, near(T[7] + 2, 30, 40, 30), moon(T[7] + 2, near(T[7] + 2, 30, 40, 30)), 52, -0.04);
-      key(E[7], near(E[7], 30, 48, 20), moon(E[7], near(E[7], 30, 48, 20)), 50);
-      // 于是饮酒乐甚，扣舷而歌之 — and down again, among them.
-      key(E[8], near(E[8], -8, 9, 13), sit.deck(E[8]), 46);
-      hold(T[9] + 2.6, near(T[9] + 2.6, 1, 3.2, 10.5), sit.deck(T[9] + 2.6), 40);
-      // 桂棹兮兰桨，击空明兮溯流光 — round to Su singing.
-      hold(E[9], near(E[9], -0.4, 2.0, 3.6), sit.su(E[9]), 36);
-      // 渺渺兮予怀，望美人兮天一方 — and past him, to the far edge of the sky.
-      key(E[10], near(E[10], -1.2, 2.6, 3.6), [B(E[10]).x + 110, 40, B(E[10]).z - 200], 50);
-      // 客有吹洞箫者 … 不绝如缕 — close on the piper, held while he plays.
-      hold(T[11] + 3.4, near(T[11] + 3.4, 0.6, 1.9, 3.4), sit.piper(T[11] + 3.4), 32);
-      hold(E[12], near(E[12], 0.4, 1.8, 3.0), sit.piper(E[12]), 30);
-      // 余音袅袅 — drawing slowly away while the last note goes on.
-      key(E[13], near(E[13], -5, 4, 15), sit.deck(E[13]), 40);
-      // 舞幽壑之潜蛟 — the dark cleft in the cliff; 泣孤舟之嫠妇 — the one other boat.
-      key(T[14] + 2.6, near(T[14] + 2.6, 2, 6, 10), [13, 16, -76], 44);
-      key(E[14], near(E[14], 4, 5, 12), [34, -0.6, 14], 40);
-      // 苏子愀然，正襟危坐 — Su, face on.
-      hold(T[15] + 3, near(T[15] + 3, -0.8, 1.9, 3.2), sit.su(T[15] + 3), 34);
-      hold(E[15], near(E[15], -1.2, 2.0, 3.0), sit.su(E[15]), 32);
-      // 月明星稀，乌鹊南飞 — up at the moon, and the magpies cross it.
-      key(T[16] + 3.4, near(T[16] + 3.4, -4, 2.4, 4), moon(T[16] + 3.4, near(T[16] + 3.4, -4, 2.4, 4)), 40);
-      key(T[16] + 6.6, near(T[16] + 6.6, -5, 3.4, 5), moon(T[16] + 6.6, near(T[16] + 6.6, -5, 3.4, 5)), 40);
-      // 西望夏口，东望武昌，山川相缪 — up, and round from the cliffs to the west,
-      // back across the cliffs, and on to the east.
-      key(T[17] + 0.2, near(T[17] + 0.2, -2, 14, 14), [B(T[17]).x + 10, 26, -170], 52);
-      key(T[17] + 3.0, near(T[17] + 3.0, 0, 24, 22), [-320, 10, -170], 54);
-      key(T[17] + 5.8, near(T[17] + 5.8, 0, 26, 24), [B(T[17]).x + 30, 22, -170], 54);
-      key(T[18] + 0.6, near(T[18] + 0.6, 2, 26, 24), [320, 10, -170], 54);
-      // 此非孟德之困于周郎者乎 — over to the north side, above the dark water.
-      key(E[18], near(E[18], 8, 22, -14), [B(E[18]).x + 60, -2, 60], 52);
-      // 方其破荆州 … 而今安在哉 — and the fleet comes down out of the west on the
-      // current, passing across in front of us, fills the river, and is gone.
-      key(T[19] + 3, near(T[19] + 3, 6, 18, -22), [B(T[19]).x - 30, -2, 60], 54);
-      key(T[20] + 3, near(T[20] + 3, 4, 30, -26), [B(T[20]).x - 40, -6, 70], 58);
-      key(T[21] + 3, near(T[21] + 3, 2, 22, -24), [B(T[21]).x - 50, 0, 60], 54);
-      key(T[22] + 2.5, near(T[22] + 2.5, 0, 18, -22), [B(T[22]).x - 50, 0, 60], 52);
-      key(E[22], near(E[22], -2, 14, -18), [B(E[22]).x - 50, 2, 60], 52);
-      // 况吾与子渔樵于江渚之上 … 举匏樽以相属 — back to the two of them in the boat.
-      key(T[23] + 4, near(T[23] + 4, -7, 6, -11), sit.deck(T[23] + 4), 44);
-      key(T[24] + 2.5, near(T[24] + 2.5, -4, 9, -15), sit.deck(T[24] + 2.5), 44);
-      // 寄蜉蝣于天地，渺沧海之一粟 — straight up, until the boat is a grain on the water.
-      key(E[25], near(E[25], 0, 84, -24), sit.deck(E[25]), 44);
-      // 哀吾生之须臾，羡长江之无穷 — and the river going on east without end.
-      key(E[26], near(E[26], 12, 66, -10), [B(E[26]).x + 260, 0, 10], 50);
-      // 挟飞仙以遨游，抱明月而长终 — the moon.
-      key(E[27], near(E[27], 20, 40, 20), moon(E[27], near(E[27], 20, 40, 20)), 48);
-      // 托遗响于悲风 — down in the wind.
-      key(E[28], near(E[28], -10, 8, 14), sit.deck(E[28]), 44);
-      // 苏子曰：客亦知夫水与月乎 — Su answers him.
-      hold(E[29], near(E[29], -1.0, 2.0, 3.2), sit.su(E[29]), 34);
-      // 逝者如斯，而未尝往也 — down on the water as it goes by.
-      key(T[30] + 2.6, near(T[30] + 2.6, 4, 1.0, 6), near(T[30] + 2.6, 30, -2.4, 10), 50);
-      key(E[30], near(E[30], 6, 1.0, 6), near(E[30], 32, -2.4, 4), 50);
-      // 盈虚者如彼 — the moon in the water, and the moon.
-      key(T[31] + 2.6, near(T[31] + 2.6, 2, 2.2, 8), near(T[31] + 2.6, 50, -1.6, -24), 46);
-      key(E[31], near(E[31], 0, 3, 9), moon(E[31], near(E[31], 0, 3, 9)), 44);
-      // 盖将自其变者而观之 … 而又何羡乎 — slowly round the boat, as if there were all the time in the world.
-      [0, 1, 2, 3].forEach((i) => {
-        const s = T[32] + 2 + i * ((E[33] - T[32] - 2) / 3);
-        const a = 1.9 - i * 0.55;
-        key(s, near(s, Math.cos(a) * 22, 9 + i * 1.5, Math.sin(a) * 22), sit.deck(s), 46);
-      });
-      // 且夫天地之间 … 虽一毫而莫取 — wide: the river, the wall, the moon over it.
-      key(E[35], near(E[35], -30, 12, 40), [B(E[35]).x + 30, 24, -84], 52);
-      // 惟江上之清风，与山间之明月 … 用之不竭 — the moon over the cliffs.
-      key(T[36] + 3.5, near(T[36] + 3.5, -14, 4, 40), moon(T[36] + 3.5, near(T[36] + 3.5, -14, 4, 40)), 46);
-      key(E[38], near(E[38], -4, 10, 44), moon(E[38], near(E[38], -4, 10, 44)), 48);
-      // 是造物者之无尽藏也 — back, wide.
-      key(E[39], near(E[39], -10, 8, 20), sit.deck(E[39]), 46);
-      // 客喜而笑，洗盏更酌 … 杯盘狼藉 — close over them again.
-      hold(T[40] + 3, near(T[40] + 3, 1.2, 4.6, 11.5), sit.deck(T[40] + 3), 40);
-      hold(E[41], near(E[41], -1, 5.4, 11), sit.deck(E[41]), 40);
-      // 相与枕藉乎舟中，不知东方之既白 — and away up behind them, towards the east,
+      // The take is five movements, one for each part of the piece. Each goes one
+      // way — up, round, out, down, up — and never stops; nothing is looked at
+      // across the river at the wall from close to, and the moon is seen three
+      // times, from three different places.
+
+      // I. 泛舟 — the voyage (0 – 1:06). One long rise: in low on the water
+      // from upstream, the cliffs a wall running away on the left; past the boat
+      // and over it; out over the open water as the moon comes up; and on up into
+      // the air for 羽化而登仙.
+      key(0, near(0, -50, 1.3, 6), [B(0).x + 220, 3, -14], 54);
+      key(T[0], near(T[0], -34, 1.5, 7), [B(T[0]).x + 160, 1, -22], 52);
+      key(T[1], near(T[1], -16, 2.2, 8), down(T[1]), 48);
+      key(T[2] + 1, near(T[2] + 1, -2, 6.5, 8), down(T[2] + 1), 46);
+      key(T[3] + 1.5, near(T[3] + 1.5, 10, 8.5, 9), moon(T[3] + 1.5, near(T[3] + 1.5, 10, 8.5, 9)), 44);
+      key(T[4] + 1, near(T[4] + 1, 22, 12, 12), moon(T[4] + 1, near(T[4] + 1, 22, 12, 12)), 50);
+      key(T[5] + 1, near(T[5] + 1, 32, 18, 16), [B(T[5]).x + 170, -2, 26], 54);
+      key(T[6] + 1, near(T[6] + 1, 42, 28, 18), [B(T[6]).x + 260, 10, 60], 56, -0.05);
+      key(T[7] + 1, near(T[7] + 1, 50, 40, 14), [B(T[7]).x + 20, -2, 100], 56, -0.03);
+      key(E[7], near(E[7], 52, 50, 16), [B(E[7]).x - 10, -2, 34], 54);
+
+      // II. 歌 · 箫 — the song and the flute (1:06 – 2:00). One slow descending
+      // circle round the boat, from high in the south-east, round by the east
+      // and the north — close past the piper, face on to him as he plays — and
+      // to the west, where it comes level with Su and looks him in the face as
+      // he sits up; the moon is over his shoulder, which is where we go next.
+      key(T[8] + 3.5, orbit(T[8] + 3.5, 0.55, 46, 36), down(T[8] + 3.5), 52);
+      key(T[9] + 2.5, orbit(T[9] + 2.5, 0.0, 30, 20), down(T[9] + 2.5), 46);
+      key(T[10] + 2.5, orbit(T[10] + 2.5, -0.8, 18, 9), down(T[10] + 2.5), 42);
+      key(T[11] + 3, orbit(T[11] + 3, -1.3, 12, 4.6), sit.piper(T[11] + 3), 34);
+      key(T[12] + 3.5, orbit(T[12] + 3.5, -1.75, 9.5, 3.2), sit.piper(T[12] + 3.5), 30);
+      key(T[13] + 2.5, orbit(T[13] + 2.5, -2.3, 10, 3), down(T[13] + 2.5), 34);
+      key(T[14] + 3, orbit(T[14] + 3, -2.75, 13, 4), [34, -0.6, 14], 40);
+      key(T[15] + 4, orbit(T[15] + 4, -3.15, 9, 3.6), sit.su(T[15] + 4), 34);
+
+      // III. 客曰 — the guest (2:00 – 3:30). Away from the boat, upstream and up:
+      // backwards at first, the moon over the boat and the magpies across it;
+      // round through the south to face up the river; the fleet comes down it
+      // and passes under; and on up until the boat is a grain on the water.
+      key(T[16] + 1.5, near(T[16] + 1.5, -4, 8.5, 4), moon(T[16] + 1.5, near(T[16] + 1.5, -4, 8.5, 4)), 42);
+      key(T[16] + 6.5, near(T[16] + 6.5, -14, 11, 6), moon(T[16] + 6.5, near(T[16] + 6.5, -14, 11, 6)), 42);
+      key(T[17] + 1.7, near(T[17] + 1.7, -24, 15, 10), [B(T[17]).x + 120, 0, 110], 54);
+      key(T[17] + 5.5, near(T[17] + 5.5, -32, 18, 12), [B(T[17]).x - 20, -2, 150], 56);
+      key(T[18] + 3, near(T[18] + 3, -41, 21.5, 8), [B(T[18]).x - 220, -2, 10], 54);
+      key(T[19] + 2.5, near(T[19] + 2.5, -48, 24, 3), [B(T[19]).x - 190, -6, 2], 56);
+      key(T[20] + 3, near(T[20] + 3, -55, 28, -1), [B(T[20]).x - 130, -8, 6], 58);
+      key(T[21] + 3, near(T[21] + 3, -61, 34, 0), [B(T[21]).x - 100, -8, 4], 58);
+      key(T[22] + 3.5, near(T[22] + 3.5, -66, 43, 3), [B(T[22]).x - 110, -6, 8], 56);
+      key(T[23] + 3.5, near(T[23] + 3.5, -70, 54, 9), [B(T[23]).x - 60, -2, 90], 54);
+      key(T[24] + 3, near(T[24] + 3, -64, 66, 13), down(T[24] + 3), 46);
+      key(E[25], near(E[25], -50, 86, 10), down(E[25]), 44);
+      key(E[26], near(E[26], -40, 82, 8), [B(E[26]).x + 320, 0, 2], 50);
+      key(E[27], near(E[27], -32, 76, 8), moon(E[27], near(E[27], -32, 76, 8)), 50);
+
+      // IV. 苏子曰 — Su's answer (3:30 – 4:46). One long glide down: out over the
+      // river to the south in the wind, round over the open water with the
+      // cliffs and the moon across it, and in low from the south-west to the
+      // boat at the water's level.
+      key(E[28], near(E[28], -34, 64, 18), [B(E[28]).x + 140, -2, 30], 54);
+      key(E[29] + 0.5, near(E[29] + 0.5, -34, 52, 32), [B(E[29]).x + 70, -2, 24], 52);
+      key(E[30] + 0.5, near(E[30] + 0.5, -31, 43, 43), [B(E[30]).x + 70, -1.6, 0], 50);
+      key(E[31], near(E[31], -27, 35, 51), [B(E[31]).x + 60, -1.6, -6], 50);
+      key(E[32], near(E[32], -22, 28, 56), [B(E[32]).x + 230, 6, 24], 54);
+      key(E[33], near(E[33], -17, 22, 56), [B(E[33]).x + 220, 6, 10], 54);
+      key(E[34], near(E[34], -14, 17, 52), [B(E[34]).x + 230, 4, -12], 54);
+      key(E[35], near(E[35], -14, 13, 44), [B(E[35]).x + 200, 8, -40], 54);
+      key(E[36], near(E[36], -16, 12, 35), [B(E[36]).x + 150, 46, -90], 58);
+      key(E[37], near(E[37], -18, 8, 26), down(E[37]), 48);
+      key(E[38], near(E[38], -18, 4.4, 17), down(E[38]), 44);
+      key(E[39], near(E[39], -16, 3.2, 10), down(E[39]), 42);
+      key(E[40], near(E[40], -11, 2.6, 5.5), down(E[40]), 40);
+
+      // V. 既白 — dawn (4:46 –). Up and back behind them, towards the east,
       // while the night goes over.
-      key(E[42], near(E[42], -14, 8, 8), [B(E[42]).x + 260, 18, -40], 50);
-      key(TOTAL, near(TOTAL, -24, 14, 14), [B(TOTAL).x + 260, 14, -40], 50);
+      key(E[41], near(E[41], -9.5, 3.6, 2.5), down(E[41]), 42);
+      key(E[42], near(E[42], -13, 7, -1), [B(E[42]).x + 240, 16, -36], 48);
+      key(TOTAL, near(TOTAL, -24, 14, -3), [B(TOTAL).x + 260, 14, -40], 50);
       K.sort((a, b) => a[0] - b[0]);
       return K;
     },
@@ -323,19 +306,22 @@ window.__screenplays = window.__screenplays || {};
           // nearest first in, farthest first out
           const inA = ease(span(come, Math.min(0.9, d / 260), Math.min(1, d / 260 + 0.25)));
           const outA = 1 - ease(span(s, T[22] + 1 + sh.gone * 3 + (1 - Math.min(1, d / 200)) * 1.5, T[22] + 3 + sh.gone * 3 + (1 - Math.min(1, d / 200)) * 1.5));
-          const a = inA * outA * Math.max(0.2, 1 - d / 300);
+          // a ship right under the lens would fill it: the near ones stay in the mist
+          const a = inA * outA * Math.max(0.2, 1 - d / 300) * ease(span(Math.hypot(d, pose.pos[1] - WATER), 34, 52));
           if (a <= 0.01) continue;
           // Each ship is drawn as a painter would: a hull along the line its keel
           // makes on the screen, a mast, a battened junk sail and a banner.
           const z = sh.z, y = WATER;
           const st = project([x - sh.len / 2, y, z], pose), bw = project([x + sh.len / 2, y, z], pose), c = project([x, y, z], pose);
-          if (st.z < 3 || bw.z < 3 || c.z < 3) continue;
+          if (st.z < 15 || bw.z < 15 || c.z < 15) continue;
           const k = H / 2 / Math.tan((pose.fov * Math.PI) / 360) / c.z; // pixels per metre there
           let ux = bw.x - st.x, uy = bw.y - st.y;
           const ul = Math.hypot(ux, uy);
           // seen end-on a hull is still a few metres wide
-          const minL = 5 * k;
+          // and seen any way it is never longer than it is
+          const minL = 5 * k, maxL = sh.len * k * 1.1;
           if (ul < minL) { const f = ul > 0.1 ? minL / ul : 0; ux = ul > 0.1 ? ux * f : minL; uy = ul > 0.1 ? uy * f : 0; }
+          else if (ul > maxL) { ux *= maxL / ul; uy *= maxL / ul; }
           const sx = c.x - ux / 2, sy = c.y - uy / 2, ex = c.x + ux / 2, ey = c.y + uy / 2;
           const hh = 1.7 * k;
           ctx.globalAlpha = a * 0.55;
