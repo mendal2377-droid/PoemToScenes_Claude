@@ -13,7 +13,7 @@ there is not a single light source in the scene.
 
 ## What's here
 
-**Ten worlds**, each built around what its text is actually about, and each with a
+**Eleven worlds**, each built around what its text is actually about, and each with a
 different landform *and* a different emotion — not one valley re-tinted.
 
 | | text | landform | feeling |
@@ -28,14 +28,18 @@ different landform *and* a different emotion — not one valley re-tinted.
 | 8 | **敕勒歌** · 佚名 | a steppe under a great sky; the grass parts to show cattle | 辽阔 |
 | 9 | **桃花源记** · 陶渊明 | a stream through peach blossom to a mountain with one narrow slot; beyond it, a hidden valley of fields | 惊喜 |
 | 10 | **游褒禅山记** · 王安石 | a mountain, a bright front cave, and a back cave that is truly dark — you carry a torch | 求索 |
+| 11 | **赤壁赋** · 苏轼 | the Yangtze at night under a wall of red cliffs, the moon over 东山, one small open boat | 旷达 |
 
-The last two are prose. They are walked *in the order they are told* — the trail runs from
+The last three are prose. They are walked *in the order they are told* — the trail runs from
 where you wake, through every place in the sequence of the text, and does not loop back —
 and carry no 平仄 or rhyme apparatus, since a story is not scanned. In 桃花源记 the
 mountain is a solid wall from outside and the valley cannot be seen until you are through
 the slot: 豁然开朗 is a reveal, not a caption. In 游褒禅山记 the back cave goes to near
 black, lit only by what your torch reaches, and the crystals get brighter and stranger the
-deeper you go — 入之愈深，其进愈难，而其见愈奇 as an experience.
+deeper you go — 入之愈深，其进愈难，而其见愈奇 as an experience. 赤壁赋 is too long to
+inscribe whole, so the inscription carries its sixteen most-quoted sentences, walked
+along the south bank with the cliffs across the water the whole way; Su Shi and his two
+guests sit in an open boat under them, one with a 洞箫 at his lips.
 
 The shelf was first sketched with 桃花源记 in the sixth slot as a poem; it is prose, so it
 now has its own world and 饮酒·其五 took the slot.
@@ -131,7 +135,7 @@ Each poem is laid down in its own tradition (`paint` on the scene):
 | 一角 Ma Yuan's corner — ink, most of the sheet left empty | 江雪 |
 | 夜墨 ink at night, the moon left as bare paper | 鸟鸣涧 |
 | 青绿 blue-green, mineral azurite and malachite | 春江花月夜, 桃花源记 |
-| 浅绛 pale crimson-ochre, with an indigo distance | 登高, 饮酒 |
+| 浅绛 pale crimson-ochre, with an indigo distance | 登高, 饮酒, 赤壁赋 |
 | 没骨 boneless colour, no outline at all | 敕勒歌 |
 | 水墨 ink alone | 游褒禅山记 |
 
@@ -260,6 +264,22 @@ over the white bar (`__film.birds(false)` hides the scene's flock). The score is
 the old 羽 mode on D: the gale under everything, the qin walking down, gibbons far up
 the gorge, a deep roll for 滚滚, and at 独 the wind and the drone fall away and leave
 one xiao note.
+`赤壁赋` (`scripts/reel/chibi.js`) is the first prose film and writes all 537
+characters, in five minutes and twenty seconds of one night on the river. It is
+written as it is read, clause by clause in passages of two to four columns, each
+passage dissolving like ink in water before the next, with the English wrapped beneath.
+The boat drifts east under the cliffs (`__film.boat` sails it) and the clock carries
+the night: the moon comes up over 东山 at 少焉, climbs while they talk, and at
+不知东方之既白 the rest of the night goes by in six seconds. The camera follows the
+argument: low on the still water, up into the air for 羽化而登仙, close on the piper
+for 呜呜然, magpies across the moon for 乌鹊南飞, Cao Cao's fleet coming down the river
+in ghost-light and gone at 而今安在哉, so high the boat is 沧海之一粟, and back down to
+the water for 逝者如斯. The whole text then unrolls right to left as one page over the
+river at dawn (a screenplay can set its own closing page with `drawFinal`). The score
+is a qin in 宫 on G for the voyage and for Su, the 洞箫 in 羽 on E for the guest, war
+drums for the fleet, the wind at 悲风, and birds at dawn. A key with a sixth value of
+`true` is a hold, passed through at rest, so a close shot two metres from someone does
+not swing off them.
 Load mp4-muxer, the engine and a screenplay on a page of the site, then
 `await __reel(__screenplays.niaoming, { upload: '<endpoint>' })`.
 

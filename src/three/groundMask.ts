@@ -92,6 +92,10 @@ export function buildGroundMask(
   }
 
   const tex = new THREE.CanvasTexture(canvas);
+  // The canvas's rows run with z (toY), and the shaders sample it by world
+  // position, z to v — so it must go up as drawn. Flipped, as a CanvasTexture is
+  // by default, every trail, bank and sandbar was painted mirrored north–south.
+  tex.flipY = false;
   tex.wrapS = THREE.ClampToEdgeWrapping;
   tex.wrapT = THREE.ClampToEdgeWrapping;
   tex.minFilter = THREE.LinearMipmapLinearFilter;

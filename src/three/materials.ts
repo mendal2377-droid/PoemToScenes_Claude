@@ -228,7 +228,9 @@ export function makeTerrainMaterial(p: Palette) {
 
         // 留白. Large patches where the brush simply never went — the ground
         // washes back to bare paper and everything else stops there too.
-        float bai = smoothstep(0.58, 0.86, texture2D(uPaperField, maskUv).r);
+        // The field is laid from above, so on a sheer face one patch would run
+        // the whole height of the rock as a streak; it stays on the flats.
+        float bai = smoothstep(0.58, 0.86, texture2D(uPaperField, maskUv).r) * (1.0 - smoothstep(0.25, 0.55, slope));
         col = mix(col, uPaper * 1.02, bai * 0.72);
 
         // The trail the poem walks you along — but 万径人踪灭: once the snow

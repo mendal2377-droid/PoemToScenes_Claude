@@ -38,7 +38,16 @@ for (const file of fs.readdirSync(dir)) {
   const author = /author: '([^']+)'/.exec(src)[1];
   const title = /title: '([^']+)'/.exec(src)[1];
   // The title is written too, and the seal reads 〈name〉之印 or 〈name〉印, so those two are always wanted too.
-  const chars = new Set([...texts.join(''), ...title, ...author, '之', '印']);
+  // A film of the scene (scripts/reel/) may write more than the inscription
+  // does — 赤壁赋 is written whole — so whatever Han its screenplays use is kept too.
+  const reels = path.join(root, 'scripts', 'reel');
+  const filmed = fs
+    .readdirSync(reels)
+    .map((f) => fs.readFileSync(path.join(reels, f), 'utf8'))
+    .filter((r) => r.includes(`scene: '${id}'`))
+    .join('')
+    .match(/\p{Script=Han}/gu) ?? [];
+  const chars = new Set([...texts.join(''), ...title, ...author, '之', '印', ...filmed]);
   const glyphs = {};
   const missing = [];
   for (const ch of chars) {

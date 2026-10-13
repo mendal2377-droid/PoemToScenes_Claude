@@ -11,6 +11,7 @@ import { XI_JIANG } from './xijiang';
 import { YIN_JIU } from './yinjiu';
 import { TAO_HUA_YUAN } from './taohuayuan';
 import { BAO_CHAN_SHAN } from './baochanshan';
+import { CHI_BI } from './chibi';
 
 /**
  * Level ground under what people have built or set down.
@@ -57,6 +58,7 @@ export const SCENES: readonly PoemScene[] = [
   CHI_LE,
   TAO_HUA_YUAN,
   BAO_CHAN_SHAN,
+  CHI_BI,
 ].map(settle);
 
 validateAll(SCENES);

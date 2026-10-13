@@ -21,7 +21,7 @@
  */
 window.__screenplays = window.__screenplays || {};
 
-window.__reel = async (sp, { upload = null, preview = null } = {}) => {
+window.__reel = async (sp, { upload = null, preview = null, audioOnly = false } = {}) => {
   const W = 1080, H = 1920, FPS = 30, SR = 48000;
   const TOTAL = sp.total;
   const PAPER = sp.paper || '#e9e7de';
@@ -78,7 +78,10 @@ window.__reel = async (sp, { upload = null, preview = null } = {}) => {
     k[2] = k[1].map((v, j) => v + (d[j] / l) * sp.aim);
   });
   const tan = (i, get) => {
-    if (i === 0 || i === K.length - 1) return get(K[i]).map(() => 0);
+    // A key marked to hold (its sixth value) is passed through at rest: a close
+    // shot a couple of metres from someone cannot afford the swing a tangent
+    // brings from a key far away.
+    if (i === 0 || i === K.length - 1 || K[i][5]) return get(K[i]).map(() => 0);
     const a = get(K[i - 1]), b = get(K[i + 1]), c = get(K[i]);
     // Either end of a hold (a key repeating its neighbour) is at rest, so the
     // camera eases out of it rather than leaving at speed.
@@ -286,14 +289,14 @@ window.__reel = async (sp, { upload = null, preview = null } = {}) => {
   const TITLE = sp.title && { ...sp.title, plan: planColumn(sp.title.text, sp.title.at, sp.title.dur ?? 1.6) };
   const AUTHOR = sp.title && { plan: planColumn(sp.author, sp.title.at + 1.5, 1.3) };
   const FIN = sp.final;
-  LINES.forEach((l, i) => (l.final = planColumn(l.zh, FIN.at + i * 0.9, 0.01)));
+  if (!sp.drawFinal) LINES.forEach((l, i) => (l.final = planColumn(l.zh, FIN.at + i * 0.9, 0.01)));
   const sealChars = sp.sealChars ?? (sp.author.length === 2 ? `${sp.author}之印` : `${sp.author}印`.slice(0, 4));
   const longest = Math.max(...LINES.map((l) => [...l.zh].length));
 
   const layerA = mk(), layerB = mk();
   const api = {
     ctx, W, H, project, skyPoint, ease, ease5, span, mix, mix3, clamp01, rng, lum, INK, SILVER, PAPER, F, G, WATER,
-    layers: [layerA, layerB], strokesInto, blit, english, drawColumn,
+    layers: [layerA, layerB], strokesInto, blit, english, drawColumn, planColumn, glyphStrokes, KAI, LATIN,
   };
 
   // ----------------------------------------------------------------- a frame
@@ -368,12 +371,15 @@ window.__reel = async (sp, { upload = null, preview = null } = {}) => {
     // The poem whole, and the seal.
     const fA = ease(span(t, FIN.at - 0.4, FIN.at + 0.4)) * (1 - ease(span(t, FIN.out - 1.4, FIN.out)));
     if (fA > 0) {
-      LINES.forEach((l, i) => {
+      // A screenplay can lay the whole text out itself — a prose piece is set as
+      // a page, not as one column per line — and say where its seal goes.
+      if (sp.drawFinal) sp.drawFinal(api, t, fA);
+      else LINES.forEach((l, i) => {
         const ap = ease(span(t, FIN.at + i * 0.6, FIN.at + i * 0.6 + 1.3));
         drawColumn(l.final, FIN.x0 - i * FIN.dx, FIN.y, FIN.size, t + 100, fA * ap, FIN.ink ?? textInk);
       });
-      seal(sealChars, FIN.x0 - (LINES.length - 1) * FIN.dx + 6, FIN.y + FIN.size * (longest * 1.08 + 0.5), 88, t, FIN.sealAt);
-      english(FIN.credit, fA * ease(span(t, FIN.sealAt - 0.8, FIN.sealAt + 0.4)), 1452);
+      seal(sealChars, FIN.sealX ?? FIN.x0 - (LINES.length - 1) * FIN.dx + 6, FIN.sealY ?? FIN.y + FIN.size * (longest * 1.08 + 0.5), FIN.sealSize ?? 88, t, FIN.sealAt);
+      english(FIN.credit, fA * ease(span(t, FIN.sealAt - 0.8, FIN.sealAt + 0.4)), FIN.creditY ?? 1452);
     }
 
     // To paper, and the house mark.
@@ -537,17 +543,57 @@ window.__reel = async (sp, { upload = null, preview = null } = {}) => {
       A.noise(t, t + 0.09, 'lowpass', 900, 0.7, 0.25, 0.004, 0.08);
     };
     A.drop(0.35);
-    // The brush: every stroke, a dry whisper of hair on paper.
-    const strokes = [];
-    [TITLE, AUTHOR, ...LINES].filter(Boolean).forEach((c) => c.plan.forEach((ss) => ss.forEach((p) => strokes.push([p.t0, p.t1 - p.t0]))));
-    for (const [t, d] of strokes) {
-      const dd = Math.max(0.08, Math.min(0.5, d));
-      const b = A.noise(t, t + dd + 0.05, 'bandpass', 2600 + rnd() * 1400, 1.1, 0.024, Math.min(0.03, dd * 0.3), dd * 0.6, master, -0.25);
-      b.fl.frequency.linearRampToValueAtTime(1800 + rnd() * 800, t + dd);
+    // The brush: every stroke, a dry whisper of hair on paper — band-passed
+    // noise sweeping down as the stroke goes. Synthesised straight into one
+    // buffer rather than as a chain of nodes per stroke: a whole text is
+    // thousands of strokes, and an offline graph that size never finishes.
+    {
+      const strokes = [];
+      [TITLE, AUTHOR, ...LINES].filter(Boolean).forEach((c) => c.plan.forEach((ss) => ss.forEach((p) => strokes.push([p.t0, p.t1 - p.t0]))));
+      const len = Math.ceil(TOTAL * SR), bb = oc.createBuffer(2, len, SR), BL = bb.getChannelData(0), BR = bb.getChannelData(1);
+      const gL = Math.cos(0.375 * Math.PI / 2), gR = Math.sin(0.375 * Math.PI / 2); // panned a little left
+      for (const [t, d] of strokes) {
+        const dd = Math.max(0.08, Math.min(0.5, d)), dur = dd + 0.05;
+        const f0 = 2600 + rnd() * 1400, f1 = 1800 + rnd() * 800, att = Math.min(0.03, dd * 0.3), rel = dd * 0.6;
+        const i0 = Math.floor(t * SR), n = Math.min(Math.floor(dur * SR), len - i0);
+        let x1 = 0, x2 = 0, y1 = 0, y2 = 0, b0 = 0, b2 = 0, a1 = 0, a2 = 0;
+        for (let k = 0; k < n; k++) {
+          const u = k / SR;
+          if ((k & 63) === 0) {
+            // RBJ band-pass, 0 dB peak, Q 1.1
+            const fc = u < dd ? f0 + (f1 - f0) * (u / dd) : f1, w = 2 * Math.PI * fc / SR, al = Math.sin(w) / 2.2, a0 = 1 + al;
+            b0 = al / a0; b2 = -al / a0; a1 = (-2 * Math.cos(w)) / a0; a2 = (1 - al) / a0;
+          }
+          const x = rnd() * 2 - 1;
+          const y = b0 * x + b2 * x2 - a1 * y1 - a2 * y2;
+          x2 = x1; x1 = x; y2 = y1; y1 = y;
+          const env = 0.024 * (u < att ? u / att : u > dur - rel ? Math.max(0, (dur - u) / rel) : 1);
+          BL[i0 + k] += y * env * gL; BR[i0 + k] += y * env * gR;
+        }
+      }
+      const src = oc.createBufferSource(); src.buffer = bb; src.connect(master); src.start(0);
     }
     A.thock(FIN.sealAt + 0.05);
     sp.score(A);
     return oc.startRendering();
+  }
+
+  // ------------------------------------------------------- the score alone
+  // For listening to (and timing) the score without filming: a WAV.
+  if (audioOnly) {
+    job.phase = 'score';
+    const t0 = performance.now();
+    const buf = await score();
+    job.scoreSeconds = (performance.now() - t0) / 1000;
+    const n = buf.length, wav = new DataView(new ArrayBuffer(44 + n * 4));
+    const str = (o, x) => [...x].forEach((c, i) => wav.setUint8(o + i, c.charCodeAt(0)));
+    str(0, 'RIFF'); wav.setUint32(4, 36 + n * 4, true); str(8, 'WAVEfmt '); wav.setUint32(16, 16, true); wav.setUint16(20, 1, true); wav.setUint16(22, 2, true);
+    wav.setUint32(24, SR, true); wav.setUint32(28, SR * 4, true); wav.setUint16(32, 4, true); wav.setUint16(34, 16, true); str(36, 'data'); wav.setUint32(40, n * 4, true);
+    const L = buf.getChannelData(0), R = buf.getChannelData(1);
+    for (let i = 0; i < n; i++) { wav.setInt16(44 + i * 4, Math.max(-1, Math.min(1, L[i])) * 32767, true); wav.setInt16(46 + i * 4, Math.max(-1, Math.min(1, R[i])) * 32767, true); }
+    if (upload) await fetch(upload + sp.name + '.wav', { method: 'POST', body: new Blob([wav]) });
+    job.done = true;
+    return;
   }
 
   // ----------------------------------------------------------------- the film
@@ -560,7 +606,7 @@ window.__reel = async (sp, { upload = null, preview = null } = {}) => {
       fastStart: 'in-memory',
     });
     const venc = new VideoEncoder({ output: (c, m) => muxer.addVideoChunk(c, m), error: (e) => (job.encErr = String(e)) });
-    venc.configure({ codec: 'avc1.640028', width: W, height: H, bitrate: 14000000, framerate: FPS, latencyMode: 'quality' });
+    venc.configure({ codec: 'avc1.640028', width: W, height: H, bitrate: sp.bitrate ?? 14000000, framerate: FPS, latencyMode: 'quality' });
 
     const buf = await score();
     job.phase = 'audio-encode';

@@ -112,6 +112,7 @@ export type Role =
   | 'herdsman' // dark coat, tall hat, a staff
   | 'companion' // one of the four, with a torch
   | 'fisher' // 蓑笠 — straw cape and rain hat
+  | 'piper' // 吹洞箫者 — a grey robe, a long bamboo flute held to the lips
   | 'monkey'; // 猿 — small, brown, on a rock
 
 /** Creatures placed by hand — the ones a line names, or one that would be there. */
@@ -140,6 +141,21 @@ export type Person = {
   sit?: boolean;
   /** Lit torch, held out to the side. */
   torch?: boolean;
+};
+
+/**
+ * Who is aboard a boat, seated, in the boat's own frame: x across the beam,
+ * z along it (bow towards +z). A boat with a party carries them instead of
+ * the fisherman.
+ */
+export type Passenger = { role: Exclude<Role, 'fisher' | 'monkey'>; x: number; z: number; rot: number };
+
+export type BoatSpec = {
+  x: number;
+  z: number;
+  rot: number;
+  on?: 'basin' | 'river' | 'stream' | 'ground';
+  party?: readonly Passenger[];
 };
 
 /** Birds on the wing, circling a point. */
@@ -236,9 +252,9 @@ export type PoemScene = {
   /** Grazing animals, for poems that need them. */
   herd?: { count: number; x: number; z: number; r: number; color: string; scale: number };
   /** Where the fisherman's boat rides, if the poem has one. */
-  boat?: { x: number; z: number; rot: number; on?: 'basin' | 'river' | 'stream' | 'ground' };
+  boat?: BoatSpec;
   /** Further boats, for stories that have more than one. */
-  boats?: readonly { x: number; z: number; rot: number; on?: 'basin' | 'river' | 'stream' | 'ground' }[];
+  boats?: readonly BoatSpec[];
   people?: readonly Person[];
   animals?: readonly Animal[];
   flocks?: readonly Flock[];

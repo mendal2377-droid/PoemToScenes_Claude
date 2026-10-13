@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { terrainHeight } from '@/lib/terrain';
-import type { PoemScene, Role } from '@/lib/types';
+import type { Passenger, PoemScene, Role } from '@/lib/types';
 import { makeInkMaterial } from './materials';
 import { Figure } from './Figure';
 import type { World } from './useWorld';
@@ -20,7 +20,7 @@ import type { World } from './useWorld';
  * is what tells you who they are.
  */
 
-type Pose = 'stand' | 'carry' | 'wash' | 'read' | 'staff' | 'hoe' | 'play' | 'torch' | 'poet';
+type Pose = 'stand' | 'carry' | 'wash' | 'read' | 'staff' | 'hoe' | 'play' | 'torch' | 'poet' | 'xiao';
 
 type Costume = {
   robe: string;
@@ -44,6 +44,7 @@ const COSTUME: Record<Exclude<Role, 'fisher' | 'monkey'>, Costume> = {
   farmer: { robe: '#7a6a48', trim: '#4c3e32', hat: 'straw', hatColor: '#c8b070', pose: 'hoe', height: 1 },
   herdsman: { robe: '#4c3e32', trim: '#c8a050', hat: 'fur', hatColor: '#2e2620', pose: 'staff', height: 1.04 },
   companion: { robe: '#6a6258', trim: '#3a3226', hat: 'cap', hatColor: '#26221e', pose: 'torch', height: 1 },
+  piper: { robe: '#8e8c84', trim: '#3e3a34', hat: 'bun', hatColor: '#26221e', pose: 'xiao', height: 1 },
 };
 
 const SKIN = '#d6b48e';
@@ -117,6 +118,8 @@ function Person({ role, sit, torch, mats, seed }: { role: keyof typeof COSTUME; 
       play: { l: [0.1, 0.95], r: [0.1, -0.95] },
       torch: { l: [0.05, 0.14], r: [-1.5, -0.12] },
       poet: { l: [0.38, 0.06], r: [0.38, -0.06] },
+      // Both hands up in front of the chin, on the flute.
+      xiao: { l: [-1.35, 0.42], r: [-1.05, -0.36] },
     } as const
   )[pose];
 
@@ -188,6 +191,13 @@ function Person({ role, sit, torch, mats, seed }: { role: keyof typeof COSTUME; 
         <mesh material={mats(SKIN)} position={[0, 0.46 * h, 0]}>
           <cylinderGeometry args={[0.045 * h, 0.05 * h, 0.09 * h, 6]} />
         </mesh>
+
+        {/* 洞箫 — the end-blown flute, from the lips forward and down. */}
+        {pose === 'xiao' && (
+          <mesh material={mats('#4a3a24')} position={[0, 0.33 * h, 0.27 * h]} rotation={[-0.61, 0, 0]}>
+            <cylinderGeometry args={[0.016 * h, 0.019 * h, 0.62 * h, 6]} />
+          </mesh>
+        )}
 
         {/* The head. */}
         <group position={[0, 0.6 * h, 0]}>
@@ -373,21 +383,20 @@ function Monkey({ mats, seed }: { mats: Mats; seed: number }) {
   );
 }
 
-export function People({ scene, world }: { scene: PoemScene; world: World }) {
-  // One material per colour used, shared between every figure that wears it.
+/** One material per colour used, shared between every figure that wears it. */
+function useMats(palette: PoemScene['palette']): Mats {
   const cache = useMemo(() => new Map<string, THREE.ShaderMaterial>(), []);
   const mats = useMemo<Mats>(
     () => (color: string) => {
       let m = cache.get(color);
       if (!m) {
-        m = makeInkMaterial(scene.palette, color);
+        m = makeInkMaterial(palette, color);
         cache.set(color, m);
       }
       return m;
     },
-    [cache, scene.palette]
+    [cache, palette]
   );
-
   useEffect(
     () => () => {
       cache.forEach((m) => m.dispose());
@@ -395,6 +404,25 @@ export function People({ scene, world }: { scene: PoemScene; world: World }) {
     },
     [cache]
   );
+  return mats;
+}
+
+/** The people aboard a boat, seated, in the boat's own frame. */
+export function Party({ scene, party }: { scene: PoemScene; party: readonly Passenger[] }) {
+  const mats = useMats(scene.palette);
+  return (
+    <>
+      {party.map((p, i) => (
+        <group key={i} position={[p.x, 0, p.z]} rotation={[0, p.rot, 0]}>
+          <Person role={p.role} sit mats={mats} seed={i + 11} />
+        </group>
+      ))}
+    </>
+  );
+}
+
+export function People({ scene, world }: { scene: PoemScene; world: World }) {
+  const mats = useMats(scene.palette);
 
   if (!scene.people?.length) return null;
 

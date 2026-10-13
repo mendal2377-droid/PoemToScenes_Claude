@@ -46,6 +46,8 @@ export const film = {
    * director can crane, push in and hold.
    */
   pose: null as null | { pos: [number, number, number]; look: [number, number, number]; fov?: number; roll?: number },
+  /** Boats a film is sailing, by index (the scene's `boat` first): where each is now. */
+  boats: {} as Record<number, { x: number; z: number; rot: number } | undefined>,
   /** The arriving ink drop, driven by hand (0 bare paper … 1 the painting); null leaves it off. */
   bloom: null as number | null,
 };
@@ -79,6 +81,8 @@ declare global {
       water: number;
       /** 风吹草低 — lay the grass down: how hard, and where the gust's front is along x. */
       bow: (amount: number, front: number) => void;
+      /** Sail a boat (the scene's `boat` is 0): put it here, facing so; null gives it back to the scene. */
+      boat: (i: number, p: { x: number; z: number; rot: number } | null) => void;
       /** Show or hide the scene's own flocks, for a film that draws its birds itself. */
       birds: (on: boolean) => void;
       /** Directions of the sun and moon as they stand now (unit vectors). */
@@ -125,6 +129,9 @@ export function installFilm(scene: PoemScene) {
     water: scene.terrain.rivers?.[0]?.level ?? 0,
     birds: (on) => {
       film.birds = on;
+    },
+    boat: (i, p) => {
+      film.boats[i] = p ?? undefined;
     },
     bow: (amount, front) => {
       shared.uBow.value = amount;

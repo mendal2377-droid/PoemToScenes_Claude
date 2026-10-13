@@ -8,7 +8,7 @@ import { distToPath } from '@/lib/noise';
 import type { PoemScene } from '@/lib/types';
 import type { World } from './useWorld';
 import { Figure } from './Figure';
-import { People } from './People';
+import { Party, People } from './People';
 import { OVERLAY_LAYER } from './InkPass';
 import { Animals } from './Animals';
 import { film } from './Film';
@@ -180,13 +180,29 @@ function Boats({ scene, world }: { scene: PoemScene; world: World }) {
   return (
     <>
       {all.map((b, i) => (
-        <Boat key={i} b={b} scene={scene} world={world} />
+        <Boat key={i} i={i} b={b} scene={scene} world={world} />
       ))}
     </>
   );
 }
 
-function Boat({ b, scene, world }: { b: NonNullable<PoemScene['boat']>; scene: PoemScene; world: World }) {
+function Boat({ i, b, scene, world }: { i: number; b: NonNullable<PoemScene['boat']>; scene: PoemScene; world: World }) {
+  const ref = useRef<THREE.Group>(null);
+  // Afloat, it rides the water: a slow roll and pitch. A film can also sail it
+  // (`__film.boat`), for a voyage — 纵一苇之所如.
+  useFrame(({ clock }) => {
+    const g = ref.current;
+    if (!g || b.on === 'ground') return;
+    const o = film.boats[i];
+    if (o) {
+      g.position.x = o.x;
+      g.position.z = o.z;
+      g.rotation.y = o.rot;
+    }
+    const t = clock.elapsedTime + i * 3;
+    g.rotation.z = Math.sin(t * 0.8) * 0.025;
+    g.rotation.x = Math.sin(t * 0.53 + 1) * 0.012;
+  });
   if (!world.geo.boatHull) return null;
   // Afloat, a boat rides at the level of its water — the pond's, the river's,
   // or the brook's surface where it lies. A boat that has been left on the bank
@@ -203,12 +219,18 @@ function Boat({ b, scene, world }: { b: NonNullable<PoemScene['boat']>; scene: P
   }
 
   return (
-    <group position={[b.x, y - 0.18, b.z]} rotation={[0, b.rot, 0]}>
+    <group ref={ref} position={[b.x, y - 0.18, b.z]} rotation={[0, b.rot, 0]}>
       <mesh geometry={world.geo.boatHull} material={world.mat.wood} />
-      {world.geo.boatCanopy && (
+      {/* A party sits in the open — 一叶之扁舟 — with nothing between them. */}
+      {world.geo.boatCanopy && !b.party && (
         <mesh geometry={world.geo.boatCanopy} material={world.mat.thatch} position={[0, 0.36, 0.5]} />
       )}
-      {!ashore && (
+      {!ashore && b.party && (
+        <group position={[0, 0.12, 0]}>
+          <Party scene={scene} party={b.party} />
+        </group>
+      )}
+      {!ashore && !b.party && (
         <>
           {/* The fisherman, seated at the stern under his hat. */}
           <group position={[0, 0.34, -1.5]} scale={0.78}>
