@@ -198,16 +198,17 @@ export const CHI_BI: PoemScene = {
   // The moon over 东山, a little north of east, above the end of the cliffs.
   luminary: { x: 0.86, y: 0.26, z: -0.42, size: 0.11, kind: 'moon' },
   // 泛舟 — a covered boat under the cliffs, and the three of them in it: Su
-  // at the bow end, facing back, the piper and the other guest facing him.
+  // at the bow end, facing back, the piper and the other guest facing him —
+  // all three where the hull is wide enough to hold them (see validate.ts).
   boat: {
     x: -6,
     z: -32,
     rot: Math.PI / 2,
     on: 'river',
     party: [
-      { role: 'scholar', x: 0, z: 1.85, rot: Math.PI },
-      { role: 'piper', x: -0.15, z: -1.55, rot: 0.2 },
-      { role: 'poet', x: 0.25, z: -2.25, rot: -0.15 },
+      { role: 'scholar', x: 0, z: 1.6, rot: Math.PI },
+      { role: 'piper', x: -0.1, z: -0.8, rot: 0.2 },
+      { role: 'poet', x: 0.05, z: -1.75, rot: -0.15 },
     ],
   },
   // 泣孤舟之嫠妇 — and one other boat out on the river, alone.

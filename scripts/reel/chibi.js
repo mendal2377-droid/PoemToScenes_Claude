@@ -173,7 +173,7 @@ window.__screenplays = window.__screenplays || {};
         return tab[ks[i]].map((v, j) => v + (tab[ks[i + 1]][j] - v) * u);
       };
       const moon = (s, from) => { const d = moonDir(clock(s)); return from.map((v, j) => v + d[j] * 200); };
-      const sit = { su: (s) => on(s, 0, 1.15, 1.85), piper: (s) => on(s, -0.15, 1.1, -1.55), deck: (s) => on(s, 0, 0.5, 0) };
+      const sit = { su: (s) => on(s, 0, 1.15, 1.6), piper: (s) => on(s, -0.1, 1.1, -0.8), deck: (s) => on(s, 0, 0.5, 0) };
       const K = [];
       const key = (s, pos, look, fov, roll) => K.push([s, pos, look, fov, roll ?? 0]);
       const down = (s) => sit.deck(s);

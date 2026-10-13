@@ -26,6 +26,7 @@ import {
   buildRocks,
   scatterRocks,
 } from './flora';
+import { BOAT } from '@/lib/boat';
 import { buildBoatCanopy, buildBoatHull, buildCape, buildFlocks, buildGlowPoints, buildHat, buildHerd, buildPavilionRoof } from './props';
 import { bodies, shared } from './materials';
 import {
@@ -239,7 +240,7 @@ function buildWorld(scene: PoemScene) {
         )
       : null,
     pavilionRoof: scene.pavilion ? buildPavilionRoof(3.1, 2.9, 4.9) : null,
-    boatHull: scene.boat || scene.boats?.length ? buildBoatHull(5.6, 1.5, 0.62) : null,
+    boatHull: scene.boat || scene.boats?.length ? buildBoatHull(BOAT.length, BOAT.beam, BOAT.depth) : null,
     boatCanopy: scene.boat || scene.boats?.length ? buildBoatCanopy(2.1, 1.35, 0.85) : null,
     hat: buildHat(0.44, 0.2),
     cape: buildCape(0.17, 0.44, 0.82),

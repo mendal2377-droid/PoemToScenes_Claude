@@ -1,6 +1,7 @@
 import { distToPath, smoothstep } from './noise';
 import { basinWaterLevel, inWater, riverWidth, terrainHeight, waterSurface } from './terrain';
 import type { PoemScene } from './types';
+import { SEATED_RADIUS, boatHalfBeam } from './boat';
 
 /**
  * Checks a poem's data before it can ship.
@@ -119,6 +120,14 @@ export function validateScene(s: PoemScene): string[] {
     } else if (inWater(boat.x, boat.z, s.terrain)) {
       e.push(at(`boat at (${boat.x}, ${boat.z}) is meant to be on the bank but is in the water`));
     }
+    // Whoever is aboard sits inside the hull: the robe of a seated figure must
+    // not hang out over the gunwale where the boat narrows towards its ends.
+    boat.party?.forEach((p, i) => {
+      const room = boatHalfBeam(p.z) - SEATED_RADIUS;
+      if (Math.abs(p.x) > room) {
+        e.push(at(`passenger ${i} (${p.role}) at (${p.x}, ${p.z}) sits outside the hull — the beam there leaves ${room.toFixed(2)} either side of the centreline`));
+      }
+    });
   }
 
   // --- every line has something to look at ----------------------------------
